@@ -426,14 +426,30 @@ export default function App() {
                 <Settings2 size={18} className="text-emerald-500" />
                 <h2 className="font-bold">Templates</h2>
               </div>
-              <button 
-                onClick={generateAITemplate}
-                disabled={isGeneratingAI}
-                className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all disabled:opacity-50"
-                title="AI Suggestion"
-              >
-                <Sparkles size={18} className={isGeneratingAI ? "animate-spin" : ""} />
-              </button>
+              <div className="flex items-center gap-1">
+                <span className="text-[9px] font-bold text-emerald-500 uppercase tracking-tighter mr-2 animate-pulse">Auto-saved</span>
+                <button 
+                  onClick={() => {
+                    const def = DEFAULT_TEMPLATES.find(t => t.id === activeTemplateId);
+                    if (def && confirm('Reset template ini ke pengaturan awal?')) {
+                      updateActiveTemplateText(def.text);
+                      toast.success('Template direset');
+                    }
+                  }}
+                  className="p-2 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-xl transition-all"
+                  title="Reset to Default"
+                >
+                  <History size={18} />
+                </button>
+                <button 
+                  onClick={generateAITemplate}
+                  disabled={isGeneratingAI}
+                  className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all disabled:opacity-50"
+                  title="AI Suggestion"
+                >
+                  <Sparkles size={18} className={isGeneratingAI ? "animate-spin" : ""} />
+                </button>
+              </div>
             </div>
             
             <div className="flex gap-2 mb-4 overflow-x-auto pb-2 scrollbar-hide">
