@@ -1,0 +1,5 @@
+{
+  "name": "WAsender - WhatsApp Blast Tool",
+  "description": "Generate and manage WhatsApp blast messages for shipping updates and customer notifications.",
+  "requestFramePermissions": []
+}
