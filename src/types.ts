@@ -4,6 +4,7 @@ export interface BlastEntry {
   recipientName: string;
   itemName: string;
   receiptNumber: string;
+  cod: string;
   status: 'pending' | 'sent' | 'failed';
   createdAt: number;
 }
@@ -16,13 +17,25 @@ export interface MessageTemplate {
 
 export const DEFAULT_TEMPLATES: MessageTemplate[] = [
   {
-    id: 'shipping',
-    name: 'Proses Pengiriman',
-    text: "Halo {nama}, pesanan {barang} dengan No Resi {resi} sedang dalam proses pengiriman. Terima kasih!"
+    id: 'retur',
+    name: 'Konfirmasi Retur',
+    text: "{salam} ka, kami dari JNT Cargo manado mau konfrimasi resi : {resi} dengan nama barang : {barang} dengan COD : {cod} sudah ada percobaan delivery tapi msaih belum sukses apakah masih mau diambil atau di retur ka ?"
   },
   {
     id: 'received',
     name: 'Konfirmasi Diterima',
-    text: "Halo {nama}, pesanan {barang} (Resi: {resi}) sudah sampai di tujuan. Mohon konfirmasi jika sudah diterima dengan baik. Terima kasih!"
+    text: "{salam} kak, perkenalkan saya {pengirim} dari JNT Cargo, kak mau konfirmasi apakah nomor resi ini: {resi} dengan nama penerima: {nama} dengan barang: {barang}, apakah sudah diterima?"
   }
 ];
+
+export interface AppSettings {
+  delay: number; // in milliseconds
+  autoCloseTab: boolean;
+  senderName: string;
+}
+
+export const DEFAULT_SETTINGS: AppSettings = {
+  delay: 2000,
+  autoCloseTab: false,
+  senderName: 'Admin JNT'
+};
