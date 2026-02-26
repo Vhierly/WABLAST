@@ -83,7 +83,17 @@ export default function App() {
     const savedSettings = localStorage.getItem('wa_blast_settings');
     
     if (savedEntries) setEntries(JSON.parse(savedEntries));
-    if (savedTemplates) setTemplates(JSON.parse(savedTemplates));
+    if (savedTemplates) {
+      const parsedTemplates: MessageTemplate[] = JSON.parse(savedTemplates);
+      // Merge saved templates with defaults to ensure new default templates appear
+      const mergedTemplates = [...parsedTemplates];
+      DEFAULT_TEMPLATES.forEach(def => {
+        if (!mergedTemplates.find(t => t.id === def.id)) {
+          mergedTemplates.push(def);
+        }
+      });
+      setTemplates(mergedTemplates);
+    }
     if (savedActiveId) setActiveTemplateId(savedActiveId);
     if (savedSettings) setSettings(JSON.parse(savedSettings));
   }, []);

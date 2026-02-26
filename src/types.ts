@@ -22,6 +22,11 @@ export const DEFAULT_TEMPLATES: MessageTemplate[] = [
     text: "{salam} ka, kami dari JNT Cargo manado mau konfrimasi resi : {resi} dengan nama barang : {barang} dengan COD : {cod} sudah ada percobaan delivery tapi msaih belum sukses apakah masih mau diambil atau di retur ka ?"
   },
   {
+    id: 'delivery',
+    name: 'Proses Pengantaran',
+    text: "{salam} kak, perkenalkan saya {pengirim} dari JNT Cargo. Menginfokan bahwa paket kakak dengan resi {resi} ({barang}) saat ini sedang dalam proses pengantaran oleh kurir kami ke alamat tujuan. Mohon ditunggu ya kak. Terima kasih!"
+  },
+  {
     id: 'received',
     name: 'Konfirmasi Diterima',
     text: "{salam} kak, perkenalkan saya {pengirim} dari JNT Cargo, kak mau konfirmasi apakah nomor resi ini: {resi} dengan nama penerima: {nama} dengan barang: {barang}, apakah sudah diterima?"
