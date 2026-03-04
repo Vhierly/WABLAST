@@ -61,6 +61,8 @@ export default function App() {
   const [currentIndex, setCurrentIndex] = useState(-1);
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [countdown, setCountdown] = useState(0);
   const [bulkData, setBulkData] = useState('');
   const [isConfirmingClear, setIsConfirmingClear] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -294,18 +296,26 @@ export default function App() {
   };
 
   useEffect(() => {
+    let timer: NodeJS.Timeout;
+    let countdownInterval: NodeJS.Timeout;
+
     if (isBlasting) {
       const pendingEntries = entries.filter(e => e.status === 'pending');
       
       if (pendingEntries.length > 0) {
-        const entry = pendingEntries[0]; // Always take the first pending
-        const timer = setTimeout(() => {
+        const entry = pendingEntries[0];
+        setCountdown(Math.ceil(settings.delay / 1000));
+
+        countdownInterval = setInterval(() => {
+          setCountdown(prev => Math.max(0, prev - 1));
+        }, 1000);
+
+        timer = setTimeout(() => {
           // Use a named window 'WAsenderTab' to reuse the same tab.
-          // This is more reliable and avoids opening 100 separate tabs.
           const newWindow = window.open(getWALink(entry), 'WAsenderTab');
           
           if (!newWindow) {
-            toast.error('Popup terblokir! Klik tombol "Start Engine" lagi dan pastikan pilih "Always Allow Popups" di pojok kanan atas browser.', {
+            toast.error('Popup terblokir! Harap izinkan popup di browser Anda.', {
               duration: 8000,
               icon: '🚫'
             });
@@ -315,7 +325,6 @@ export default function App() {
 
           updateStatus(entry.id, 'sent');
         }, settings.delay);
-        return () => clearTimeout(timer);
       } else {
         setIsBlasting(false);
         toast.success('Blast selesai!', {
@@ -323,7 +332,12 @@ export default function App() {
         });
       }
     }
-  }, [isBlasting, entries.length, settings.delay]);
+
+    return () => {
+      clearTimeout(timer);
+      clearInterval(countdownInterval);
+    };
+  }, [isBlasting, entries, settings.delay]);
 
   const filteredEntries = useMemo(() => {
     return entries.filter(e => 
@@ -385,12 +399,20 @@ export default function App() {
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 Sedang mengirim pesan ke <span className="font-bold text-emerald-600 dark:text-emerald-400">{entries.filter(e => e.status === 'sent').length}</span> dari <span className="font-bold">{entries.length}</span> antrean.
               </p>
-              <div className="pt-4 flex flex-col gap-2">
+              
+              <div className="py-4">
+                <div className="text-4xl font-black text-emerald-600 dark:text-emerald-400 tabular-nums">
+                  {countdown}s
+                </div>
+                <p className="text-[10px] text-gray-400 uppercase tracking-widest mt-1">Next message in</p>
+              </div>
+
+              <div className="pt-2 flex flex-col gap-2">
                 <p className="text-[10px] text-amber-600 dark:text-amber-400 font-bold uppercase tracking-widest animate-pulse">
                   Jangan tutup tab WhatsApp Web yang terbuka!
                 </p>
                 <p className="text-[9px] text-gray-400 italic">
-                  Jika macet, Anda bisa klik "Kirim Berikutnya" atau tunggu delay selesai.
+                  Jika macet, Anda bisa klik "Kirim Berikutnya" atau tambah delay di Settings.
                 </p>
               </div>
             </div>
@@ -447,6 +469,13 @@ export default function App() {
               title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
             >
               {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
+            <button 
+              onClick={() => setShowSettingsModal(true)}
+              className="p-2.5 bg-gray-50 dark:bg-[#1C2128] border border-black/5 dark:border-white/5 rounded-xl text-gray-500 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-all"
+              title="Settings"
+            >
+              <Settings2 size={18} />
             </button>
             <div className="hidden md:flex items-center gap-2 px-4 py-2 bg-gray-50 dark:bg-[#1C2128] rounded-full border border-black/5 dark:border-white/5">
               <div className={cn("w-2 h-2 rounded-full animate-pulse", isBlasting ? "bg-emerald-500" : "bg-gray-300 dark:bg-gray-700")} />
@@ -950,6 +979,70 @@ export default function App() {
                     <p className="text-gray-400 dark:text-gray-600 text-sm italic">No pending entries to preview.</p>
                   </div>
                 )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Settings Modal */}
+      <AnimatePresence>
+        {showSettingsModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowSettingsModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-md" />
+            <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative w-full max-w-md bg-white dark:bg-[#16191F] rounded-[2rem] shadow-2xl overflow-hidden border border-black/5 dark:border-white/10">
+              <div className="p-6 border-b border-black/5 dark:border-white/5 flex items-center justify-between bg-gray-50/50 dark:bg-gray-900/20">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-xl flex items-center justify-center"><Settings2 size={20} /></div>
+                  <div>
+                    <h2 className="text-lg font-bold">Settings</h2>
+                    <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wider">Engine Configuration</p>
+                  </div>
+                </div>
+                <button onClick={() => setShowSettingsModal(false)} className="p-2 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-full transition-colors"><X size={20} /></button>
+              </div>
+              <div className="p-6 space-y-6">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+                      <Timer size={14} /> Blast Delay (Milliseconds)
+                    </label>
+                    <input 
+                      type="number" 
+                      value={settings.delay}
+                      onChange={(e) => setSettings(prev => ({ ...prev, delay: parseInt(e.target.value) || 1000 }))}
+                      className="w-full px-4 py-3 bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-sm"
+                      placeholder="5000"
+                      min="1000"
+                      step="500"
+                    />
+                    <p className="text-[10px] text-gray-400 italic">
+                      Disarankan minimal 5000ms (5 detik) agar WhatsApp Web sempat memuat pesan.
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+                      <User size={14} /> Nama Pengirim
+                    </label>
+                    <input 
+                      type="text" 
+                      value={settings.senderName}
+                      onChange={(e) => setSettings(prev => ({ ...prev, senderName: e.target.value }))}
+                      className="w-full px-4 py-3 bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-sm"
+                      placeholder="Admin JNT"
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-4">
+                  <button 
+                    onClick={() => setShowSettingsModal(false)}
+                    className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-bold shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all"
+                  >
+                    Save Configuration
+                  </button>
+                </div>
               </div>
             </motion.div>
           </div>
