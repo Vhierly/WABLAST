@@ -60,6 +60,7 @@ export default function App() {
   const [isBlasting, setIsBlasting] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(-1);
   const [showBulkModal, setShowBulkModal] = useState(false);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [bulkData, setBulkData] = useState('');
   const [isConfirmingClear, setIsConfirmingClear] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -604,6 +605,13 @@ export default function App() {
                 <FileSpreadsheet size={18} /> Bulk Import
               </button>
               <button
+                onClick={() => setShowPreviewModal(true)}
+                disabled={entries.filter(e => e.status === 'pending').length === 0}
+                className="px-6 py-3 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-2xl font-bold text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition-all flex items-center gap-2 disabled:opacity-50"
+              >
+                <Search size={18} /> Preview
+              </button>
+              <button
                 onClick={isBlasting ? stopBlast : startBlast}
                 disabled={entries.length === 0}
                 className={cn(
@@ -842,6 +850,67 @@ export default function App() {
                   <button onClick={() => setShowBulkModal(false)} className="flex-1 py-4 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-2xl font-bold hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">Cancel</button>
                   <button onClick={handleBulkImport} className="flex-[2] py-4 bg-emerald-600 text-white rounded-2xl font-bold shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all">Import Data</button>
                 </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Preview Modal */}
+      <AnimatePresence>
+        {showPreviewModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowPreviewModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-md" />
+            <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative w-full max-w-lg bg-white dark:bg-[#16191F] rounded-[2rem] shadow-2xl overflow-hidden border border-black/5 dark:border-white/10">
+              <div className="p-6 border-b border-black/5 dark:border-white/5 flex items-center justify-between bg-gray-50/50 dark:bg-gray-900/20">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-xl flex items-center justify-center"><MessageSquare size={20} /></div>
+                  <div>
+                    <h2 className="text-lg font-bold">Message Preview</h2>
+                    <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wider">First Pending Entry</p>
+                  </div>
+                </div>
+                <button onClick={() => setShowPreviewModal(false)} className="p-2 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-full transition-colors"><X size={20} /></button>
+              </div>
+              <div className="p-6 space-y-4">
+                {entries.find(e => e.status === 'pending') ? (
+                  <>
+                    <div className="p-4 bg-gray-50 dark:bg-[#1C2128] rounded-2xl border border-gray-100 dark:border-white/5">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-8 h-8 bg-emerald-100 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-lg flex items-center justify-center text-xs font-bold">
+                          {entries.find(e => e.status === 'pending')?.recipientName.charAt(0)}
+                        </div>
+                        <div>
+                          <div className="text-xs font-bold">{entries.find(e => e.status === 'pending')?.recipientName}</div>
+                          <div className="text-[10px] text-gray-400 font-mono">{entries.find(e => e.status === 'pending')?.phone}</div>
+                        </div>
+                      </div>
+                      <div className="bg-white dark:bg-[#16191F] p-4 rounded-xl border border-black/5 dark:border-white/10 text-sm whitespace-pre-wrap leading-relaxed dark:text-gray-300 font-sans">
+                        {generateMessage(entries.find(e => e.status === 'pending')!)}
+                      </div>
+                    </div>
+                    <div className="flex gap-3">
+                      <button onClick={() => setShowPreviewModal(false)} className="flex-1 py-3 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-xl font-bold text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">Close</button>
+                      <button 
+                        onClick={() => {
+                          const entry = entries.find(e => e.status === 'pending');
+                          if (entry) {
+                            handleSendManual(entry);
+                            setShowPreviewModal(false);
+                          }
+                        }} 
+                        className="flex-1 py-3 bg-emerald-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all flex items-center justify-center gap-2"
+                      >
+                        <Send size={16} /> Send Now
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-center py-12">
+                    <Clock size={48} className="mx-auto text-gray-200 dark:text-gray-800 mb-4" />
+                    <p className="text-gray-400 dark:text-gray-600 text-sm italic">No pending entries to preview.</p>
+                  </div>
+                )}
               </div>
             </motion.div>
           </div>
