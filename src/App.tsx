@@ -63,6 +63,7 @@ export default function App() {
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [activeSettingsTab, setActiveSettingsTab] = useState<'general' | 'antispam'>('general');
   const [countdown, setCountdown] = useState(0);
   const [nextBatchPauseAt, setNextBatchPauseAt] = useState(0);
   const [bulkData, setBulkData] = useState('');
@@ -1081,8 +1082,13 @@ export default function App() {
         {showBulkModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowBulkModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-md" />
-            <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative w-full max-w-2xl bg-white dark:bg-[#16191F] rounded-[2rem] shadow-2xl overflow-hidden border border-black/5 dark:border-white/10">
-              <div className="p-8 border-b border-black/5 dark:border-white/5 flex items-center justify-between bg-gray-50/50 dark:bg-gray-900/20">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }} 
+              animate={{ opacity: 1, scale: 1, y: 0 }} 
+              exit={{ opacity: 0, scale: 0.95, y: 20 }} 
+              className="relative w-full max-w-2xl max-h-[90vh] bg-white dark:bg-[#16191F] rounded-[2rem] shadow-2xl overflow-hidden border border-black/5 dark:border-white/10 flex flex-col"
+            >
+              <div className="p-8 border-b border-black/5 dark:border-white/5 flex items-center justify-between bg-gray-50/50 dark:bg-gray-900/20 shrink-0">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-xl flex items-center justify-center"><FileSpreadsheet size={20} /></div>
                   <div>
@@ -1092,7 +1098,7 @@ export default function App() {
                 </div>
                 <button onClick={() => setShowBulkModal(false)} className="p-2 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-full transition-colors"><X size={20} /></button>
               </div>
-              <div className="p-8 space-y-6">
+              <div className="p-8 space-y-6 overflow-y-auto custom-scrollbar flex-1">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="p-4 bg-emerald-50 dark:bg-emerald-900/10 rounded-2xl border border-emerald-100 dark:border-emerald-900/20">
                     <div className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-1">Step 1</div>
@@ -1124,8 +1130,13 @@ export default function App() {
         {showPreviewModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowPreviewModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-md" />
-            <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative w-full max-w-lg bg-white dark:bg-[#16191F] rounded-[2rem] shadow-2xl overflow-hidden border border-black/5 dark:border-white/10">
-              <div className="p-6 border-b border-black/5 dark:border-white/5 flex items-center justify-between bg-gray-50/50 dark:bg-gray-900/20">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }} 
+              animate={{ opacity: 1, scale: 1, y: 0 }} 
+              exit={{ opacity: 0, scale: 0.95, y: 20 }} 
+              className="relative w-full max-w-lg max-h-[90vh] bg-white dark:bg-[#16191F] rounded-[2rem] shadow-2xl overflow-hidden border border-black/5 dark:border-white/10 flex flex-col"
+            >
+              <div className="p-6 border-b border-black/5 dark:border-white/5 flex items-center justify-between bg-gray-50/50 dark:bg-gray-900/20 shrink-0">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-xl flex items-center justify-center"><MessageSquare size={20} /></div>
                   <div>
@@ -1135,7 +1146,7 @@ export default function App() {
                 </div>
                 <button onClick={() => setShowPreviewModal(false)} className="p-2 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-full transition-colors"><X size={20} /></button>
               </div>
-              <div className="p-6 space-y-4">
+              <div className="p-6 space-y-4 overflow-y-auto custom-scrollbar flex-1">
                 {entries.find(e => e.status === 'pending') ? (
                   <>
                     <div className="p-4 bg-gray-50 dark:bg-[#1C2128] rounded-2xl border border-gray-100 dark:border-white/5">
@@ -1196,8 +1207,13 @@ export default function App() {
         {showSettingsModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowSettingsModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-md" />
-            <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative w-full max-w-md bg-white dark:bg-[#16191F] rounded-[2rem] shadow-2xl overflow-hidden border border-black/5 dark:border-white/10">
-              <div className="p-6 border-b border-black/5 dark:border-white/5 flex items-center justify-between bg-gray-50/50 dark:bg-gray-900/20">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }} 
+              animate={{ opacity: 1, scale: 1, y: 0 }} 
+              exit={{ opacity: 0, scale: 0.95, y: 20 }} 
+              className="relative w-full max-w-md max-h-[90vh] bg-white dark:bg-[#16191F] rounded-[2rem] shadow-2xl overflow-hidden border border-black/5 dark:border-white/10 flex flex-col"
+            >
+              <div className="p-6 border-b border-black/5 dark:border-white/5 flex items-center justify-between bg-gray-50/50 dark:bg-gray-900/20 shrink-0">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-xl flex items-center justify-center"><Settings2 size={20} /></div>
                   <div>
@@ -1207,63 +1223,103 @@ export default function App() {
                 </div>
                 <button onClick={() => setShowSettingsModal(false)} className="p-2 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-full transition-colors"><X size={20} /></button>
               </div>
-              <div className="p-6 space-y-6">
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
-                      <Timer size={14} /> Blast Delay (Milliseconds)
-                    </label>
-                    <input 
-                      type="number" 
-                      value={settings.delay}
-                      onChange={(e) => setSettings(prev => ({ ...prev, delay: parseInt(e.target.value) || 1000 }))}
-                      className="w-full px-4 py-3 bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-sm"
-                      placeholder="5000"
-                      min="1000"
-                      step="500"
-                    />
-                    <p className="text-[10px] text-gray-400 italic">
-                      Disarankan minimal 5000ms (5 detik) agar WhatsApp Web sempat memuat pesan.
-                    </p>
-                  </div>
 
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
-                      <User size={14} /> Nama Pengirim
-                    </label>
-                    <input 
-                      type="text" 
-                      value={settings.senderName}
-                      onChange={(e) => setSettings(prev => ({ ...prev, senderName: e.target.value }))}
-                      className="w-full px-4 py-3 bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-sm"
-                      placeholder="Admin JNT"
-                    />
-                  </div>
+              {/* Tabs */}
+              <div className="flex px-6 pt-4 gap-4 border-b border-black/5 dark:border-white/5 shrink-0">
+                <button 
+                  onClick={() => setActiveSettingsTab('general')}
+                  className={cn(
+                    "pb-3 text-xs font-bold uppercase tracking-widest transition-all relative",
+                    activeSettingsTab === 'general' ? "text-emerald-600 dark:text-emerald-400" : "text-gray-400"
+                  )}
+                >
+                  General
+                  {activeSettingsTab === 'general' && <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-500 rounded-full" />}
+                </button>
+                <button 
+                  onClick={() => setActiveSettingsTab('antispam')}
+                  className={cn(
+                    "pb-3 text-xs font-bold uppercase tracking-widest transition-all relative",
+                    activeSettingsTab === 'antispam' ? "text-emerald-600 dark:text-emerald-400" : "text-gray-400"
+                  )}
+                >
+                  Anti-Spam
+                  {activeSettingsTab === 'antispam' && <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-500 rounded-full" />}
+                </button>
+              </div>
 
-                  <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-[#1C2128] rounded-2xl border border-gray-100 dark:border-white/5">
-                    <div className="space-y-1">
-                      <div className="text-xs font-bold">Mode Manual</div>
-                      <div className="text-[10px] text-gray-400">Kirim berikutnya hanya saat Anda klik/tekan Spasi.</div>
+              <div className="p-6 overflow-y-auto custom-scrollbar flex-1">
+                {activeSettingsTab === 'general' ? (
+                  <div className="space-y-6">
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+                          <Timer size={14} /> Blast Delay (Milliseconds)
+                        </label>
+                        <input 
+                          type="number" 
+                          value={settings.delay}
+                          onChange={(e) => setSettings(prev => ({ ...prev, delay: parseInt(e.target.value) || 1000 }))}
+                          className="w-full px-4 py-3 bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-sm"
+                          placeholder="5000"
+                          min="1000"
+                          step="500"
+                        />
+                        <p className="text-[10px] text-gray-400 italic">
+                          Disarankan minimal 5000ms (5 detik) agar WhatsApp Web sempat memuat pesan.
+                        </p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+                          <User size={14} /> Nama Pengirim
+                        </label>
+                        <input 
+                          type="text" 
+                          value={settings.senderName}
+                          onChange={(e) => setSettings(prev => ({ ...prev, senderName: e.target.value }))}
+                          className="w-full px-4 py-3 bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-sm"
+                          placeholder="Admin JNT"
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-[#1C2128] rounded-2xl border border-gray-100 dark:border-white/5">
+                        <div className="space-y-1">
+                          <div className="text-xs font-bold">Mode Manual</div>
+                          <div className="text-[10px] text-gray-400">Kirim berikutnya hanya saat Anda klik/tekan Spasi.</div>
+                        </div>
+                        <button 
+                          onClick={() => setSettings(prev => ({ ...prev, manualMode: !prev.manualMode }))}
+                          className={cn(
+                            "w-12 h-6 rounded-full transition-all relative",
+                            settings.manualMode ? "bg-emerald-500" : "bg-gray-300 dark:bg-gray-700"
+                          )}
+                        >
+                          <div className={cn(
+                            "absolute top-1 w-4 h-4 bg-white rounded-full transition-all",
+                            settings.manualMode ? "left-7" : "left-1"
+                          )} />
+                        </button>
+                      </div>
+
+                      <div className="pt-2">
+                        <button 
+                          onClick={() => {
+                            if (window.confirm('Kembalikan semua template ke pengaturan default? Template yang Anda ubah akan tertimpa.')) {
+                              setTemplates(DEFAULT_TEMPLATES);
+                              setActiveTemplateId(DEFAULT_TEMPLATES[0].id);
+                              toast.success('Template berhasil dipulihkan');
+                            }
+                          }}
+                          className="w-full py-3 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-xl font-bold text-xs hover:bg-gray-200 dark:hover:bg-gray-700 transition-all flex items-center justify-center gap-2"
+                        >
+                          <RotateCcw size={14} /> Restore Default Templates
+                        </button>
+                      </div>
                     </div>
-                    <button 
-                      onClick={() => setSettings(prev => ({ ...prev, manualMode: !prev.manualMode }))}
-                      className={cn(
-                        "w-12 h-6 rounded-full transition-all relative",
-                        settings.manualMode ? "bg-emerald-500" : "bg-gray-300 dark:bg-gray-700"
-                      )}
-                    >
-                      <div className={cn(
-                        "absolute top-1 w-4 h-4 bg-white rounded-full transition-all",
-                        settings.manualMode ? "left-7" : "left-1"
-                      )} />
-                    </button>
                   </div>
-
-                  <div className="pt-4 border-t border-black/5 dark:border-white/5">
-                    <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                      <Shield size={12} className="text-emerald-500" /> Keamanan Advanced (Anti-Spam)
-                    </h3>
-                    
+                ) : (
+                  <div className="space-y-6">
                     <div className="space-y-4">
                       <div className="flex items-center justify-between p-3 bg-emerald-50/50 dark:bg-emerald-900/5 rounded-xl border border-emerald-100/50 dark:border-emerald-900/10">
                         <div className="space-y-0.5">
@@ -1322,203 +1378,50 @@ export default function App() {
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-[#1C2128] rounded-xl border border-gray-100 dark:border-white/5">
-                        <div className="space-y-0.5">
-                          <div className="text-xs font-bold">Random Greetings</div>
-                          <div className="text-[9px] text-gray-400">Variasi kata sapaan otomatis.</div>
-                        </div>
-                        <button 
-                          onClick={() => setSettings(prev => ({ ...prev, useRandomGreetings: !prev.useRandomGreetings }))}
-                          className={cn(
-                            "w-10 h-5 rounded-full transition-all relative",
-                            settings.useRandomGreetings ? "bg-emerald-500" : "bg-gray-300 dark:bg-gray-700"
-                          )}
-                        >
-                          <div className={cn(
-                            "absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all",
-                            settings.useRandomGreetings ? "left-5.5" : "left-0.5"
-                          )} />
-                        </button>
-                      </div>
-
-                      <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-[#1C2128] rounded-xl border border-gray-100 dark:border-white/5">
-                        <div className="space-y-0.5">
-                          <div className="text-xs font-bold">Random Suffix (Ref ID)</div>
-                          <div className="text-[9px] text-gray-400">Tambah ID unik di akhir pesan.</div>
-                        </div>
-                        <button 
-                          onClick={() => setSettings(prev => ({ ...prev, addRandomSuffix: !prev.addRandomSuffix }))}
-                          className={cn(
-                            "w-10 h-5 rounded-full transition-all relative",
-                            settings.addRandomSuffix ? "bg-emerald-500" : "bg-gray-300 dark:bg-gray-700"
-                          )}
-                        >
-                          <div className={cn(
-                            "absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all",
-                            settings.addRandomSuffix ? "left-5.5" : "left-0.5"
-                          )} />
-                        </button>
-                      </div>
-
-                      <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-[#1C2128] rounded-xl border border-gray-100 dark:border-white/5">
-                        <div className="space-y-0.5">
-                          <div className="text-xs font-bold">Invisible Characters</div>
-                          <div className="text-[9px] text-gray-400">Sisipkan karakter tak terlihat agar pesan unik.</div>
-                        </div>
-                        <button 
-                          onClick={() => setSettings(prev => ({ ...prev, useInvisibleChars: !prev.useInvisibleChars }))}
-                          className={cn(
-                            "w-10 h-5 rounded-full transition-all relative",
-                            settings.useInvisibleChars ? "bg-emerald-500" : "bg-gray-300 dark:bg-gray-700"
-                          )}
-                        >
-                          <div className={cn(
-                            "absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all",
-                            settings.useInvisibleChars ? "left-5.5" : "left-0.5"
-                          )} />
-                        </button>
-                      </div>
-
-                      <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-[#1C2128] rounded-xl border border-gray-100 dark:border-white/5">
-                        <div className="space-y-0.5">
-                          <div className="text-xs font-bold">Simulate Typing</div>
-                          <div className="text-[9px] text-gray-400">Tambah jeda berdasarkan panjang pesan.</div>
-                        </div>
-                        <button 
-                          onClick={() => setSettings(prev => ({ ...prev, simulateTyping: !prev.simulateTyping }))}
-                          className={cn(
-                            "w-10 h-5 rounded-full transition-all relative",
-                            settings.simulateTyping ? "bg-emerald-500" : "bg-gray-300 dark:bg-gray-700"
-                          )}
-                        >
-                          <div className={cn(
-                            "absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all",
-                            settings.simulateTyping ? "left-5.5" : "left-0.5"
-                          )} />
-                        </button>
-                      </div>
-
-                      <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-[#1C2128] rounded-xl border border-gray-100 dark:border-white/5">
-                        <div className="space-y-0.5">
-                          <div className="text-xs font-bold">Adaptive Delay</div>
-                          <div className="text-[9px] text-gray-400">Delay bertambah seiring jumlah pesan.</div>
-                        </div>
-                        <button 
-                          onClick={() => setSettings(prev => ({ ...prev, adaptiveDelay: !prev.adaptiveDelay }))}
-                          className={cn(
-                            "w-10 h-5 rounded-full transition-all relative",
-                            settings.adaptiveDelay ? "bg-emerald-500" : "bg-gray-300 dark:bg-gray-700"
-                          )}
-                        >
-                          <div className={cn(
-                            "absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all",
-                            settings.adaptiveDelay ? "left-5.5" : "left-0.5"
-                          )} />
-                        </button>
-                      </div>
-
-                      <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-[#1C2128] rounded-xl border border-gray-100 dark:border-white/5">
-                        <div className="space-y-0.5">
-                          <div className="text-xs font-bold">Random Formatting</div>
-                          <div className="text-[9px] text-gray-400">Variasi spasi dan baris baru di pesan.</div>
-                        </div>
-                        <button 
-                          onClick={() => setSettings(prev => ({ ...prev, randomizeFormatting: !prev.randomizeFormatting }))}
-                          className={cn(
-                            "w-10 h-5 rounded-full transition-all relative",
-                            settings.randomizeFormatting ? "bg-emerald-500" : "bg-gray-300 dark:bg-gray-700"
-                          )}
-                        >
-                          <div className={cn(
-                            "absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all",
-                            settings.randomizeFormatting ? "left-5.5" : "left-0.5"
-                          )} />
-                        </button>
-                      </div>
-
-                      <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-[#1C2128] rounded-xl border border-gray-100 dark:border-white/5">
-                        <div className="space-y-0.5">
-                          <div className="text-xs font-bold">Template Rotation</div>
-                          <div className="text-[9px] text-gray-400">Gunakan template berbeda secara bergantian.</div>
-                        </div>
-                        <button 
-                          onClick={() => setSettings(prev => ({ ...prev, rotateTemplates: !prev.rotateTemplates }))}
-                          className={cn(
-                            "w-10 h-5 rounded-full transition-all relative",
-                            settings.rotateTemplates ? "bg-emerald-500" : "bg-gray-300 dark:bg-gray-700"
-                          )}
-                        >
-                          <div className={cn(
-                            "absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all",
-                            settings.rotateTemplates ? "left-5.5" : "left-0.5"
-                          )} />
-                        </button>
-                      </div>
-
-                      <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-[#1C2128] rounded-xl border border-gray-100 dark:border-white/5">
-                        <div className="space-y-0.5">
-                          <div className="text-xs font-bold">Randomize Emojis</div>
-                          <div className="text-[9px] text-gray-400">Sisipkan emoji acak di setiap pesan.</div>
-                        </div>
-                        <button 
-                          onClick={() => setSettings(prev => ({ ...prev, randomizeEmojis: !prev.randomizeEmojis }))}
-                          className={cn(
-                            "w-10 h-5 rounded-full transition-all relative",
-                            settings.randomizeEmojis ? "bg-emerald-500" : "bg-gray-300 dark:bg-gray-700"
-                          )}
-                        >
-                          <div className={cn(
-                            "absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all",
-                            settings.randomizeEmojis ? "left-5.5" : "left-0.5"
-                          )} />
-                        </button>
-                      </div>
-
-                      <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-[#1C2128] rounded-xl border border-gray-100 dark:border-white/5">
-                        <div className="space-y-0.5">
-                          <div className="text-xs font-bold">Global Spintax</div>
-                          <div className="text-[9px] text-gray-400">Aktifkan parser {'{pilihan1|pilihan2}'}.</div>
-                        </div>
-                        <button 
-                          onClick={() => setSettings(prev => ({ ...prev, useGlobalSpintax: !prev.useGlobalSpintax }))}
-                          className={cn(
-                            "w-10 h-5 rounded-full transition-all relative",
-                            settings.useGlobalSpintax ? "bg-emerald-500" : "bg-gray-300 dark:bg-gray-700"
-                          )}
-                        >
-                          <div className={cn(
-                            "absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all",
-                            settings.useGlobalSpintax ? "left-5.5" : "left-0.5"
-                          )} />
-                        </button>
+                      <div className="grid grid-cols-1 gap-3">
+                        {[
+                          { key: 'useRandomGreetings', label: 'Random Greetings', desc: 'Variasi kata sapaan otomatis.' },
+                          { key: 'addRandomSuffix', label: 'Random Suffix (Ref ID)', desc: 'Tambah ID unik di akhir pesan.' },
+                          { key: 'useInvisibleChars', label: 'Invisible Characters', desc: 'Sisipkan karakter tak terlihat.' },
+                          { key: 'simulateTyping', label: 'Simulate Typing', desc: 'Tambah jeda berdasarkan panjang pesan.' },
+                          { key: 'adaptiveDelay', label: 'Adaptive Delay', desc: 'Delay bertambah seiring jumlah pesan.' },
+                          { key: 'randomizeFormatting', label: 'Random Formatting', desc: 'Variasi spasi dan baris baru.' },
+                          { key: 'rotateTemplates', label: 'Template Rotation', desc: 'Gunakan template berbeda bergantian.' },
+                          { key: 'randomizeEmojis', label: 'Randomize Emojis', desc: 'Sisipkan emoji acak di setiap pesan.' },
+                          { key: 'useGlobalSpintax', label: 'Global Spintax', desc: 'Aktifkan parser {pilihan1|pilihan2}.' }
+                        ].map((item) => (
+                          <div key={item.key} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-[#1C2128] rounded-xl border border-gray-100 dark:border-white/5">
+                            <div className="space-y-0.5">
+                              <div className="text-xs font-bold">{item.label}</div>
+                              <div className="text-[9px] text-gray-400">{item.desc}</div>
+                            </div>
+                            <button 
+                              onClick={() => setSettings(prev => ({ ...prev, [item.key]: !prev[item.key as keyof AppSettings] }))}
+                              className={cn(
+                                "w-10 h-5 rounded-full transition-all relative",
+                                settings[item.key as keyof AppSettings] ? "bg-emerald-500" : "bg-gray-300 dark:bg-gray-700"
+                              )}
+                            >
+                              <div className={cn(
+                                "absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all",
+                                settings[item.key as keyof AppSettings] ? "left-5.5" : "left-0.5"
+                              )} />
+                            </button>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   </div>
+                )}
+              </div>
 
-                  <div className="pt-2">
-                    <button 
-                      onClick={() => {
-                        if (window.confirm('Kembalikan semua template ke pengaturan default? Template yang Anda ubah akan tertimpa.')) {
-                          setTemplates(DEFAULT_TEMPLATES);
-                          setActiveTemplateId(DEFAULT_TEMPLATES[0].id);
-                          toast.success('Template berhasil dipulihkan');
-                        }
-                      }}
-                      className="w-full py-3 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-xl font-bold text-xs hover:bg-gray-200 dark:hover:bg-gray-700 transition-all flex items-center justify-center gap-2"
-                    >
-                      <RotateCcw size={14} /> Restore Default Templates
-                    </button>
-                  </div>
-                </div>
-
-                <div className="pt-4">
-                  <button 
-                    onClick={() => setShowSettingsModal(false)}
-                    className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-bold shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all"
-                  >
-                    Save Configuration
-                  </button>
-                </div>
+              <div className="p-6 border-t border-black/5 dark:border-white/5 bg-gray-50/50 dark:bg-gray-900/20 shrink-0">
+                <button 
+                  onClick={() => setShowSettingsModal(false)}
+                  className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-bold shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all"
+                >
+                  Save Configuration
+                </button>
               </div>
             </motion.div>
           </div>
