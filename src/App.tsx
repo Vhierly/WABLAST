@@ -24,7 +24,9 @@ import {
   History,
   Timer,
   ExternalLink,
-  ChevronRight
+  ChevronRight,
+  Moon,
+  Sun
 } from 'lucide-react';
 import { Toaster, toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'motion/react';
@@ -60,7 +62,10 @@ export default function App() {
   const [bulkData, setBulkData] = useState('');
   const [isConfirmingClear, setIsConfirmingClear] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    const saved = localStorage.getItem('wa_blast_theme');
+    return saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  });
   
   // Form state
   const [formData, setFormData] = useState({
@@ -99,6 +104,14 @@ export default function App() {
   useEffect(() => localStorage.setItem('wa_blast_templates', JSON.stringify(templates)), [templates]);
   useEffect(() => localStorage.setItem('wa_blast_active_template_id', activeTemplateId), [activeTemplateId]);
   useEffect(() => localStorage.setItem('wa_blast_settings', JSON.stringify(settings)), [settings]);
+  useEffect(() => {
+    localStorage.setItem('wa_blast_theme', isDarkMode ? 'dark' : 'light');
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [isDarkMode]);
 
   const activeTemplate = templates.find(t => t.id === activeTemplateId) || templates[0];
 
@@ -276,43 +289,12 @@ export default function App() {
     toast.success('Laporan berhasil diunduh');
   };
 
-  const generateAITemplate = async () => {
-    setIsGeneratingAI(true);
-    try {
-      const prompt = `Buatlah template pesan WhatsApp profesional untuk ${activeTemplate.name} toko online. 
-      Gunakan variabel {nama}, {barang}, dan {resi}. 
-      Teks harus ramah, sopan, dan singkat. 
-      Hanya berikan teks pesannya saja tanpa penjelasan tambahan.`;
-      
-      const response = await fetch('/api/gemini', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, model: "gemini-3-flash-preview" })
-      });
-
-      if (!response.ok) throw new Error('Failed to generate AI template');
-      
-      const data = await response.json();
-      const text = data.text;
-      
-      if (text) {
-        updateActiveTemplateText(text.trim());
-        toast.success('Template diperbarui dengan AI');
-      }
-    } catch (error) {
-      console.error(error);
-      toast.error('Gagal generate AI template');
-    } finally {
-      setIsGeneratingAI(false);
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-[#F8F9FA] text-[#1A1A1A] font-sans selection:bg-emerald-100">
+    <div className="min-h-screen bg-[#F8F9FA] dark:bg-[#0F1115] text-[#1A1A1A] dark:text-[#E4E6EB] font-sans selection:bg-emerald-100 dark:selection:bg-emerald-900/30 transition-colors duration-300">
       <Toaster position="top-right" />
       
       {/* Sidebar-like Header */}
-      <header className="bg-white border-b border-black/5 sticky top-0 z-30 backdrop-blur-md bg-white/80">
+      <header className="bg-white dark:bg-[#16191F] border-b border-black/5 dark:border-white/5 sticky top-0 z-30 backdrop-blur-md bg-white/80 dark:bg-[#16191F]/80">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-emerald-600/20">
@@ -324,14 +306,21 @@ export default function App() {
             </div>
           </div>
           
-          <div className="flex items-center gap-6">
-            <div className="hidden md:flex items-center gap-2 px-4 py-2 bg-gray-50 rounded-full border border-black/5">
-              <div className={cn("w-2 h-2 rounded-full animate-pulse", isBlasting ? "bg-emerald-500" : "bg-gray-300")} />
-              <span className="text-xs font-medium text-gray-500">{isBlasting ? 'System Active' : 'System Idle'}</span>
+          <div className="flex items-center gap-4 md:gap-6">
+            <button 
+              onClick={() => setIsDarkMode(!isDarkMode)}
+              className="p-2.5 bg-gray-50 dark:bg-[#1C2128] border border-black/5 dark:border-white/5 rounded-xl text-gray-500 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-all"
+              title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            >
+              {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
+            <div className="hidden md:flex items-center gap-2 px-4 py-2 bg-gray-50 dark:bg-[#1C2128] rounded-full border border-black/5 dark:border-white/5">
+              <div className={cn("w-2 h-2 rounded-full animate-pulse", isBlasting ? "bg-emerald-500" : "bg-gray-300 dark:bg-gray-700")} />
+              <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{isBlasting ? 'System Active' : 'System Idle'}</span>
             </div>
             <button 
               onClick={exportToCSV}
-              className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-gray-600 hover:text-emerald-600 transition-colors"
+              className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
             >
               <Download size={14} /> Export
             </button>
@@ -345,13 +334,13 @@ export default function App() {
         <div className="lg:col-span-4 space-y-6">
           
           {/* Stats Card */}
-          <section className="bg-white rounded-3xl p-6 shadow-sm border border-black/5">
+          <section className="bg-white dark:bg-[#16191F] rounded-3xl p-6 shadow-sm border border-black/5 dark:border-white/5">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-2">
                 <BarChart3 size={18} className="text-emerald-500" />
                 <h2 className="font-bold">Overview</h2>
               </div>
-              <History size={16} className="text-gray-300" />
+              <History size={16} className="text-gray-300 dark:text-gray-600" />
             </div>
             <div className="h-48 w-full">
               <ResponsiveContainer width="100%" height="100%">
@@ -367,14 +356,20 @@ export default function App() {
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
-                  <RechartsTooltip />
+                  <RechartsTooltip 
+                    contentStyle={{ 
+                      backgroundColor: isDarkMode ? '#16191F' : '#FFFFFF',
+                      borderColor: isDarkMode ? '#2D333B' : '#E5E7EB',
+                      color: isDarkMode ? '#E4E6EB' : '#1A1A1A'
+                    }}
+                  />
                 </PieChart>
               </ResponsiveContainer>
             </div>
             <div className="grid grid-cols-2 gap-4 mt-4">
               {statsData.map(s => (
-                <div key={s.name} className="p-3 rounded-2xl bg-gray-50 border border-black/5">
-                  <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{s.name}</div>
+                <div key={s.name} className="p-3 rounded-2xl bg-gray-50 dark:bg-[#1C2128] border border-black/5 dark:border-white/5">
+                  <div className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">{s.name}</div>
                   <div className="text-xl font-bold" style={{ color: s.color }}>{s.value}</div>
                 </div>
               ))}
@@ -382,26 +377,26 @@ export default function App() {
           </section>
 
           {/* Settings Card */}
-          <section className="bg-white rounded-3xl p-6 shadow-sm border border-black/5">
+          <section className="bg-white dark:bg-[#16191F] rounded-3xl p-6 shadow-sm border border-black/5 dark:border-white/5">
             <div className="flex items-center gap-2 mb-6">
               <Timer size={18} className="text-emerald-500" />
               <h2 className="font-bold">Engine Settings</h2>
             </div>
             <div className="space-y-6">
               <div className="space-y-2">
-                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Nama Pengirim</label>
+                <label className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Nama Pengirim</label>
                 <input
                   type="text"
                   value={settings.senderName}
                   onChange={(e) => setSettings(prev => ({ ...prev, senderName: e.target.value }))}
                   placeholder="Contoh: Admin JNT"
-                  className="w-full p-3 text-sm bg-gray-50 border border-gray-100 rounded-xl focus:border-emerald-500 outline-none"
+                  className="w-full p-3 text-sm bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-xl focus:border-emerald-500 outline-none dark:text-white"
                 />
               </div>
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Blast Delay</label>
-                  <span className="text-xs font-mono font-bold text-emerald-600">{settings.delay / 1000}s</span>
+                  <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Blast Delay</label>
+                  <span className="text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400">{settings.delay / 1000}s</span>
                 </div>
                 <input 
                   type="range" 
@@ -410,9 +405,9 @@ export default function App() {
                   step="500"
                   value={settings.delay}
                   onChange={(e) => setSettings(prev => ({ ...prev, delay: parseInt(e.target.value) }))}
-                  className="w-full h-1.5 bg-gray-100 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                  className="w-full h-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg appearance-none cursor-pointer accent-emerald-500"
                 />
-                <div className="flex justify-between text-[10px] text-gray-400 font-mono">
+                <div className="flex justify-between text-[10px] text-gray-400 dark:text-gray-600 font-mono">
                   <span>FAST</span>
                   <span>SAFE</span>
                 </div>
@@ -421,7 +416,7 @@ export default function App() {
           </section>
 
           {/* Template Editor */}
-          <section className="bg-white rounded-3xl p-6 shadow-sm border border-black/5">
+          <section className="bg-white dark:bg-[#16191F] rounded-3xl p-6 shadow-sm border border-black/5 dark:border-white/5">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <Settings2 size={18} className="text-emerald-500" />
@@ -437,18 +432,10 @@ export default function App() {
                       toast.success('Template direset');
                     }
                   }}
-                  className="p-2 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-xl transition-all"
+                  className="p-2 text-gray-400 dark:text-gray-500 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/10 rounded-xl transition-all"
                   title="Reset to Default"
                 >
                   <History size={18} />
-                </button>
-                <button 
-                  onClick={generateAITemplate}
-                  disabled={isGeneratingAI}
-                  className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all disabled:opacity-50"
-                  title="AI Suggestion"
-                >
-                  <Sparkles size={18} className={isGeneratingAI ? "animate-spin" : ""} />
                 </button>
               </div>
             </div>
@@ -462,7 +449,7 @@ export default function App() {
                     "whitespace-nowrap px-4 py-2 rounded-xl text-xs font-bold transition-all border",
                     activeTemplateId === t.id 
                       ? "bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-600/20" 
-                      : "bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100"
+                      : "bg-gray-50 dark:bg-[#1C2128] text-gray-500 dark:text-gray-400 border-gray-200 dark:border-white/5 hover:bg-gray-100 dark:hover:bg-gray-800"
                   )}
                 >
                   {t.name}
@@ -473,7 +460,7 @@ export default function App() {
             <textarea
               value={activeTemplate.text}
               onChange={(e) => updateActiveTemplateText(e.target.value)}
-              className="w-full h-40 p-4 text-sm bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all resize-none leading-relaxed"
+              className="w-full h-40 p-4 text-sm bg-gray-50 dark:bg-[#1C2128] border border-gray-200 dark:border-white/5 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all resize-none leading-relaxed dark:text-white"
               placeholder="Tulis template pesan..."
             />
             <div className="mt-3 flex flex-wrap gap-2">
@@ -481,7 +468,7 @@ export default function App() {
                 <button
                   key={tag}
                   onClick={() => updateActiveTemplateText(activeTemplate.text + ' ' + tag)}
-                  className="text-[10px] font-bold tracking-wider px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-600 transition-colors"
+                  className="text-[10px] font-bold tracking-wider px-3 py-1.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg text-gray-600 dark:text-gray-400 transition-colors"
                 >
                   {tag}
                 </button>
@@ -494,21 +481,21 @@ export default function App() {
         <div className="lg:col-span-8 space-y-6">
           
           {/* Action Bar */}
-          <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between bg-white p-4 rounded-3xl border border-black/5 shadow-sm">
+          <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between bg-white dark:bg-[#16191F] p-4 rounded-3xl border border-black/5 dark:border-white/5 shadow-sm">
             <div className="relative flex-1">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" size={18} />
               <input 
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Cari nama, nomor, atau resi..."
-                className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-sm"
+                className="w-full pl-12 pr-4 py-3 bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-sm dark:text-white"
               />
             </div>
             <div className="flex gap-3">
               <button 
                 onClick={() => setShowBulkModal(true)}
-                className="px-6 py-3 bg-emerald-50 text-emerald-700 rounded-2xl font-bold text-sm hover:bg-emerald-100 transition-all flex items-center gap-2"
+                className="px-6 py-3 bg-emerald-50 dark:bg-emerald-900/10 text-emerald-700 dark:text-emerald-400 rounded-2xl font-bold text-sm hover:bg-emerald-100 dark:hover:bg-emerald-900/20 transition-all flex items-center gap-2"
               >
                 <FileSpreadsheet size={18} /> Bulk Import
               </button>
@@ -519,7 +506,7 @@ export default function App() {
                   "px-8 py-3 rounded-2xl font-bold text-sm transition-all flex items-center gap-2 shadow-lg",
                   isBlasting 
                     ? "bg-red-500 text-white shadow-red-500/20" 
-                    : "bg-black text-white shadow-black/20 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
+                    : "bg-black dark:bg-emerald-600 text-white shadow-black/20 dark:shadow-emerald-600/20 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
                 )}
               >
                 {isBlasting ? <Square size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" />}
@@ -529,59 +516,59 @@ export default function App() {
           </div>
 
           {/* Quick Add Form */}
-          <section className="bg-white rounded-3xl p-6 shadow-sm border border-black/5">
+          <section className="bg-white dark:bg-[#16191F] rounded-3xl p-6 shadow-sm border border-black/5 dark:border-white/5">
             <form onSubmit={handleAddEntry} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Phone</label>
+                  <label className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Phone</label>
                   <input
                     type="text"
                     value={formData.phone}
                     onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
                     placeholder="0812..."
-                    className="w-full p-3 text-sm bg-gray-50 border border-gray-100 rounded-xl focus:border-emerald-500 outline-none"
+                    className="w-full p-3 text-sm bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-xl focus:border-emerald-500 outline-none dark:text-white"
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Name</label>
+                  <label className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Name</label>
                   <input
                     type="text"
                     value={formData.recipientName}
                     onChange={(e) => setFormData(prev => ({ ...prev, recipientName: e.target.value }))}
                     placeholder="Recipient Name"
-                    className="w-full p-3 text-sm bg-gray-50 border border-gray-100 rounded-xl focus:border-emerald-500 outline-none"
+                    className="w-full p-3 text-sm bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-xl focus:border-emerald-500 outline-none dark:text-white"
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Item Name</label>
+                  <label className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Item Name</label>
                   <input
                     type="text"
                     value={formData.itemName}
                     onChange={(e) => setFormData(prev => ({ ...prev, itemName: e.target.value }))}
                     placeholder="Nama Barang"
-                    className="w-full p-3 text-sm bg-gray-50 border border-gray-100 rounded-xl focus:border-emerald-500 outline-none"
+                    className="w-full p-3 text-sm bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-xl focus:border-emerald-500 outline-none dark:text-white"
                   />
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Resi</label>
+                  <label className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Resi</label>
                   <input
                     type="text"
                     value={formData.receiptNumber}
                     onChange={(e) => setFormData(prev => ({ ...prev, receiptNumber: e.target.value }))}
                     placeholder="Resi Number"
-                    className="w-full p-3 text-sm bg-gray-50 border border-gray-100 rounded-xl focus:border-emerald-500 outline-none"
+                    className="w-full p-3 text-sm bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-xl focus:border-emerald-500 outline-none dark:text-white"
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">COD</label>
+                  <label className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">COD</label>
                   <input
                     type="text"
                     value={formData.cod}
                     onChange={(e) => setFormData(prev => ({ ...prev, cod: e.target.value }))}
                     placeholder="274,398"
-                    className="w-full p-3 text-sm bg-gray-50 border border-gray-100 rounded-xl focus:border-emerald-500 outline-none"
+                    className="w-full p-3 text-sm bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-xl focus:border-emerald-500 outline-none dark:text-white"
                   />
                 </div>
                 <button
@@ -595,22 +582,22 @@ export default function App() {
           </section>
 
           {/* Queue Table */}
-          <div className="bg-white rounded-3xl shadow-sm border border-black/5 overflow-hidden">
-            <div className="p-6 border-b border-black/5 flex items-center justify-between">
+          <div className="bg-white dark:bg-[#16191F] rounded-3xl shadow-sm border border-black/5 dark:border-white/5 overflow-hidden">
+            <div className="p-6 border-b border-black/5 dark:border-white/5 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <FileText size={18} className="text-emerald-500" />
                 <h2 className="font-bold">Queue Management</h2>
-                <span className="ml-2 px-2 py-0.5 bg-gray-100 text-[10px] font-bold text-gray-500 rounded-md">{filteredEntries.length} items</span>
+                <span className="ml-2 px-2 py-0.5 bg-gray-100 dark:bg-gray-800 text-[10px] font-bold text-gray-500 dark:text-gray-400 rounded-md">{filteredEntries.length} items</span>
               </div>
               
               {isConfirmingClear ? (
                 <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-2">
-                  <span className="text-[10px] font-bold text-red-600 uppercase">Confirm?</span>
+                  <span className="text-[10px] font-bold text-red-600 dark:text-red-400 uppercase">Confirm?</span>
                   <button onClick={clearAll} className="px-3 py-1.5 text-[10px] font-bold uppercase bg-red-500 text-white rounded-lg">Yes</button>
-                  <button onClick={() => setIsConfirmingClear(false)} className="px-3 py-1.5 text-[10px] font-bold uppercase bg-gray-100 text-gray-600 rounded-lg">No</button>
+                  <button onClick={() => setIsConfirmingClear(false)} className="px-3 py-1.5 text-[10px] font-bold uppercase bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-lg">No</button>
                 </div>
               ) : (
-                <button onClick={() => setIsConfirmingClear(true)} className="p-2 text-gray-300 hover:text-red-500 transition-colors">
+                <button onClick={() => setIsConfirmingClear(true)} className="p-2 text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 transition-colors">
                   <Trash2 size={18} />
                 </button>
               )}
@@ -619,18 +606,18 @@ export default function App() {
             <div className="overflow-x-auto">
               <table className="w-full text-left">
                 <thead>
-                  <tr className="bg-gray-50/50">
-                    <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Recipient</th>
-                    <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Details</th>
-                    <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Status</th>
-                    <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-right">Actions</th>
+                  <tr className="bg-gray-50/50 dark:bg-gray-900/20">
+                    <th className="px-6 py-4 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Recipient</th>
+                    <th className="px-6 py-4 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Details</th>
+                    <th className="px-6 py-4 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Status</th>
+                    <th className="px-6 py-4 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-black/5">
+                <tbody className="divide-y divide-black/5 dark:divide-white/5">
                   <AnimatePresence mode="popLayout">
                     {filteredEntries.length === 0 ? (
                       <motion.tr initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center">
-                        <td colSpan={4} className="px-6 py-16 text-gray-400 text-sm italic">
+                        <td colSpan={4} className="px-6 py-16 text-gray-400 dark:text-gray-600 text-sm italic">
                           No matching records found.
                         </td>
                       </motion.tr>
@@ -644,24 +631,28 @@ export default function App() {
                           exit={{ opacity: 0, x: -10 }}
                           className={cn(
                             "group transition-all",
-                            isBlasting && index === currentIndex ? "bg-emerald-50/80" : "hover:bg-gray-50/50"
+                            isBlasting && index === currentIndex 
+                              ? "bg-emerald-50/80 dark:bg-emerald-900/10" 
+                              : "hover:bg-gray-50/50 dark:hover:bg-gray-900/10"
                           )}
                         >
                           <td className="px-6 py-5">
                             <div className="font-bold text-sm">{entry.recipientName}</div>
-                            <div className="text-xs text-gray-400 font-mono">{entry.phone}</div>
+                            <div className="text-xs text-gray-400 dark:text-gray-500 font-mono">{entry.phone}</div>
                           </td>
                           <td className="px-6 py-5">
                             <div className="text-sm font-medium truncate max-w-[200px]" title={entry.itemName}>{entry.itemName || '-'}</div>
                             <div className="flex gap-2 items-center">
-                              <div className="text-[10px] text-gray-400 font-mono uppercase tracking-wider">Resi: {entry.receiptNumber || '-'}</div>
-                              {entry.cod && <div className="text-[10px] text-amber-600 font-bold uppercase tracking-wider">COD: {entry.cod}</div>}
+                              <div className="text-[10px] text-gray-400 dark:text-gray-500 font-mono uppercase tracking-wider">Resi: {entry.receiptNumber || '-'}</div>
+                              {entry.cod && <div className="text-[10px] text-amber-600 dark:text-amber-500 font-bold uppercase tracking-wider">COD: {entry.cod}</div>}
                             </div>
                           </td>
                           <td className="px-6 py-5">
                             <div className={cn(
                               "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest",
-                              entry.status === 'sent' ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"
+                              entry.status === 'sent' 
+                                ? "bg-emerald-100 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400" 
+                                : "bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400"
                             )}>
                               {entry.status === 'sent' ? <CheckCircle2 size={10} /> : <Clock size={10} />}
                               {entry.status}
@@ -669,8 +660,8 @@ export default function App() {
                           </td>
                           <td className="px-6 py-5 text-right">
                             <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <button onClick={() => handleSendManual(entry)} className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-xl"><ExternalLink size={16} /></button>
-                              <button onClick={() => setEntries(prev => prev.filter(e => e.id !== entry.id))} className="p-2 text-gray-300 hover:text-red-500 rounded-xl"><Trash2 size={16} /></button>
+                              <button onClick={() => handleSendManual(entry)} className="p-2 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-xl"><ExternalLink size={16} /></button>
+                              <button onClick={() => setEntries(prev => prev.filter(e => e.id !== entry.id))} className="p-2 text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 rounded-xl"><Trash2 size={16} /></button>
                             </div>
                           </td>
                         </motion.tr>
@@ -689,36 +680,36 @@ export default function App() {
         {showBulkModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowBulkModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-md" />
-            <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative w-full max-w-2xl bg-white rounded-[2rem] shadow-2xl overflow-hidden">
-              <div className="p-8 border-b border-black/5 flex items-center justify-between bg-gray-50/50">
+            <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative w-full max-w-2xl bg-white dark:bg-[#16191F] rounded-[2rem] shadow-2xl overflow-hidden border border-black/5 dark:border-white/10">
+              <div className="p-8 border-b border-black/5 dark:border-white/5 flex items-center justify-between bg-gray-50/50 dark:bg-gray-900/20">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-emerald-100 text-emerald-600 rounded-xl flex items-center justify-center"><FileSpreadsheet size={20} /></div>
+                  <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-xl flex items-center justify-center"><FileSpreadsheet size={20} /></div>
                   <div>
                     <h2 className="text-xl font-bold">Bulk Import</h2>
-                    <p className="text-xs text-gray-400">Copy-paste data from Excel or CSV</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500">Copy-paste data from Excel or CSV</p>
                   </div>
                 </div>
-                <button onClick={() => setShowBulkModal(false)} className="p-2 hover:bg-gray-200 rounded-full transition-colors"><X size={20} /></button>
+                <button onClick={() => setShowBulkModal(false)} className="p-2 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-full transition-colors"><X size={20} /></button>
               </div>
               <div className="p-8 space-y-6">
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
-                    <div className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-1">Step 1</div>
-                    <p className="text-xs text-emerald-800">Siapkan kolom: Phone, Name, Item, Receipt, COD</p>
+                  <div className="p-4 bg-emerald-50 dark:bg-emerald-900/10 rounded-2xl border border-emerald-100 dark:border-emerald-900/20">
+                    <div className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-1">Step 1</div>
+                    <p className="text-xs text-emerald-800 dark:text-emerald-300">Siapkan kolom: Phone, Name, Item, Receipt, COD</p>
                   </div>
-                  <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100">
-                    <div className="text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-1">Step 2</div>
-                    <p className="text-xs text-blue-800">Copy range dari Excel & Paste di bawah</p>
+                  <div className="p-4 bg-blue-50 dark:bg-blue-900/10 rounded-2xl border border-blue-100 dark:border-blue-900/20">
+                    <div className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-1">Step 2</div>
+                    <p className="text-xs text-blue-800 dark:text-blue-300">Copy range dari Excel & Paste di bawah</p>
                   </div>
                 </div>
                 <textarea
                   value={bulkData}
                   onChange={(e) => setBulkData(e.target.value)}
                   placeholder="08123456789	Budi Santoso	Sepatu	JX123456	274,398..."
-                  className="w-full h-64 p-6 text-sm font-mono bg-gray-50 border border-gray-100 rounded-[1.5rem] focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all resize-none"
+                  className="w-full h-64 p-6 text-sm font-mono bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-[1.5rem] focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all resize-none dark:text-white"
                 />
                 <div className="flex gap-4">
-                  <button onClick={() => setShowBulkModal(false)} className="flex-1 py-4 bg-gray-100 text-gray-600 rounded-2xl font-bold hover:bg-gray-200 transition-all">Cancel</button>
+                  <button onClick={() => setShowBulkModal(false)} className="flex-1 py-4 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-2xl font-bold hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">Cancel</button>
                   <button onClick={handleBulkImport} className="flex-[2] py-4 bg-emerald-600 text-white rounded-2xl font-bold shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all">Import Data</button>
                 </div>
               </div>
@@ -727,8 +718,8 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      <footer className="max-w-7xl mx-auto px-6 py-12 border-t border-black/5 text-center">
-        <div className="text-[10px] text-gray-400 uppercase tracking-[0.3em] font-mono font-bold">
+      <footer className="max-w-7xl mx-auto px-6 py-12 border-t border-black/5 dark:border-white/5 text-center">
+        <div className="text-[10px] text-gray-400 dark:text-gray-600 uppercase tracking-[0.3em] font-mono font-bold">
           WAsender PRO Engine • v2.0.0 • Enterprise Edition
         </div>
       </footer>
