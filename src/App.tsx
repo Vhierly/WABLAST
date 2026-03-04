@@ -57,6 +57,7 @@ export default function App() {
   const [entries, setEntries] = useState<BlastEntry[]>([]);
   const [templates, setTemplates] = useState<MessageTemplate[]>(DEFAULT_TEMPLATES);
   const [activeTemplateId, setActiveTemplateId] = useState<string>(DEFAULT_TEMPLATES[0].id);
+  const [activeVariationIndex, setActiveVariationIndex] = useState(0);
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [isBlasting, setIsBlasting] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(-1);
@@ -133,9 +134,18 @@ export default function App() {
   };
 
   const activeTemplate = templates.find(t => t.id === activeTemplateId) || templates[0];
+  const currentTemplateText = activeTemplate.variations?.[activeVariationIndex] || activeTemplate.text;
 
   const updateActiveTemplateText = (text: string) => {
-    setTemplates(prev => prev.map(t => t.id === activeTemplateId ? { ...t, text } : t));
+    setTemplates(prev => prev.map(t => {
+      if (t.id === activeTemplateId) {
+        const variations = t.variations || [t.text, t.text, t.text];
+        const newVariations = [...variations];
+        newVariations[activeVariationIndex] = text;
+        return { ...t, text: activeVariationIndex === 0 ? text : t.text, variations: newVariations };
+      }
+      return t;
+    }));
   };
 
   const handleAddEntry = (e: React.FormEvent) => {
@@ -334,7 +344,11 @@ export default function App() {
     let templateText = activeTemplate.text;
     if (settings.rotateTemplates) {
       const count = sentCountOverride !== undefined ? sentCountOverride : entries.filter(e => e.status === 'sent').length;
-      templateText = templates[count % templates.length].text;
+      if (activeTemplate.variations && activeTemplate.variations.length > 0) {
+        templateText = activeTemplate.variations[count % activeTemplate.variations.length];
+      } else {
+        templateText = templates[count % templates.length].text;
+      }
     }
     
     const message = encodeURIComponent(generateMessage(entry, templateText));
@@ -421,7 +435,11 @@ export default function App() {
         if (settings.simulateTyping) {
           let templateText = activeTemplate.text;
           if (settings.rotateTemplates) {
-            templateText = templates[sentCount % templates.length].text;
+            if (activeTemplate.variations && activeTemplate.variations.length > 0) {
+              templateText = activeTemplate.variations[sentCount % activeTemplate.variations.length];
+            } else {
+              templateText = templates[sentCount % templates.length].text;
+            }
           }
           const message = generateMessage(entry, templateText);
           const typingDelay = Math.min(message.length * 50, 5000); // Max 5s extra for typing
@@ -758,8 +776,9 @@ export default function App() {
                   onClick={() => {
                     const def = DEFAULT_TEMPLATES.find(t => t.id === activeTemplateId);
                     if (def && confirm('Reset template ini ke pengaturan awal?')) {
-                      updateActiveTemplateText(def.text);
-                      toast.success('Template direset');
+                      setTemplates(prev => prev.map(t => t.id === activeTemplateId ? { ...def } : t));
+                      setActiveVariationIndex(0);
+                      toast.success('Template direset ke default');
                     }
                   }}
                   className="p-2 text-gray-400 dark:text-gray-500 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/10 rounded-xl transition-all"
@@ -774,7 +793,10 @@ export default function App() {
               {templates.map(t => (
                 <button
                   key={t.id}
-                  onClick={() => setActiveTemplateId(t.id)}
+                  onClick={() => {
+                    setActiveTemplateId(t.id);
+                    setActiveVariationIndex(0);
+                  }}
                   className={cn(
                     "whitespace-nowrap px-4 py-2 rounded-xl text-xs font-bold transition-all border",
                     activeTemplateId === t.id 
@@ -787,8 +809,30 @@ export default function App() {
               ))}
             </div>
 
+            {/* Variation Selector */}
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mr-2">Variasi:</span>
+              {[0, 1, 2].map(idx => (
+                <button
+                  key={idx}
+                  onClick={() => setActiveVariationIndex(idx)}
+                  className={cn(
+                    "w-8 h-8 rounded-lg text-xs font-bold transition-all border flex items-center justify-center",
+                    activeVariationIndex === idx
+                      ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800"
+                      : "bg-gray-50 dark:bg-[#1C2128] text-gray-400 border-gray-100 dark:border-white/5"
+                  )}
+                >
+                  {idx + 1}
+                </button>
+              ))}
+              <div className="ml-auto text-[9px] text-gray-400 italic">
+                {settings.rotateTemplates ? "Rotasi Aktif" : "Rotasi Mati"}
+              </div>
+            </div>
+
             <textarea
-              value={activeTemplate.text}
+              value={currentTemplateText}
               onChange={(e) => updateActiveTemplateText(e.target.value)}
               className="w-full h-40 p-4 text-sm bg-gray-50 dark:bg-[#1C2128] border border-gray-200 dark:border-white/5 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all resize-none leading-relaxed dark:text-white custom-scrollbar"
               placeholder="Tulis template pesan..."
@@ -797,7 +841,7 @@ export default function App() {
               {['{salam}', '{pengirim}', '{nama}', '{barang}', '{resi}', '{alamat}', '{cod}', '{dfod}', '{if_cod}', '{/if_cod}', '{if_dfod}', '{/if_dfod}'].map(tag => (
                 <button
                   key={tag}
-                  onClick={() => updateActiveTemplateText(activeTemplate.text + ' ' + tag)}
+                  onClick={() => updateActiveTemplateText(currentTemplateText + ' ' + tag)}
                   className="text-[10px] font-bold tracking-wider px-3 py-1.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg text-gray-600 dark:text-gray-400 transition-colors"
                 >
                   {tag}
@@ -1166,7 +1210,11 @@ export default function App() {
                           const sentCount = entries.filter(e => e.status === 'sent').length;
                           let templateText = activeTemplate.text;
                           if (settings.rotateTemplates) {
-                            templateText = templates[sentCount % templates.length].text;
+                            if (activeTemplate.variations && activeTemplate.variations.length > 0) {
+                              templateText = activeTemplate.variations[sentCount % activeTemplate.variations.length];
+                            } else {
+                              templateText = templates[sentCount % templates.length].text;
+                            }
                           }
                           return generateMessage(entry, templateText);
                         })()}
@@ -1308,6 +1356,7 @@ export default function App() {
                             if (window.confirm('Kembalikan semua template ke pengaturan default? Template yang Anda ubah akan tertimpa.')) {
                               setTemplates(DEFAULT_TEMPLATES);
                               setActiveTemplateId(DEFAULT_TEMPLATES[0].id);
+                              setActiveVariationIndex(0);
                               toast.success('Template berhasil dipulihkan');
                             }
                           }}
