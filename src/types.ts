@@ -58,6 +58,13 @@ export interface AppSettings {
   batchPause: number;
   useRandomGreetings: boolean;
   addRandomSuffix: boolean;
+  useInvisibleChars: boolean;
+  simulateTyping: boolean;
+  adaptiveDelay: boolean;
+  randomizeFormatting: boolean;
+  rotateTemplates: boolean;
+  randomizeEmojis: boolean;
+  useGlobalSpintax: boolean;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -70,5 +77,12 @@ export const DEFAULT_SETTINGS: AppSettings = {
   batchSize: 10,
   batchPause: 30000,
   useRandomGreetings: true,
-  addRandomSuffix: false
+  addRandomSuffix: false,
+  useInvisibleChars: true,
+  simulateTyping: true,
+  adaptiveDelay: true,
+  randomizeFormatting: true,
+  rotateTemplates: false,
+  randomizeEmojis: true,
+  useGlobalSpintax: true
 };

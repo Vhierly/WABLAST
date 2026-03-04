@@ -64,6 +64,7 @@ export default function App() {
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [countdown, setCountdown] = useState(0);
+  const [nextBatchPauseAt, setNextBatchPauseAt] = useState(0);
   const [bulkData, setBulkData] = useState('');
   const [isConfirmingClear, setIsConfirmingClear] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -243,8 +244,8 @@ export default function App() {
     return `Selamat ${base}`;
   };
 
-  const generateMessage = (entry: BlastEntry) => {
-    let text = activeTemplate.text;
+  const generateMessage = (entry: BlastEntry, templateText?: string) => {
+    let text = templateText || activeTemplate.text;
 
     // Handle conditional blocks
     // {if_cod}Text {cod}{/if_cod}
@@ -270,19 +271,72 @@ export default function App() {
       .replace(/{cod}/gi, entry.cod ? `Rp ${entry.cod}` : '-')
       .replace(/{dfod}/gi, entry.dfod ? `Rp ${entry.dfod}` : '-');
 
+    // Handle Spintax: {Halo|Hai|Pagi}
+    if (settings.useGlobalSpintax) {
+      finalMessage = finalMessage.replace(/{([^{}]+)}/g, (match, p1) => {
+        if (p1.includes('|')) {
+          const choices = p1.split('|');
+          return choices[Math.floor(Math.random() * choices.length)];
+        }
+        return match;
+      });
+    }
+
+    if (settings.randomizeEmojis) {
+      const emojis = ['😊', '🙏', '📦', '🚚', '✨', '✅', '📍', '🚚', '📦', '🚛', ' cargo ', ' cargo ', ' jnt ', ' jnt '];
+      const words = finalMessage.split(' ');
+      finalMessage = words.map(word => {
+        if (Math.random() > 0.9) {
+          return word + ' ' + emojis[Math.floor(Math.random() * emojis.length)];
+        }
+        return word;
+      }).join(' ');
+    }
+
     if (settings.addRandomSuffix) {
       const suffix = `\n\n_Ref: ${Math.random().toString(36).substring(7).toUpperCase()}_`;
       finalMessage += suffix;
     }
 
+    if (settings.useInvisibleChars) {
+      // Inject invisible characters (Zero Width Space) at random positions to make message hash unique
+      const zwsp = '\u200B';
+      const words = finalMessage.split(' ');
+      finalMessage = words.map(word => {
+        if (Math.random() > 0.7) {
+          return word + zwsp;
+        }
+        return word;
+      }).join(' ');
+    }
+
+    if (settings.randomizeFormatting) {
+      // Randomly change double line breaks to single or triple to vary message structure
+      const paragraphs = finalMessage.split('\n\n');
+      finalMessage = paragraphs.map((p, i) => {
+        if (i === paragraphs.length - 1) return p;
+        const rand = Math.random();
+        if (rand > 0.8) return p + '\n\n\n';
+        if (rand > 0.6) return p + '\n';
+        return p + '\n\n';
+      }).join('');
+    }
+
     return finalMessage;
   };
 
-  const getWALink = (entry: BlastEntry) => {
+  const getWALink = (entry: BlastEntry, sentCountOverride?: number) => {
     let phone = entry.phone.replace(/\D/g, '');
     if (phone.startsWith('0')) phone = '62' + phone.slice(1);
     if (!phone.startsWith('62')) phone = '62' + phone;
-    const message = encodeURIComponent(generateMessage(entry));
+    
+    let templateText = activeTemplate.text;
+    if (settings.rotateTemplates) {
+      const count = sentCountOverride !== undefined ? sentCountOverride : entries.filter(e => e.status === 'sent').length;
+      templateText = templates[count % templates.length].text;
+    }
+    
+    const message = encodeURIComponent(generateMessage(entry, templateText));
     // Force WhatsApp Web instead of wa.me
     return `https://web.whatsapp.com/send?phone=${phone}&text=${message}`;
   };
@@ -323,6 +377,13 @@ export default function App() {
     updateStatus(firstEntry.id, 'sent');
     setIsBlasting(true);
     setCurrentIndex(0);
+    
+    // Set next batch pause threshold with a little jitter (+/- 2)
+    const sentCount = entries.filter(e => e.status === 'sent').length + 1;
+    if (settings.batchSize > 0) {
+      const jitter = Math.floor(Math.random() * 5) - 2; // -2 to +2
+      setNextBatchPauseAt(sentCount + settings.batchSize + jitter);
+    }
   };
 
   const stopBlast = () => {
@@ -342,17 +403,39 @@ export default function App() {
         const entry = pendingEntries[0];
         
         // Calculate delay
-        let currentDelay = settings.delay;
+        let currentBaseDelay = settings.delay;
         if (settings.randomizeDelay) {
-          currentDelay = Math.floor(Math.random() * (settings.maxDelay - settings.delay + 1)) + settings.delay;
+          currentBaseDelay = Math.floor(Math.random() * (settings.maxDelay - settings.delay + 1)) + settings.delay;
         }
 
-        // Check for batch pause
-        if (settings.batchSize > 0 && sentCount > 0 && sentCount % settings.batchSize === 0) {
+        let currentDelay = currentBaseDelay;
+
+        // 1. Adaptive Delay: Increase delay by 500ms for every 10 messages sent
+        if (settings.adaptiveDelay) {
+          const increment = Math.floor(sentCount / 10) * 500;
+          currentDelay += increment;
+        }
+
+        // 2. Typing Simulation: ~50ms per character
+        if (settings.simulateTyping) {
+          let templateText = activeTemplate.text;
+          if (settings.rotateTemplates) {
+            templateText = templates[sentCount % templates.length].text;
+          }
+          const message = generateMessage(entry, templateText);
+          const typingDelay = Math.min(message.length * 50, 5000); // Max 5s extra for typing
+          currentDelay += typingDelay;
+        }
+
+        // 3. Check for batch pause
+        if (settings.batchSize > 0 && sentCount >= nextBatchPauseAt && nextBatchPauseAt > 0) {
           currentDelay = settings.batchPause;
           toast(`Anti-Spam: Istirahat sejenak selama ${settings.batchPause / 1000} detik...`, {
             icon: '🛡️'
           });
+          // Update next threshold for next time
+          const jitter = Math.floor(Math.random() * 5) - 2;
+          setNextBatchPauseAt(sentCount + settings.batchSize + jitter);
         }
 
         setCountdown(Math.ceil(currentDelay / 1000));
@@ -363,7 +446,7 @@ export default function App() {
 
         timer = setTimeout(() => {
           // Use a named window 'WAsenderTab' to reuse the same tab.
-          const newWindow = window.open(getWALink(entry), 'WAsenderTab');
+          const newWindow = window.open(getWALink(entry, sentCount), 'WAsenderTab');
           
           if (!newWindow) {
             toast.error('Popup terblokir! Harap izinkan popup di browser Anda.', {
@@ -419,9 +502,11 @@ export default function App() {
   const statsData = useMemo(() => {
     const sent = entries.filter(e => e.status === 'sent').length;
     const pending = entries.filter(e => e.status === 'pending').length;
+    const received = entries.filter(e => e.isReceived).length;
     return [
       { name: 'Sent', value: sent, color: '#10b981' },
-      { name: 'Pending', value: pending, color: '#f59e0b' }
+      { name: 'Pending', value: pending, color: '#f59e0b' },
+      { name: 'Received', value: received, color: '#3b82f6' }
     ];
   }, [entries]);
 
@@ -610,11 +695,11 @@ export default function App() {
                 </PieChart>
               </ResponsiveContainer>
             </div>
-            <div className="grid grid-cols-2 gap-4 mt-4">
+            <div className="grid grid-cols-3 gap-3 mt-4">
               {statsData.map(s => (
                 <div key={s.name} className="p-3 rounded-2xl bg-gray-50 dark:bg-[#1C2128] border border-black/5 dark:border-white/5">
-                  <div className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">{s.name}</div>
-                  <div className="text-xl font-bold" style={{ color: s.color }}>{s.value}</div>
+                  <div className="text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider truncate">{s.name}</div>
+                  <div className="text-lg font-bold" style={{ color: s.color }}>{s.value}</div>
                 </div>
               ))}
             </div>
@@ -717,6 +802,15 @@ export default function App() {
                   {tag}
                 </button>
               ))}
+            </div>
+            <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/20 rounded-xl">
+              <div className="flex items-center gap-2 mb-1">
+                <Sparkles size={12} className="text-blue-600 dark:text-blue-400" />
+                <span className="text-[10px] font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wider">Anti-Ban Tip: Spintax</span>
+              </div>
+              <p className="text-[10px] text-blue-600 dark:text-blue-300 leading-relaxed">
+                Gunakan format <span className="font-mono font-bold bg-blue-100 dark:bg-blue-900/30 px-1 rounded">{"{Halo|Hai|Pagi}"}</span> agar pesan diacak otomatis.
+              </p>
             </div>
           </section>
         </div>
@@ -1055,7 +1149,16 @@ export default function App() {
                         </div>
                       </div>
                       <div className="bg-white dark:bg-[#16191F] p-4 rounded-xl border border-black/5 dark:border-white/10 text-sm whitespace-pre-wrap leading-relaxed dark:text-gray-300 font-sans">
-                        {generateMessage(entries.find(e => e.status === 'pending')!)}
+                        {(() => {
+                          const entry = entries.find(e => e.status === 'pending');
+                          if (!entry) return '';
+                          const sentCount = entries.filter(e => e.status === 'sent').length;
+                          let templateText = activeTemplate.text;
+                          if (settings.rotateTemplates) {
+                            templateText = templates[sentCount % templates.length].text;
+                          }
+                          return generateMessage(entry, templateText);
+                        })()}
                       </div>
                     </div>
                     <div className="flex gap-3">
@@ -1064,7 +1167,9 @@ export default function App() {
                         onClick={() => {
                           const entry = entries.find(e => e.status === 'pending');
                           if (entry) {
-                            handleSendManual(entry);
+                            const sentCount = entries.filter(e => e.status === 'sent').length;
+                            window.open(getWALink(entry, sentCount), 'WAsenderTab');
+                            updateStatus(entry.id, 'sent');
                             setShowPreviewModal(false);
                           }
                         }} 
@@ -1251,6 +1356,139 @@ export default function App() {
                           <div className={cn(
                             "absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all",
                             settings.addRandomSuffix ? "left-5.5" : "left-0.5"
+                          )} />
+                        </button>
+                      </div>
+
+                      <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-[#1C2128] rounded-xl border border-gray-100 dark:border-white/5">
+                        <div className="space-y-0.5">
+                          <div className="text-xs font-bold">Invisible Characters</div>
+                          <div className="text-[9px] text-gray-400">Sisipkan karakter tak terlihat agar pesan unik.</div>
+                        </div>
+                        <button 
+                          onClick={() => setSettings(prev => ({ ...prev, useInvisibleChars: !prev.useInvisibleChars }))}
+                          className={cn(
+                            "w-10 h-5 rounded-full transition-all relative",
+                            settings.useInvisibleChars ? "bg-emerald-500" : "bg-gray-300 dark:bg-gray-700"
+                          )}
+                        >
+                          <div className={cn(
+                            "absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all",
+                            settings.useInvisibleChars ? "left-5.5" : "left-0.5"
+                          )} />
+                        </button>
+                      </div>
+
+                      <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-[#1C2128] rounded-xl border border-gray-100 dark:border-white/5">
+                        <div className="space-y-0.5">
+                          <div className="text-xs font-bold">Simulate Typing</div>
+                          <div className="text-[9px] text-gray-400">Tambah jeda berdasarkan panjang pesan.</div>
+                        </div>
+                        <button 
+                          onClick={() => setSettings(prev => ({ ...prev, simulateTyping: !prev.simulateTyping }))}
+                          className={cn(
+                            "w-10 h-5 rounded-full transition-all relative",
+                            settings.simulateTyping ? "bg-emerald-500" : "bg-gray-300 dark:bg-gray-700"
+                          )}
+                        >
+                          <div className={cn(
+                            "absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all",
+                            settings.simulateTyping ? "left-5.5" : "left-0.5"
+                          )} />
+                        </button>
+                      </div>
+
+                      <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-[#1C2128] rounded-xl border border-gray-100 dark:border-white/5">
+                        <div className="space-y-0.5">
+                          <div className="text-xs font-bold">Adaptive Delay</div>
+                          <div className="text-[9px] text-gray-400">Delay bertambah seiring jumlah pesan.</div>
+                        </div>
+                        <button 
+                          onClick={() => setSettings(prev => ({ ...prev, adaptiveDelay: !prev.adaptiveDelay }))}
+                          className={cn(
+                            "w-10 h-5 rounded-full transition-all relative",
+                            settings.adaptiveDelay ? "bg-emerald-500" : "bg-gray-300 dark:bg-gray-700"
+                          )}
+                        >
+                          <div className={cn(
+                            "absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all",
+                            settings.adaptiveDelay ? "left-5.5" : "left-0.5"
+                          )} />
+                        </button>
+                      </div>
+
+                      <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-[#1C2128] rounded-xl border border-gray-100 dark:border-white/5">
+                        <div className="space-y-0.5">
+                          <div className="text-xs font-bold">Random Formatting</div>
+                          <div className="text-[9px] text-gray-400">Variasi spasi dan baris baru di pesan.</div>
+                        </div>
+                        <button 
+                          onClick={() => setSettings(prev => ({ ...prev, randomizeFormatting: !prev.randomizeFormatting }))}
+                          className={cn(
+                            "w-10 h-5 rounded-full transition-all relative",
+                            settings.randomizeFormatting ? "bg-emerald-500" : "bg-gray-300 dark:bg-gray-700"
+                          )}
+                        >
+                          <div className={cn(
+                            "absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all",
+                            settings.randomizeFormatting ? "left-5.5" : "left-0.5"
+                          )} />
+                        </button>
+                      </div>
+
+                      <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-[#1C2128] rounded-xl border border-gray-100 dark:border-white/5">
+                        <div className="space-y-0.5">
+                          <div className="text-xs font-bold">Template Rotation</div>
+                          <div className="text-[9px] text-gray-400">Gunakan template berbeda secara bergantian.</div>
+                        </div>
+                        <button 
+                          onClick={() => setSettings(prev => ({ ...prev, rotateTemplates: !prev.rotateTemplates }))}
+                          className={cn(
+                            "w-10 h-5 rounded-full transition-all relative",
+                            settings.rotateTemplates ? "bg-emerald-500" : "bg-gray-300 dark:bg-gray-700"
+                          )}
+                        >
+                          <div className={cn(
+                            "absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all",
+                            settings.rotateTemplates ? "left-5.5" : "left-0.5"
+                          )} />
+                        </button>
+                      </div>
+
+                      <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-[#1C2128] rounded-xl border border-gray-100 dark:border-white/5">
+                        <div className="space-y-0.5">
+                          <div className="text-xs font-bold">Randomize Emojis</div>
+                          <div className="text-[9px] text-gray-400">Sisipkan emoji acak di setiap pesan.</div>
+                        </div>
+                        <button 
+                          onClick={() => setSettings(prev => ({ ...prev, randomizeEmojis: !prev.randomizeEmojis }))}
+                          className={cn(
+                            "w-10 h-5 rounded-full transition-all relative",
+                            settings.randomizeEmojis ? "bg-emerald-500" : "bg-gray-300 dark:bg-gray-700"
+                          )}
+                        >
+                          <div className={cn(
+                            "absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all",
+                            settings.randomizeEmojis ? "left-5.5" : "left-0.5"
+                          )} />
+                        </button>
+                      </div>
+
+                      <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-[#1C2128] rounded-xl border border-gray-100 dark:border-white/5">
+                        <div className="space-y-0.5">
+                          <div className="text-xs font-bold">Global Spintax</div>
+                          <div className="text-[9px] text-gray-400">Aktifkan parser {'{pilihan1|pilihan2}'}.</div>
+                        </div>
+                        <button 
+                          onClick={() => setSettings(prev => ({ ...prev, useGlobalSpintax: !prev.useGlobalSpintax }))}
+                          className={cn(
+                            "w-10 h-5 rounded-full transition-all relative",
+                            settings.useGlobalSpintax ? "bg-emerald-500" : "bg-gray-300 dark:bg-gray-700"
+                          )}
+                        >
+                          <div className={cn(
+                            "absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all",
+                            settings.useGlobalSpintax ? "left-5.5" : "left-0.5"
                           )} />
                         </button>
                       </div>
