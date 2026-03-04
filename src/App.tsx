@@ -26,7 +26,8 @@ import {
   ExternalLink,
   ChevronRight,
   Moon,
-  Sun
+  Sun,
+  RotateCcw
 } from 'lucide-react';
 import { Toaster, toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'motion/react';
@@ -114,6 +115,13 @@ export default function App() {
       document.documentElement.classList.remove('dark');
     }
   }, [isDarkMode]);
+
+  const handleResetDefault = () => {
+    if (window.confirm('Apakah Anda yakin ingin menghapus semua data dan kembali ke pengaturan awal? Semua antrean dan template custom akan hilang.')) {
+      localStorage.clear();
+      window.location.reload();
+    }
+  };
 
   const activeTemplate = templates.find(t => t.id === activeTemplateId) || templates[0];
 
@@ -266,23 +274,34 @@ export default function App() {
   };
 
   useEffect(() => {
-    if (isBlasting && currentIndex >= 0) {
+    if (isBlasting) {
       const pendingEntries = entries.filter(e => e.status === 'pending');
-      if (currentIndex < pendingEntries.length) {
-        const entry = pendingEntries[currentIndex];
+      
+      if (pendingEntries.length > 0) {
+        const entry = pendingEntries[0]; // Always take the first pending
         const timer = setTimeout(() => {
-          window.open(getWALink(entry), '_blank');
+          const newWindow = window.open(getWALink(entry), '_blank');
+          
+          if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+            toast.error('Popup terblokir! Harap izinkan popup di browser Anda.', {
+              duration: 5000,
+              icon: '🚫'
+            });
+            setIsBlasting(false);
+            return;
+          }
+
           updateStatus(entry.id, 'sent');
-          setCurrentIndex(prev => prev + 1);
         }, settings.delay);
         return () => clearTimeout(timer);
       } else {
         setIsBlasting(false);
-        setCurrentIndex(-1);
-        toast.success('Blast selesai!');
+        toast.success('Blast selesai!', {
+          icon: '✅'
+        });
       }
     }
-  }, [isBlasting, currentIndex, entries, settings.delay]);
+  }, [isBlasting, entries.length, settings.delay]);
 
   const filteredEntries = useMemo(() => {
     return entries.filter(e => 
@@ -324,6 +343,45 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[#F8F9FA] dark:bg-[#0F1115] text-[#1A1A1A] dark:text-[#E4E6EB] font-sans selection:bg-emerald-100 dark:selection:bg-emerald-900/30 transition-colors duration-300">
       <Toaster position="top-right" />
+
+      {/* Blast Progress Overlay */}
+      {isBlasting && (
+        <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-6">
+          <div className="bg-white dark:bg-[#16191F] rounded-3xl p-8 max-w-md w-full shadow-2xl border border-white/10 text-center space-y-6">
+            <div className="relative w-24 h-24 mx-auto">
+              <div className="absolute inset-0 border-4 border-emerald-500/20 rounded-full" />
+              <div className="absolute inset-0 border-4 border-emerald-500 rounded-full border-t-transparent animate-spin" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Play size={32} className="text-emerald-500 fill-current" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-2xl font-bold">Engine Running...</h2>
+              <p className="text-gray-500 dark:text-gray-400">
+                Membuka tab WhatsApp secara otomatis. <br/>
+                Harap jangan menutup halaman ini.
+              </p>
+            </div>
+            <div className="p-4 bg-amber-50 dark:bg-amber-900/10 rounded-2xl border border-amber-100 dark:border-amber-900/20 text-left">
+              <div className="flex gap-3">
+                <AlertCircle className="text-amber-600 shrink-0" size={20} />
+                <div className="space-y-1">
+                  <p className="text-xs font-bold text-amber-800 dark:text-amber-400 uppercase tracking-wider">Penting!</p>
+                  <p className="text-xs text-amber-700 dark:text-amber-300">
+                    Jika tab tidak terbuka, pastikan Anda telah <b>mengizinkan Pop-up</b> di browser untuk situs ini.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={stopBlast}
+              className="w-full py-4 bg-red-500 hover:bg-red-600 text-white rounded-2xl font-bold transition-all shadow-lg shadow-red-500/20"
+            >
+              Hentikan Blast
+            </button>
+          </div>
+        </div>
+      )}
       
       {/* Sidebar-like Header */}
       <header className="bg-white dark:bg-[#16191F] border-b border-black/5 dark:border-white/5 sticky top-0 z-30 backdrop-blur-md bg-white/80 dark:bg-[#16191F]/80">
@@ -338,7 +396,15 @@ export default function App() {
             </div>
           </div>
           
-          <div className="flex items-center gap-4 md:gap-6">
+          <div className="flex items-center gap-2 md:gap-3">
+            <button 
+              onClick={handleResetDefault}
+              className="p-2.5 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/20 rounded-xl text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/20 transition-all flex items-center gap-2"
+              title="Reset ke Pengaturan Awal"
+            >
+              <RotateCcw size={18} />
+              <span className="hidden lg:inline text-xs font-bold uppercase tracking-wider">Reset</span>
+            </button>
             <button 
               onClick={() => setIsDarkMode(!isDarkMode)}
               className="p-2.5 bg-gray-50 dark:bg-[#1C2128] border border-black/5 dark:border-white/5 rounded-xl text-gray-500 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-all"
