@@ -440,7 +440,7 @@ export default function App() {
               </div>
             </div>
             
-            <div className="flex gap-2 mb-4 overflow-x-auto pb-2 scrollbar-hide">
+            <div className="flex gap-2 mb-4 overflow-x-auto pb-2 custom-scrollbar">
               {templates.map(t => (
                 <button
                   key={t.id}
@@ -460,7 +460,7 @@ export default function App() {
             <textarea
               value={activeTemplate.text}
               onChange={(e) => updateActiveTemplateText(e.target.value)}
-              className="w-full h-40 p-4 text-sm bg-gray-50 dark:bg-[#1C2128] border border-gray-200 dark:border-white/5 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all resize-none leading-relaxed dark:text-white"
+              className="w-full h-40 p-4 text-sm bg-gray-50 dark:bg-[#1C2128] border border-gray-200 dark:border-white/5 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all resize-none leading-relaxed dark:text-white custom-scrollbar"
               placeholder="Tulis template pesan..."
             />
             <div className="mt-3 flex flex-wrap gap-2">
@@ -603,7 +603,7 @@ export default function App() {
               )}
             </div>
 
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto custom-scrollbar">
               <table className="w-full text-left">
                 <thead>
                   <tr className="bg-gray-50/50 dark:bg-gray-900/20">
@@ -706,7 +706,7 @@ export default function App() {
                   value={bulkData}
                   onChange={(e) => setBulkData(e.target.value)}
                   placeholder="08123456789	Budi Santoso	Sepatu	JX123456	274,398..."
-                  className="w-full h-64 p-6 text-sm font-mono bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-[1.5rem] focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all resize-none dark:text-white"
+                  className="w-full h-64 p-6 text-sm font-mono bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-[1.5rem] focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all resize-none dark:text-white custom-scrollbar"
                 />
                 <div className="flex gap-4">
                   <button onClick={() => setShowBulkModal(false)} className="flex-1 py-4 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-2xl font-bold hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">Cancel</button>
