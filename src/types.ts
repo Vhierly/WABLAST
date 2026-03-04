@@ -31,17 +31,17 @@ export const DEFAULT_TEMPLATES: MessageTemplate[] = [
   {
     id: 'received',
     name: '✅ Konfirmasi Diterima',
-    text: "{salam} Kak {nama}, 📦\n\nKami dari J&T Cargo ingin mengonfirmasi apakah paket dengan resi: *{resi}* ({barang}) tujuan {alamat} sudah diterima dengan baik?\n\nTerima kasih telah menggunakan layanan J&T Cargo. Senang bisa melayani Anda! 🙏✨"
+    text: "{salam} Kak {nama}, 📦\n\nKami dari J&T Cargo ingin mengonfirmasi apakah paket dengan resi: *{resi}* ({barang}) tujuan {alamat} sudah diterima dengan baik?\n\n{if_cod}💰 Konfirmasi Pembayaran COD: *{cod}*\n{/if_cod}{if_dfod}💳 Konfirmasi Pembayaran DFOD: *{dfod}*\n{/if_dfod}\nTerima kasih telah menggunakan layanan J&T Cargo. Senang bisa melayani Anda! 🙏✨"
   },
   {
     id: 'failed_delivery',
     name: '📍 Gagal Kirim (Alamat/Kosong)',
-    text: "{salam} Kak {nama}, 📦\n\nKurir J&T Cargo sedang di lokasi untuk antar paket resi: *{resi}* ({barang}), namun rumah terlihat kosong/alamat sulit ditemukan.\n\nMohon bantuannya untuk *Share Location* atau berikan patokan rumah yang jelas agar paket bisa segera sampai. Terima kasih! 🙏"
+    text: "{salam} Kak {nama}, 📦\n\nKurir J&T Cargo sedang di lokasi untuk antar paket resi: *{resi}* ({barang}) tujuan {alamat}, namun rumah terlihat kosong/alamat sulit ditemukan.\n\n{if_cod}💰 Tagihan COD: *{cod}*\n{/if_cod}{if_dfod}💳 DFOD: *{dfod}*\n{/if_dfod}\nMohon bantuannya untuk *Share Location* atau berikan patokan rumah yang jelas agar paket bisa segera sampai. Terima kasih! 🙏"
   },
   {
     id: 'cod_reminder',
-    name: '💰 Pengingat COD',
-    text: "{salam} Kak {nama}, 📦\n\nPaket J&T Cargo Kakak dengan resi: *{resi}* ({barang}) akan segera diantar hari ini.\n\n💰 Total COD yang harus dibayar: *{cod}*\n\nMohon siapkan uang pas ya Kak agar proses serah terima lebih cepat. Terima kasih! 😊"
+    name: '💰 Pengingat Tagihan (COD/DFOD)',
+    text: "{salam} Kak {nama}, 📦\n\nPaket J&T Cargo Kakak dengan resi: *{resi}* ({barang}) akan segera diantar hari ini.\n\n{if_cod}💰 Total COD yang harus dibayar: *{cod}*\n{/if_cod}{if_dfod}💳 Biaya DFOD: *{dfod}*\n{/if_dfod}\nMohon siapkan uang pas ya Kak agar proses serah terima lebih cepat. Terima kasih! 😊"
   }
 ];
 
