@@ -39,10 +39,12 @@ export interface AppSettings {
   delay: number; // in milliseconds
   autoCloseTab: boolean;
   senderName: string;
+  manualMode: boolean;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
   delay: 5000,
   autoCloseTab: false,
-  senderName: 'Admin JNT'
+  senderName: 'Admin JNT',
+  manualMode: false
 };

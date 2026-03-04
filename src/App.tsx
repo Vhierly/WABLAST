@@ -299,7 +299,7 @@ export default function App() {
     let timer: NodeJS.Timeout;
     let countdownInterval: NodeJS.Timeout;
 
-    if (isBlasting) {
+    if (isBlasting && !settings.manualMode) {
       const pendingEntries = entries.filter(e => e.status === 'pending');
       
       if (pendingEntries.length > 0) {
@@ -337,7 +337,25 @@ export default function App() {
       clearTimeout(timer);
       clearInterval(countdownInterval);
     };
-  }, [isBlasting, entries, settings.delay]);
+  }, [isBlasting, entries, settings.delay, settings.manualMode]);
+
+  // Keyboard shortcut for manual mode
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (isBlasting && settings.manualMode && (e.code === 'Space' || e.code === 'Enter')) {
+        e.preventDefault();
+        const pending = entries.filter(ent => ent.status === 'pending');
+        if (pending.length > 0) {
+          const entry = pending[0];
+          window.open(getWALink(entry), 'WAsenderTab');
+          updateStatus(entry.id, 'sent');
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isBlasting, settings.manualMode, entries]);
 
   const filteredEntries = useMemo(() => {
     return entries.filter(e => 
@@ -397,22 +415,31 @@ export default function App() {
             <div className="space-y-2">
               <h3 className="text-xl font-bold">Blasting in Progress...</h3>
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                Sedang mengirim pesan ke <span className="font-bold text-emerald-600 dark:text-emerald-400">{entries.filter(e => e.status === 'sent').length}</span> dari <span className="font-bold">{entries.length}</span> antrean.
+                Pesan terkirim: <span className="font-bold text-emerald-600 dark:text-emerald-400">{entries.filter(e => e.status === 'sent').length}</span> / <span className="font-bold">{entries.length}</span>
               </p>
               
-              <div className="py-4">
-                <div className="text-4xl font-black text-emerald-600 dark:text-emerald-400 tabular-nums">
-                  {countdown}s
+              {!settings.manualMode ? (
+                <div className="py-4">
+                  <div className="text-4xl font-black text-emerald-600 dark:text-emerald-400 tabular-nums">
+                    {countdown}s
+                  </div>
+                  <p className="text-[10px] text-gray-400 uppercase tracking-widest mt-1">Next message in</p>
                 </div>
-                <p className="text-[10px] text-gray-400 uppercase tracking-widest mt-1">Next message in</p>
-              </div>
+              ) : (
+                <div className="py-6 space-y-2">
+                  <div className="px-4 py-2 bg-emerald-50 dark:bg-emerald-900/10 text-emerald-700 dark:text-emerald-400 rounded-xl text-xs font-bold border border-emerald-100 dark:border-emerald-900/20">
+                    MODE MANUAL AKTIF
+                  </div>
+                  <p className="text-[10px] text-gray-400">Tekan [SPASI] atau klik tombol di bawah untuk lanjut.</p>
+                </div>
+              )}
 
               <div className="pt-2 flex flex-col gap-2">
                 <p className="text-[10px] text-amber-600 dark:text-amber-400 font-bold uppercase tracking-widest animate-pulse">
-                  Jangan tutup tab WhatsApp Web yang terbuka!
+                  PENTING: Tekan [ENTER] pada tab WhatsApp untuk mengirim!
                 </p>
                 <p className="text-[9px] text-gray-400 italic">
-                  Jika macet, Anda bisa klik "Kirim Berikutnya" atau tambah delay di Settings.
+                  Browser tidak mengizinkan klik otomatis di dalam WhatsApp. Tekan Enter setiap kali pesan muncul.
                 </p>
               </div>
             </div>
@@ -1032,6 +1059,25 @@ export default function App() {
                       className="w-full px-4 py-3 bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-sm"
                       placeholder="Admin JNT"
                     />
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-[#1C2128] rounded-2xl border border-gray-100 dark:border-white/5">
+                    <div className="space-y-1">
+                      <div className="text-xs font-bold">Mode Manual</div>
+                      <div className="text-[10px] text-gray-400">Kirim berikutnya hanya saat Anda klik/tekan Spasi.</div>
+                    </div>
+                    <button 
+                      onClick={() => setSettings(prev => ({ ...prev, manualMode: !prev.manualMode }))}
+                      className={cn(
+                        "w-12 h-6 rounded-full transition-all relative",
+                        settings.manualMode ? "bg-emerald-500" : "bg-gray-300 dark:bg-gray-700"
+                      )}
+                    >
+                      <div className={cn(
+                        "absolute top-1 w-4 h-4 bg-white rounded-full transition-all",
+                        settings.manualMode ? "left-7" : "left-1"
+                      )} />
+                    </button>
                   </div>
                 </div>
 
