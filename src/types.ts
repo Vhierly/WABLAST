@@ -42,7 +42,7 @@ export interface AppSettings {
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
-  delay: 2000,
+  delay: 5000,
   autoCloseTab: false,
   senderName: 'Admin JNT'
 };

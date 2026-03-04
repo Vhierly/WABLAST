@@ -250,11 +250,13 @@ export default function App() {
     if (phone.startsWith('0')) phone = '62' + phone.slice(1);
     if (!phone.startsWith('62')) phone = '62' + phone;
     const message = encodeURIComponent(generateMessage(entry));
-    return `https://wa.me/${phone}?text=${message}`;
+    // Force WhatsApp Web instead of wa.me
+    return `https://web.whatsapp.com/send?phone=${phone}&text=${message}`;
   };
 
   const handleSendManual = (entry: BlastEntry) => {
-    window.open(getWALink(entry), '_blank');
+    // Use a named window to reuse the same tab and avoid popup blockers
+    window.open(getWALink(entry), 'WAsenderTab');
     updateStatus(entry.id, 'sent');
   };
 
@@ -268,6 +270,20 @@ export default function App() {
       toast.error('Tidak ada pesan pending');
       return;
     }
+
+    // Open the first one immediately to "unlock" the popup blocker
+    const firstEntry = pending[0];
+    const newWindow = window.open(getWALink(firstEntry), 'WAsenderTab');
+    
+    if (!newWindow) {
+      toast.error('Popup terblokir! Harap izinkan popup di browser Anda.', {
+        duration: 5000,
+        icon: '🚫'
+      });
+      return;
+    }
+
+    updateStatus(firstEntry.id, 'sent');
     setIsBlasting(true);
     setCurrentIndex(0);
   };
@@ -284,11 +300,13 @@ export default function App() {
       if (pendingEntries.length > 0) {
         const entry = pendingEntries[0]; // Always take the first pending
         const timer = setTimeout(() => {
-          const newWindow = window.open(getWALink(entry), '_blank');
+          // Use a named window 'WAsenderTab' to reuse the same tab.
+          // This is more reliable and avoids opening 100 separate tabs.
+          const newWindow = window.open(getWALink(entry), 'WAsenderTab');
           
-          if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
-            toast.error('Popup terblokir! Harap izinkan popup di browser Anda.', {
-              duration: 5000,
+          if (!newWindow) {
+            toast.error('Popup terblokir! Klik tombol "Start Engine" lagi dan pastikan pilih "Always Allow Popups" di pojok kanan atas browser.', {
+              duration: 8000,
               icon: '🚫'
             });
             setIsBlasting(false);
@@ -363,29 +381,40 @@ export default function App() {
               </div>
             </div>
             <div className="space-y-2">
-              <h2 className="text-2xl font-bold">Engine Running...</h2>
-              <p className="text-gray-500 dark:text-gray-400">
-                Membuka tab WhatsApp secara otomatis. <br/>
-                Harap jangan menutup halaman ini.
+              <h3 className="text-xl font-bold">Blasting in Progress...</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Sedang mengirim pesan ke <span className="font-bold text-emerald-600 dark:text-emerald-400">{entries.filter(e => e.status === 'sent').length}</span> dari <span className="font-bold">{entries.length}</span> antrean.
               </p>
-            </div>
-            <div className="p-4 bg-amber-50 dark:bg-amber-900/10 rounded-2xl border border-amber-100 dark:border-amber-900/20 text-left">
-              <div className="flex gap-3">
-                <AlertCircle className="text-amber-600 shrink-0" size={20} />
-                <div className="space-y-1">
-                  <p className="text-xs font-bold text-amber-800 dark:text-amber-400 uppercase tracking-wider">Penting!</p>
-                  <p className="text-xs text-amber-700 dark:text-amber-300">
-                    Jika tab tidak terbuka, pastikan Anda telah <b>mengizinkan Pop-up</b> di browser untuk situs ini.
-                  </p>
-                </div>
+              <div className="pt-4 flex flex-col gap-2">
+                <p className="text-[10px] text-amber-600 dark:text-amber-400 font-bold uppercase tracking-widest animate-pulse">
+                  Jangan tutup tab WhatsApp Web yang terbuka!
+                </p>
+                <p className="text-[9px] text-gray-400 italic">
+                  Jika macet, Anda bisa klik "Kirim Berikutnya" atau tunggu delay selesai.
+                </p>
               </div>
             </div>
-            <button
-              onClick={stopBlast}
-              className="w-full py-4 bg-red-500 hover:bg-red-600 text-white rounded-2xl font-bold transition-all shadow-lg shadow-red-500/20"
-            >
-              Hentikan Blast
-            </button>
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={() => {
+                  const pending = entries.filter(e => e.status === 'pending');
+                  if (pending.length > 0) {
+                    const entry = pending[0];
+                    window.open(getWALink(entry), 'WAsenderTab');
+                    updateStatus(entry.id, 'sent');
+                  }
+                }}
+                className="w-full py-3 bg-emerald-100 dark:bg-emerald-900/10 text-emerald-700 dark:text-emerald-400 rounded-2xl font-bold text-sm hover:bg-emerald-200 transition-all border border-emerald-200 dark:border-emerald-900/30"
+              >
+                Kirim Berikutnya (Manual)
+              </button>
+              <button
+                onClick={stopBlast}
+                className="w-full py-3 bg-red-500 hover:bg-red-600 text-white rounded-2xl font-bold transition-all shadow-lg shadow-red-500/20 text-sm"
+              >
+                Berhenti
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -626,6 +655,16 @@ export default function App() {
               </button>
             </div>
           </div>
+
+          {/* Popup Warning */}
+          {!isBlasting && entries.length > 0 && (
+            <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20 rounded-2xl p-4 flex items-start gap-3">
+              <AlertCircle className="text-amber-600 dark:text-amber-400 shrink-0" size={18} />
+              <div className="text-xs text-amber-800 dark:text-amber-300 leading-relaxed">
+                <span className="font-bold">PENTING:</span> Mesin akan membuka <span className="font-bold">WhatsApp Web</span> di tab yang sama secara bergantian. Pastikan Anda telah <span className="font-bold">MENGIZINKAN POPUP</span> di browser Anda (klik ikon gembok/popup di bar alamat browser). Gunakan delay minimal 5 detik agar WA Web sempat memuat pesan.
+              </div>
+            </div>
+          )}
 
           {/* Quick Add Form */}
           <section className="bg-white dark:bg-[#16191F] rounded-3xl p-6 shadow-sm border border-black/5 dark:border-white/5">
