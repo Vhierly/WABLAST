@@ -8,6 +8,7 @@ export interface BlastEntry {
   cod: string;
   dfod: string;
   status: 'pending' | 'sent' | 'failed';
+  isReceived: boolean;
   createdAt: number;
 }
 
@@ -50,11 +51,24 @@ export interface AppSettings {
   autoCloseTab: boolean;
   senderName: string;
   manualMode: boolean;
+  // Anti-spam settings
+  randomizeDelay: boolean;
+  maxDelay: number;
+  batchSize: number;
+  batchPause: number;
+  useRandomGreetings: boolean;
+  addRandomSuffix: boolean;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
   delay: 5000,
   autoCloseTab: false,
   senderName: 'Admin JNT',
-  manualMode: false
+  manualMode: false,
+  randomizeDelay: true,
+  maxDelay: 10000,
+  batchSize: 10,
+  batchPause: 30000,
+  useRandomGreetings: true,
+  addRandomSuffix: false
 };

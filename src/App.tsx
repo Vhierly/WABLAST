@@ -27,7 +27,8 @@ import {
   ChevronRight,
   Moon,
   Sun,
-  RotateCcw
+  RotateCcw,
+  Shield
 } from 'lucide-react';
 import { Toaster, toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'motion/react';
@@ -146,6 +147,7 @@ export default function App() {
       id: crypto.randomUUID(),
       ...formData,
       status: 'pending',
+      isReceived: false,
       createdAt: Date.now()
     };
 
@@ -175,8 +177,8 @@ export default function App() {
         const secondCol = (columns[1] || '').toLowerCase();
         if (firstCol === 'no' || secondCol === 'resi/awb' || secondCol === 'resi') return;
 
-        const codValue = columns[6] || '-';
-        const dfodValue = columns[7] || '-';
+        const codValue = (columns[6] || '-').replace(/[^0-9.,-]/g, '');
+        const dfodValue = (columns[7] || '-').replace(/[^0-9.,-]/g, '');
         const itemNameValue = columns[8] || '';
 
         newEntries.push({
@@ -189,6 +191,7 @@ export default function App() {
           cod: (codValue === '-' || codValue === '0' || !codValue) ? '' : codValue,
           dfod: (dfodValue === '--' || dfodValue === '-' || dfodValue === '0' || !dfodValue) ? '' : dfodValue,
           status: 'pending',
+          isReceived: false,
           createdAt: Date.now()
         });
         successCount++;
@@ -213,10 +216,31 @@ export default function App() {
 
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour >= 5 && hour < 11) return 'Selamat Pagi';
-    if (hour >= 11 && hour < 15) return 'Selamat Siang';
-    if (hour >= 15 && hour < 18) return 'Selamat Sore';
-    return 'Selamat Malam';
+    let base = '';
+    if (hour >= 5 && hour < 11) base = 'Pagi';
+    else if (hour >= 11 && hour < 15) base = 'Siang';
+    else if (hour >= 15 && hour < 18) base = 'Sore';
+    else base = 'Malam';
+
+    if (settings.useRandomGreetings) {
+      const variations = [
+        `Selamat ${base}`,
+        `${base} Kak`,
+        `Halo, Selamat ${base}`,
+        `Halo Kak, Selamat ${base}`,
+        `Permisi, Selamat ${base}`,
+        `Halo`,
+        `Pagi/Siang/Sore/Malam` // This is just a placeholder for the logic below
+      ];
+      
+      // Filter out the placeholder and use real variations
+      const realVariations = variations.filter(v => v !== 'Pagi/Siang/Sore/Malam');
+      realVariations.push(base); // Just "Pagi", "Siang", etc.
+      
+      return realVariations[Math.floor(Math.random() * realVariations.length)];
+    }
+
+    return `Selamat ${base}`;
   };
 
   const generateMessage = (entry: BlastEntry) => {
@@ -236,7 +260,7 @@ export default function App() {
       text = text.replace(/{if_dfod}/gi, '').replace(/{\/if_dfod}/gi, '');
     }
 
-    return text
+    let finalMessage = text
       .replace(/{salam}/gi, getGreeting())
       .replace(/{pengirim}/gi, settings.senderName || 'Admin')
       .replace(/{nama}/gi, entry.recipientName)
@@ -245,6 +269,13 @@ export default function App() {
       .replace(/{alamat}/gi, entry.address || '-')
       .replace(/{cod}/gi, entry.cod ? `Rp ${entry.cod}` : '-')
       .replace(/{dfod}/gi, entry.dfod ? `Rp ${entry.dfod}` : '-');
+
+    if (settings.addRandomSuffix) {
+      const suffix = `\n\n_Ref: ${Math.random().toString(36).substring(7).toUpperCase()}_`;
+      finalMessage += suffix;
+    }
+
+    return finalMessage;
   };
 
   const getWALink = (entry: BlastEntry) => {
@@ -264,6 +295,10 @@ export default function App() {
 
   const updateStatus = (id: string, status: BlastEntry['status']) => {
     setEntries(prev => prev.map(e => e.id === id ? { ...e, status } : e));
+  };
+
+  const toggleReceived = (id: string) => {
+    setEntries(prev => prev.map(e => e.id === id ? { ...e, isReceived: !e.isReceived } : e));
   };
 
   const startBlast = () => {
@@ -301,10 +336,26 @@ export default function App() {
 
     if (isBlasting && !settings.manualMode) {
       const pendingEntries = entries.filter(e => e.status === 'pending');
+      const sentCount = entries.filter(e => e.status === 'sent').length;
       
       if (pendingEntries.length > 0) {
         const entry = pendingEntries[0];
-        setCountdown(Math.ceil(settings.delay / 1000));
+        
+        // Calculate delay
+        let currentDelay = settings.delay;
+        if (settings.randomizeDelay) {
+          currentDelay = Math.floor(Math.random() * (settings.maxDelay - settings.delay + 1)) + settings.delay;
+        }
+
+        // Check for batch pause
+        if (settings.batchSize > 0 && sentCount > 0 && sentCount % settings.batchSize === 0) {
+          currentDelay = settings.batchPause;
+          toast(`Anti-Spam: Istirahat sejenak selama ${settings.batchPause / 1000} detik...`, {
+            icon: '🛡️'
+          });
+        }
+
+        setCountdown(Math.ceil(currentDelay / 1000));
 
         countdownInterval = setInterval(() => {
           setCountdown(prev => Math.max(0, prev - 1));
@@ -324,7 +375,7 @@ export default function App() {
           }
 
           updateStatus(entry.id, 'sent');
-        }, settings.delay);
+        }, currentDelay);
       } else {
         setIsBlasting(false);
         toast.success('Blast selesai!', {
@@ -337,7 +388,7 @@ export default function App() {
       clearTimeout(timer);
       clearInterval(countdownInterval);
     };
-  }, [isBlasting, entries, settings.delay, settings.manualMode]);
+  }, [isBlasting, entries, settings.delay, settings.manualMode, settings.randomizeDelay, settings.maxDelay, settings.batchSize, settings.batchPause]);
 
   // Keyboard shortcut for manual mode
   useEffect(() => {
@@ -376,16 +427,19 @@ export default function App() {
 
   const exportToCSV = () => {
     if (entries.length === 0) return;
-    const headers = ['Phone', 'Name', 'Item', 'Receipt', 'Status', 'Created At'];
+    const headers = ['Phone', 'Name', 'Item', 'Receipt', 'Status', 'Received', 'Created At'];
     const rows = entries.map(e => [
       e.phone,
       e.recipientName,
       e.itemName,
       e.receiptNumber,
       e.status,
+      e.isReceived ? 'YES' : 'NO',
       new Date(e.createdAt).toLocaleString()
     ]);
-    const csvContent = [headers, ...rows].map(r => r.join(',')).join('\n');
+    const csvContent = [headers, ...rows]
+      .map(r => r.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
@@ -785,7 +839,7 @@ export default function App() {
                   <input
                     type="text"
                     value={formData.cod}
-                    onChange={(e) => setFormData(prev => ({ ...prev, cod: e.target.value }))}
+                    onChange={(e) => setFormData(prev => ({ ...prev, cod: e.target.value.replace(/[^0-9.,]/g, '') }))}
                     placeholder="274,398"
                     className="w-full p-3 text-sm bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-xl focus:border-emerald-500 outline-none dark:text-white"
                   />
@@ -795,7 +849,7 @@ export default function App() {
                   <input
                     type="text"
                     value={formData.dfod}
-                    onChange={(e) => setFormData(prev => ({ ...prev, dfod: e.target.value }))}
+                    onChange={(e) => setFormData(prev => ({ ...prev, dfod: e.target.value.replace(/[^0-9.,]/g, '') }))}
                     placeholder="10,000"
                     className="w-full p-3 text-sm bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-xl focus:border-emerald-500 outline-none dark:text-white"
                   />
@@ -839,6 +893,7 @@ export default function App() {
                     <th className="px-6 py-4 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Recipient</th>
                     <th className="px-6 py-4 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Details</th>
                     <th className="px-6 py-4 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Status</th>
+                    <th className="px-6 py-4 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Received</th>
                     <th className="px-6 py-4 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest text-right">Actions</th>
                   </tr>
                 </thead>
@@ -890,6 +945,25 @@ export default function App() {
                               {entry.status === 'sent' ? <CheckCircle2 size={10} /> : <Clock size={10} />}
                               {entry.status}
                             </div>
+                          </td>
+                          <td className="px-6 py-5">
+                            <button 
+                              onClick={() => toggleReceived(entry.id)}
+                              className={cn(
+                                "flex items-center gap-2 px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all",
+                                entry.isReceived 
+                                  ? "bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-900/30" 
+                                  : "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 border border-transparent"
+                              )}
+                            >
+                              <div className={cn(
+                                "w-3 h-3 rounded-sm border flex items-center justify-center transition-all",
+                                entry.isReceived ? "bg-blue-600 border-blue-600" : "border-gray-300 dark:border-gray-700"
+                              )}>
+                                {entry.isReceived && <CheckCircle2 size={10} className="text-white" />}
+                              </div>
+                              {entry.isReceived ? 'Diterima' : 'Belum'}
+                            </button>
                           </td>
                           <td className="px-6 py-5 text-right">
                             <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -1078,6 +1152,109 @@ export default function App() {
                         settings.manualMode ? "left-7" : "left-1"
                       )} />
                     </button>
+                  </div>
+
+                  <div className="pt-4 border-t border-black/5 dark:border-white/5">
+                    <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                      <Shield size={12} className="text-emerald-500" /> Keamanan Advanced (Anti-Spam)
+                    </h3>
+                    
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between p-3 bg-emerald-50/50 dark:bg-emerald-900/5 rounded-xl border border-emerald-100/50 dark:border-emerald-900/10">
+                        <div className="space-y-0.5">
+                          <div className="text-xs font-bold">Randomize Delay</div>
+                          <div className="text-[9px] text-gray-400">Jeda waktu acak agar tidak terdeteksi bot.</div>
+                        </div>
+                        <button 
+                          onClick={() => setSettings(prev => ({ ...prev, randomizeDelay: !prev.randomizeDelay }))}
+                          className={cn(
+                            "w-10 h-5 rounded-full transition-all relative",
+                            settings.randomizeDelay ? "bg-emerald-500" : "bg-gray-300 dark:bg-gray-700"
+                          )}
+                        >
+                          <div className={cn(
+                            "absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all",
+                            settings.randomizeDelay ? "left-5.5" : "left-0.5"
+                          )} />
+                        </button>
+                      </div>
+
+                      {settings.randomizeDelay && (
+                        <div className="space-y-2 px-1">
+                          <label className="text-[10px] font-bold text-gray-500 uppercase">Max Delay (ms)</label>
+                          <input 
+                            type="number" 
+                            value={settings.maxDelay}
+                            onChange={(e) => setSettings(prev => ({ ...prev, maxDelay: parseInt(e.target.value) || 10000 }))}
+                            className="w-full px-3 py-2 bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-lg text-xs"
+                            step="500"
+                          />
+                        </div>
+                      )}
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold text-gray-500 uppercase">Batch Size</label>
+                          <input 
+                            type="number" 
+                            value={settings.batchSize}
+                            onChange={(e) => setSettings(prev => ({ ...prev, batchSize: parseInt(e.target.value) || 0 }))}
+                            className="w-full px-3 py-2 bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-lg text-xs"
+                            placeholder="10"
+                          />
+                          <p className="text-[8px] text-gray-400 italic">Istirahat tiap X pesan.</p>
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold text-gray-500 uppercase">Pause (ms)</label>
+                          <input 
+                            type="number" 
+                            value={settings.batchPause}
+                            onChange={(e) => setSettings(prev => ({ ...prev, batchPause: parseInt(e.target.value) || 0 }))}
+                            className="w-full px-3 py-2 bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-lg text-xs"
+                            placeholder="30000"
+                          />
+                          <p className="text-[8px] text-gray-400 italic">Lama istirahat.</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-[#1C2128] rounded-xl border border-gray-100 dark:border-white/5">
+                        <div className="space-y-0.5">
+                          <div className="text-xs font-bold">Random Greetings</div>
+                          <div className="text-[9px] text-gray-400">Variasi kata sapaan otomatis.</div>
+                        </div>
+                        <button 
+                          onClick={() => setSettings(prev => ({ ...prev, useRandomGreetings: !prev.useRandomGreetings }))}
+                          className={cn(
+                            "w-10 h-5 rounded-full transition-all relative",
+                            settings.useRandomGreetings ? "bg-emerald-500" : "bg-gray-300 dark:bg-gray-700"
+                          )}
+                        >
+                          <div className={cn(
+                            "absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all",
+                            settings.useRandomGreetings ? "left-5.5" : "left-0.5"
+                          )} />
+                        </button>
+                      </div>
+
+                      <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-[#1C2128] rounded-xl border border-gray-100 dark:border-white/5">
+                        <div className="space-y-0.5">
+                          <div className="text-xs font-bold">Random Suffix (Ref ID)</div>
+                          <div className="text-[9px] text-gray-400">Tambah ID unik di akhir pesan.</div>
+                        </div>
+                        <button 
+                          onClick={() => setSettings(prev => ({ ...prev, addRandomSuffix: !prev.addRandomSuffix }))}
+                          className={cn(
+                            "w-10 h-5 rounded-full transition-all relative",
+                            settings.addRandomSuffix ? "bg-emerald-500" : "bg-gray-300 dark:bg-gray-700"
+                          )}
+                        >
+                          <div className={cn(
+                            "absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all",
+                            settings.addRandomSuffix ? "left-5.5" : "left-0.5"
+                          )} />
+                        </button>
+                      </div>
+                    </div>
                   </div>
 
                   <div className="pt-2">
