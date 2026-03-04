@@ -37,7 +37,6 @@ import {
   ResponsiveContainer, 
   Tooltip as RechartsTooltip 
 } from 'recharts';
-import { GoogleGenAI } from "@google/genai";
 import { 
   BlastEntry, 
   MessageTemplate, 
@@ -49,9 +48,6 @@ import {
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
-
-// Initialize Gemini
-const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
 
 export default function App() {
   const [entries, setEntries] = useState<BlastEntry[]>([]);
@@ -288,12 +284,17 @@ export default function App() {
       Teks harus ramah, sopan, dan singkat. 
       Hanya berikan teks pesannya saja tanpa penjelasan tambahan.`;
       
-      const response = await genAI.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: [{ parts: [{ text: prompt }] }],
+      const response = await fetch('/api/gemini', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt, model: "gemini-3-flash-preview" })
       });
+
+      if (!response.ok) throw new Error('Failed to generate AI template');
       
-      const text = response.text;
+      const data = await response.json();
+      const text = data.text;
+      
       if (text) {
         updateActiveTemplateText(text.trim());
         toast.success('Template diperbarui dengan AI');
