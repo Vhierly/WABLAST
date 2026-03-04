@@ -20,18 +20,28 @@ export interface MessageTemplate {
 export const DEFAULT_TEMPLATES: MessageTemplate[] = [
   {
     id: 'retur',
-    name: 'Konfirmasi Retur',
-    text: "{salam} ka, kami dari JNT Cargo manado mau konfrimasi resi : {resi} dengan nama barang : {barang} tujuan {alamat}. {if_cod}Info Tagihan - COD: {cod}. {/if_cod}{if_dfod}DFOD: {dfod}. {/if_dfod}Sudah ada percobaan delivery tapi masih belum sukses, apakah masih mau diambil atau di retur ka ?"
+    name: '⚠️ Konfirmasi Retur (Urgent)',
+    text: "{salam} Kak {nama}, 📦\n\nKami dari J&T Cargo menginfokan paket resi: *{resi}* ({barang}) tujuan {alamat} mengalami kendala pengantaran.\n\n{if_cod}💰 Tagihan COD: *{cod}*\n{/if_cod}{if_dfod}💳 DFOD: *{dfod}*\n{/if_dfod}\nSudah ada percobaan delivery namun belum sukses. Mohon konfirmasinya apakah paket masih mau diambil atau di-retur (kembali ke pengirim) ya Kak? 🙏"
   },
   {
     id: 'delivery',
-    name: 'Proses Pengantaran',
-    text: "{salam} kak, perkenalkan saya {pengirim} dari JNT Cargo. Menginfokan bahwa paket kakak with resi {resi} ({barang}) tujuan {alamat} saat ini sedang dalam proses pengantaran oleh kurir kami. {if_cod}Tagihan COD: {cod}. {/if_cod}{if_dfod}DFOD: {dfod}. {/if_dfod}Mohon ditunggu ya kak. Terima kasih!"
+    name: '🚚 Proses Pengantaran',
+    text: "{salam} Kak {nama}, 📦\n\nSaya {pengirim} dari J&T Cargo. Menginfokan paket Kakak dengan resi: *{resi}* ({barang}) tujuan {alamat} saat ini *SEDANG DALAM PROSES PENGANTARAN* oleh kurir kami.\n\n{if_cod}💰 Mohon siapkan dana COD: *{cod}*\n{/if_cod}{if_dfod}💳 Biaya DFOD: *{dfod}*\n{/if_dfod}\nMohon HP selalu aktif ya Kak agar kurir mudah menghubungi. Terima kasih! 😊"
   },
   {
     id: 'received',
-    name: 'Konfirmasi Diterima',
-    text: "{salam} kak, perkenalkan saya {pengirim} dari JNT Cargo, kak mau konfirmasi apakah nomor resi ini: {resi} dengan nama penerima: {nama} tujuan {alamat}, apakah sudah diterima?"
+    name: '✅ Konfirmasi Diterima',
+    text: "{salam} Kak {nama}, 📦\n\nKami dari J&T Cargo ingin mengonfirmasi apakah paket dengan resi: *{resi}* ({barang}) tujuan {alamat} sudah diterima dengan baik?\n\nTerima kasih telah menggunakan layanan J&T Cargo. Senang bisa melayani Anda! 🙏✨"
+  },
+  {
+    id: 'failed_delivery',
+    name: '📍 Gagal Kirim (Alamat/Kosong)',
+    text: "{salam} Kak {nama}, 📦\n\nKurir J&T Cargo sedang di lokasi untuk antar paket resi: *{resi}* ({barang}), namun rumah terlihat kosong/alamat sulit ditemukan.\n\nMohon bantuannya untuk *Share Location* atau berikan patokan rumah yang jelas agar paket bisa segera sampai. Terima kasih! 🙏"
+  },
+  {
+    id: 'cod_reminder',
+    name: '💰 Pengingat COD',
+    text: "{salam} Kak {nama}, 📦\n\nPaket J&T Cargo Kakak dengan resi: *{resi}* ({barang}) akan segera diantar hari ini.\n\n💰 Total COD yang harus dibayar: *{cod}*\n\nMohon siapkan uang pas ya Kak agar proses serah terima lebih cepat. Terima kasih! 😊"
   }
 ];
 

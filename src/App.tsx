@@ -1079,6 +1079,21 @@ export default function App() {
                       )} />
                     </button>
                   </div>
+
+                  <div className="pt-2">
+                    <button 
+                      onClick={() => {
+                        if (window.confirm('Kembalikan semua template ke pengaturan default? Template yang Anda ubah akan tertimpa.')) {
+                          setTemplates(DEFAULT_TEMPLATES);
+                          setActiveTemplateId(DEFAULT_TEMPLATES[0].id);
+                          toast.success('Template berhasil dipulihkan');
+                        }
+                      }}
+                      className="w-full py-3 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-xl font-bold text-xs hover:bg-gray-200 dark:hover:bg-gray-700 transition-all flex items-center justify-center gap-2"
+                    >
+                      <RotateCcw size={14} /> Restore Default Templates
+                    </button>
+                  </div>
                 </div>
 
                 <div className="pt-4">
