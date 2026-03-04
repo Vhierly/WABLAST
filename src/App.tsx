@@ -73,7 +73,9 @@ export default function App() {
     recipientName: '',
     itemName: '',
     receiptNumber: '',
-    cod: ''
+    address: '',
+    cod: '',
+    dfod: ''
   });
 
   // Load data
@@ -134,7 +136,7 @@ export default function App() {
     };
 
     setEntries(prev => [newEntry, ...prev]);
-    setFormData({ phone: '', recipientName: '', itemName: '', receiptNumber: '', cod: '' });
+    setFormData({ phone: '', recipientName: '', itemName: '', receiptNumber: '', address: '', cod: '', dfod: '' });
     toast.success('Data ditambahkan');
   };
 
@@ -152,14 +154,25 @@ export default function App() {
       const delimiter = line.includes('\t') ? '\t' : ',';
       const columns = line.split(delimiter).map(col => col.trim());
       
-      if (columns.length >= 2) {
+      // Expected format: No, Resi/AWB, Nama Penerima, No HP, Alamat Lengkap, Tanda COD, Nominal COD, DFOD
+      if (columns.length >= 4) {
+        // Skip header lines
+        const firstCol = columns[0].toLowerCase();
+        const secondCol = (columns[1] || '').toLowerCase();
+        if (firstCol === 'no' || secondCol === 'resi/awb' || secondCol === 'resi') return;
+
+        const codValue = columns[6] || '-';
+        const dfodValue = columns[7] || '-';
+
         newEntries.push({
           id: crypto.randomUUID(),
-          phone: columns[0],
-          recipientName: columns[1],
-          itemName: columns[2] || '',
-          receiptNumber: columns[3] || '',
-          cod: columns[4] || '',
+          receiptNumber: columns[1] || '',
+          recipientName: columns[2] || '',
+          phone: columns[3] || '',
+          address: columns[4] || '',
+          itemName: '', 
+          cod: (codValue === '-' || codValue === '0' || !codValue) ? '' : codValue,
+          dfod: (dfodValue === '-' || dfodValue === '0' || !dfodValue) ? '' : dfodValue,
           status: 'pending',
           createdAt: Date.now()
         });
@@ -198,7 +211,9 @@ export default function App() {
       .replace(/{nama}/gi, entry.recipientName)
       .replace(/{barang}/gi, entry.itemName || '-')
       .replace(/{resi}/gi, entry.receiptNumber || '-')
-      .replace(/{cod}/gi, entry.cod || '0');
+      .replace(/{alamat}/gi, entry.address || '-')
+      .replace(/{cod}/gi, entry.cod ? `Rp ${entry.cod}` : '-')
+      .replace(/{dfod}/gi, entry.dfod ? `Rp ${entry.dfod}` : '-');
   };
 
   const getWALink = (entry: BlastEntry) => {
@@ -464,7 +479,7 @@ export default function App() {
               placeholder="Tulis template pesan..."
             />
             <div className="mt-3 flex flex-wrap gap-2">
-              {['{salam}', '{pengirim}', '{nama}', '{barang}', '{resi}', '{cod}'].map(tag => (
+              {['{salam}', '{pengirim}', '{nama}', '{barang}', '{resi}', '{alamat}', '{cod}', '{dfod}'].map(tag => (
                 <button
                   key={tag}
                   onClick={() => updateActiveTemplateText(activeTemplate.text + ' ' + tag)}
@@ -561,6 +576,18 @@ export default function App() {
                     className="w-full p-3 text-sm bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-xl focus:border-emerald-500 outline-none dark:text-white"
                   />
                 </div>
+                <div className="space-y-2 md:col-span-2">
+                  <label className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Address</label>
+                  <input
+                    type="text"
+                    value={formData.address}
+                    onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
+                    placeholder="Alamat Lengkap"
+                    className="w-full p-3 text-sm bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-xl focus:border-emerald-500 outline-none dark:text-white"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                 <div className="space-y-2">
                   <label className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">COD</label>
                   <input
@@ -568,6 +595,16 @@ export default function App() {
                     value={formData.cod}
                     onChange={(e) => setFormData(prev => ({ ...prev, cod: e.target.value }))}
                     placeholder="274,398"
+                    className="w-full p-3 text-sm bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-xl focus:border-emerald-500 outline-none dark:text-white"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">DFOD</label>
+                  <input
+                    type="text"
+                    value={formData.dfod}
+                    onChange={(e) => setFormData(prev => ({ ...prev, dfod: e.target.value }))}
+                    placeholder="10,000"
                     className="w-full p-3 text-sm bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-xl focus:border-emerald-500 outline-none dark:text-white"
                   />
                 </div>
@@ -642,9 +679,13 @@ export default function App() {
                           </td>
                           <td className="px-6 py-5">
                             <div className="text-sm font-medium truncate max-w-[200px]" title={entry.itemName}>{entry.itemName || '-'}</div>
-                            <div className="flex gap-2 items-center">
+                            <div className="flex flex-col gap-1">
                               <div className="text-[10px] text-gray-400 dark:text-gray-500 font-mono uppercase tracking-wider">Resi: {entry.receiptNumber || '-'}</div>
-                              {entry.cod && <div className="text-[10px] text-amber-600 dark:text-amber-500 font-bold uppercase tracking-wider">COD: {entry.cod}</div>}
+                              {entry.address && <div className="text-[10px] text-gray-400 dark:text-gray-500 truncate max-w-[200px]" title={entry.address}>{entry.address}</div>}
+                              <div className="flex gap-2">
+                                {entry.cod && <div className="text-[10px] text-amber-600 dark:text-amber-500 font-bold uppercase tracking-wider">COD: Rp {entry.cod}</div>}
+                                {entry.dfod && <div className="text-[10px] text-blue-600 dark:text-blue-500 font-bold uppercase tracking-wider">DFOD: Rp {entry.dfod}</div>}
+                              </div>
                             </div>
                           </td>
                           <td className="px-6 py-5">
@@ -695,7 +736,7 @@ export default function App() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="p-4 bg-emerald-50 dark:bg-emerald-900/10 rounded-2xl border border-emerald-100 dark:border-emerald-900/20">
                     <div className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-1">Step 1</div>
-                    <p className="text-xs text-emerald-800 dark:text-emerald-300">Siapkan kolom: Phone, Name, Item, Receipt, COD</p>
+                    <p className="text-xs text-emerald-800 dark:text-emerald-300">Kolom: No, Resi, Nama, HP, Alamat, Tanda COD, Nominal COD, DFOD</p>
                   </div>
                   <div className="p-4 bg-blue-50 dark:bg-blue-900/10 rounded-2xl border border-blue-100 dark:border-blue-900/20">
                     <div className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-1">Step 2</div>
