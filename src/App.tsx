@@ -154,7 +154,7 @@ export default function App() {
       const delimiter = line.includes('\t') ? '\t' : ',';
       const columns = line.split(delimiter).map(col => col.trim());
       
-      // Expected format: No, Resi/AWB, Nama Penerima, No HP, Alamat Lengkap, Tanda COD, Nominal COD, DFOD
+      // Expected format: No, Resi/AWB, Nama Penerima, No HP, Alamat Lengkap, Tanda COD, Nominal COD, DFOD, Nama Barang
       if (columns.length >= 4) {
         // Skip header lines
         const firstCol = columns[0].toLowerCase();
@@ -163,6 +163,7 @@ export default function App() {
 
         const codValue = columns[6] || '-';
         const dfodValue = columns[7] || '-';
+        const itemNameValue = columns[8] || '';
 
         newEntries.push({
           id: crypto.randomUUID(),
@@ -170,9 +171,9 @@ export default function App() {
           recipientName: columns[2] || '',
           phone: columns[3] || '',
           address: columns[4] || '',
-          itemName: '', 
+          itemName: itemNameValue, 
           cod: (codValue === '-' || codValue === '0' || !codValue) ? '' : codValue,
-          dfod: (dfodValue === '-' || dfodValue === '0' || !dfodValue) ? '' : dfodValue,
+          dfod: (dfodValue === '--' || dfodValue === '-' || dfodValue === '0' || !dfodValue) ? '' : dfodValue,
           status: 'pending',
           createdAt: Date.now()
         });
@@ -205,7 +206,23 @@ export default function App() {
   };
 
   const generateMessage = (entry: BlastEntry) => {
-    return activeTemplate.text
+    let text = activeTemplate.text;
+
+    // Handle conditional blocks
+    // {if_cod}Text {cod}{/if_cod}
+    if (!entry.cod) {
+      text = text.replace(/{if_cod}[\s\S]*?{\/if_cod}/gi, '');
+    } else {
+      text = text.replace(/{if_cod}/gi, '').replace(/{\/if_cod}/gi, '');
+    }
+
+    if (!entry.dfod) {
+      text = text.replace(/{if_dfod}[\s\S]*?{\/if_dfod}/gi, '');
+    } else {
+      text = text.replace(/{if_dfod}/gi, '').replace(/{\/if_dfod}/gi, '');
+    }
+
+    return text
       .replace(/{salam}/gi, getGreeting())
       .replace(/{pengirim}/gi, settings.senderName || 'Admin')
       .replace(/{nama}/gi, entry.recipientName)
@@ -479,7 +496,7 @@ export default function App() {
               placeholder="Tulis template pesan..."
             />
             <div className="mt-3 flex flex-wrap gap-2">
-              {['{salam}', '{pengirim}', '{nama}', '{barang}', '{resi}', '{alamat}', '{cod}', '{dfod}'].map(tag => (
+              {['{salam}', '{pengirim}', '{nama}', '{barang}', '{resi}', '{alamat}', '{cod}', '{dfod}', '{if_cod}', '{/if_cod}', '{if_dfod}', '{/if_dfod}'].map(tag => (
                 <button
                   key={tag}
                   onClick={() => updateActiveTemplateText(activeTemplate.text + ' ' + tag)}
@@ -736,7 +753,7 @@ export default function App() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="p-4 bg-emerald-50 dark:bg-emerald-900/10 rounded-2xl border border-emerald-100 dark:border-emerald-900/20">
                     <div className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-1">Step 1</div>
-                    <p className="text-xs text-emerald-800 dark:text-emerald-300">Kolom: No, Resi, Nama, HP, Alamat, Tanda COD, Nominal COD, DFOD</p>
+                    <p className="text-xs text-emerald-800 dark:text-emerald-300">Kolom: No, Resi, Nama, HP, Alamat, Tanda COD, Nominal COD, DFOD, Barang</p>
                   </div>
                   <div className="p-4 bg-blue-50 dark:bg-blue-900/10 rounded-2xl border border-blue-100 dark:border-blue-900/20">
                     <div className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-1">Step 2</div>

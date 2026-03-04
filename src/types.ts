@@ -21,12 +21,12 @@ export const DEFAULT_TEMPLATES: MessageTemplate[] = [
   {
     id: 'retur',
     name: 'Konfirmasi Retur',
-    text: "{salam} ka, kami dari JNT Cargo manado mau konfrimasi resi : {resi} dengan nama barang : {barang} tujuan {alamat}. Info Tagihan - COD: {cod}, DFOD: {dfod}. Sudah ada percobaan delivery tapi masih belum sukses, apakah masih mau diambil atau di retur ka ?"
+    text: "{salam} ka, kami dari JNT Cargo manado mau konfrimasi resi : {resi} dengan nama barang : {barang} tujuan {alamat}. {if_cod}Info Tagihan - COD: {cod}. {/if_cod}{if_dfod}DFOD: {dfod}. {/if_dfod}Sudah ada percobaan delivery tapi masih belum sukses, apakah masih mau diambil atau di retur ka ?"
   },
   {
     id: 'delivery',
     name: 'Proses Pengantaran',
-    text: "{salam} kak, perkenalkan saya {pengirim} dari JNT Cargo. Menginfokan bahwa paket kakak dengan resi {resi} ({barang}) tujuan {alamat} saat ini sedang dalam proses pengantaran oleh kurir kami. Tagihan: COD {cod}, DFOD {dfod}. Mohon ditunggu ya kak. Terima kasih!"
+    text: "{salam} kak, perkenalkan saya {pengirim} dari JNT Cargo. Menginfokan bahwa paket kakak with resi {resi} ({barang}) tujuan {alamat} saat ini sedang dalam proses pengantaran oleh kurir kami. {if_cod}Tagihan COD: {cod}. {/if_cod}{if_dfod}DFOD: {dfod}. {/if_dfod}Mohon ditunggu ya kak. Terima kasih!"
   },
   {
     id: 'received',
