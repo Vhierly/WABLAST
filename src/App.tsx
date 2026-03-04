@@ -108,11 +108,14 @@ export default function App() {
   useEffect(() => localStorage.setItem('wa_blast_active_template_id', activeTemplateId), [activeTemplateId]);
   useEffect(() => localStorage.setItem('wa_blast_settings', JSON.stringify(settings)), [settings]);
   useEffect(() => {
-    localStorage.setItem('wa_blast_theme', isDarkMode ? 'dark' : 'light');
+    const theme = isDarkMode ? 'dark' : 'light';
+    localStorage.setItem('wa_blast_theme', theme);
     if (isDarkMode) {
       document.documentElement.classList.add('dark');
+      document.body.classList.add('dark');
     } else {
       document.documentElement.classList.remove('dark');
+      document.body.classList.remove('dark');
     }
   }, [isDarkMode]);
 
@@ -341,7 +344,10 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA] dark:bg-[#0F1115] text-[#1A1A1A] dark:text-[#E4E6EB] font-sans selection:bg-emerald-100 dark:selection:bg-emerald-900/30 transition-colors duration-300">
+    <div className={cn(
+      "min-h-screen bg-[#F8F9FA] dark:bg-[#0F1115] text-[#1A1A1A] dark:text-[#E4E6EB] font-sans selection:bg-emerald-100 dark:selection:bg-emerald-900/30 transition-colors duration-300",
+      isDarkMode && "dark"
+    )}>
       <Toaster position="top-right" />
 
       {/* Blast Progress Overlay */}
