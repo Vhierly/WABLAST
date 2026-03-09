@@ -397,7 +397,10 @@ export default function App() {
 
   const handleSendManual = (entry: BlastEntry) => {
     // Use a named window to reuse the same tab and avoid popup blockers
-    window.open(getWALink(entry), 'WAsenderTab');
+    const newWindow = window.open(getWALink(entry), 'WAsenderTab');
+    if (newWindow) {
+      window.focus(); // Attempt to bring focus back to the app
+    }
     addLog(`🚀 Mengirim manual ke ${entry.recipientName} (${entry.receiptNumber})`, 'info');
     updateStatus(entry.id, 'sent');
   };
@@ -456,6 +459,9 @@ export default function App() {
       });
       return;
     }
+
+    // Attempt to bring focus back to the app
+    window.focus();
 
     if (settings.autoSend) {
       updateStatus(firstEntry.id, 'sending');
@@ -687,6 +693,9 @@ export default function App() {
             setIsBlasting(false);
             return;
           }
+
+          // Attempt to bring focus back to the app
+          window.focus();
 
           if (settings.autoSend) {
             updateStatus(entry.id, 'sending');
@@ -1523,7 +1532,10 @@ export default function App() {
                           const entry = entries.find(e => e.status === 'pending');
                           if (entry) {
                             const sentCount = entries.filter(e => e.status === 'sent').length;
-                            window.open(getWALink(entry, sentCount), 'WAsenderTab');
+                            const newWindow = window.open(getWALink(entry, sentCount), 'WAsenderTab');
+                            if (newWindow) {
+                              window.focus();
+                            }
                             updateStatus(entry.id, 'sent');
                             setShowPreviewModal(false);
                           }
