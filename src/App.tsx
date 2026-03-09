@@ -1905,38 +1905,6 @@ export default function App() {
           </div>
         )}
       </AnimatePresence>
-// Di dalam komponen React kamu (misalnya App.tsx)
-import { useEffect, useState } from 'react';
-
-export default function App() {
-  const [isConnected, setIsConnected] = useState(false);
-
-  useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
-      // (Opsional) Validasi origin demi keamanan
-      // if (event.origin !== "https://nama-app-kamu.netlify.app") return;
-
-      // Cek apakah pesannya berasal dari ekstensi kita
-      if (event.data && event.data.type === 'CONNECT_TO_WEBAPP') {
-        console.log('Sinyal diterima:', event.data.payload);
-        setIsConnected(true);
-        // Lakukan action lain di sini, misal sinkronisasi data WhatsApp
-      }
-    };
-
-    window.addEventListener('message', handleMessage);
-
-    // Cleanup listener saat komponen unmount
-    return () => window.removeEventListener('message', handleMessage);
-  }, []);
-
-  return (
-    <div>
-      <h1>Status Ekstensi: {isConnected ? 'Terkoneksi 🟢' : 'Terputus 🔴'}</h1>
-      <p>Buka ekstensi dan klik "Connect to WebApp" untuk menghubungkan.</p>
-    </div>
-  );
-}
       <footer className="max-w-7xl mx-auto px-6 py-12 border-t border-black/5 dark:border-white/5 text-center">
         <div className="text-[10px] text-gray-400 dark:text-gray-600 uppercase tracking-[0.3em] font-mono font-bold">
           WAsender PRO Engine • v2.0.0 • Enterprise Edition
