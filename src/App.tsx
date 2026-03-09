@@ -532,7 +532,27 @@ export default function App() {
       }
     };
     window.addEventListener('message', handlePing);
-    return () => window.removeEventListener('message', handlePing);
+    
+    // Check for DOM attribute (more reliable)
+    const checkAttr = () => {
+      if (document.documentElement.getAttribute('data-wasender-extension') === 'active') {
+        if (!isExtensionDetected) {
+          setIsExtensionDetected(true);
+          addLog(`🔌 Extension terdeteksi via DOM`, 'success');
+        }
+        setLastHeartbeat(Date.now());
+      }
+      // Also ping extension
+      window.postMessage({ type: 'EXTENSION_PING' }, '*');
+    };
+
+    const attrInterval = setInterval(checkAttr, 2000);
+    checkAttr();
+
+    return () => {
+      window.removeEventListener('message', handlePing);
+      clearInterval(attrInterval);
+    };
   }, [isExtensionDetected]);
 
   useEffect(() => {

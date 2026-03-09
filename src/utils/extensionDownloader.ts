@@ -5,12 +5,14 @@ const EXTENSION_FILES = {
   'manifest.json': `{
   "manifest_version": 3,
   "name": "WAsender Pro Helper",
-  "version": "2.0",
+  "version": "2.1",
   "description": "Advanced Auto-Send Helper for J&T Cargo WAsender",
-  "permissions": ["tabs"],
+  "permissions": ["tabs", "storage"],
   "host_permissions": [
     "https://web.whatsapp.com/*",
-    "*://*.run.app/*"
+    "https://*.run.app/*",
+    "http://*.run.app/*",
+    "http://localhost/*"
   ],
   "content_scripts": [
     {
@@ -19,9 +21,10 @@ const EXTENSION_FILES = {
       "run_at": "document_idle"
     },
     {
-      "matches": ["*://*.run.app/*"],
+      "matches": ["https://*.run.app/*", "http://*.run.app/*", "http://localhost/*"],
       "js": ["detector.js"],
-      "run_at": "document_start"
+      "run_at": "document_start",
+      "all_frames": true
     }
   ],
   "background": {
@@ -31,26 +34,35 @@ const EXTENSION_FILES = {
   'background.js': `// background.js
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "closeTab" && sender.tab) {
-    console.log("Closing tab:", sender.tab.id);
     chrome.tabs.remove(sender.tab.id);
   }
 });`,
   'detector.js': `// detector.js
-// This script runs on the webapp to notify it that the extension is installed.
 console.log("%c WAsender Extension Detector Active ", "background: #25D366; color: white; font-weight: bold;");
 
-function sendPong() {
+function injectStatus() {
+  // Set attribute on HTML tag for easy detection
+  document.documentElement.setAttribute('data-wasender-extension', 'active');
+  document.documentElement.setAttribute('data-wasender-version', '2.1');
+  
+  // Also send message
   window.postMessage({
     source: 'wasender-extension',
-    type: 'EXTENSION_PONG'
+    type: 'EXTENSION_PONG',
+    version: '2.1'
   }, '*');
 }
 
-// Send immediately
-sendPong();
+// Inject immediately and periodically
+injectStatus();
+setInterval(injectStatus, 2000);
 
-// Also send periodically to keep heartbeat alive
-setInterval(sendPong, 2000);`,
+// Listen for pings from webapp
+window.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'EXTENSION_PING') {
+    injectStatus();
+  }
+});`,
   'content.js': `// content.js
 console.log("%c WAsender Helper Connected ", "background: #25D366; color: white; font-weight: bold;");
 
