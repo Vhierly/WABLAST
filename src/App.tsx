@@ -120,6 +120,40 @@ export default function App() {
     if (savedSettings) setSettings(JSON.parse(savedSettings));
   }, []);
 
+
+
+
+  //Extension
+  export default function App() {
+  const [isConnected, setIsConnected] = useState(false);
+
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      // (Opsional) Validasi origin demi keamanan
+      // if (event.origin !== "https://nama-app-kamu.netlify.app") return;
+
+      // Cek apakah pesannya berasal dari ekstensi kita
+      if (event.data && event.data.type === 'CONNECT_TO_WEBAPP') {
+        console.log('Sinyal diterima:', event.data.payload);
+        setIsConnected(true);
+        // Lakukan action lain di sini, misal sinkronisasi data WhatsApp
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+
+    // Cleanup listener saat komponen unmount
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
+  return (
+    <div>
+      <h1>Status Ekstensi: {isConnected ? 'Terkoneksi 🟢' : 'Terputus 🔴'}</h1>
+      <p>Buka ekstensi dan klik "Connect to WebApp" untuk menghubungkan.</p>
+    </div>
+  );
+}
+  //- end extension
   // Save data
   useEffect(() => localStorage.setItem('wa_blast_entries', JSON.stringify(entries)), [entries]);
   useEffect(() => localStorage.setItem('wa_blast_templates', JSON.stringify(templates)), [templates]);
