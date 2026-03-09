@@ -133,3 +133,10 @@ if (document.readyState === "complete" || document.readyState === "interactive")
     notifyWebApp('EXTENSION_PONG');
   });
 }
+// content.js
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === 'CONNECT_TO_WEBAPP') {
+    // Teruskan pesan ke dalam environment Web App (React)
+    window.postMessage(message, '*');
+  }
+});
