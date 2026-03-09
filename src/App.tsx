@@ -485,6 +485,20 @@ export default function App() {
     addLog(`🛑 Proses blast dihentikan oleh pengguna`, 'warning');
   };
 
+  // Auto-recovery for stuck 'sending' status
+  useEffect(() => {
+    if (isBlasting && !settings.manualMode) {
+      const sendingEntry = entries.find(e => e.status === 'sending');
+      if (sendingEntry) {
+        const timer = setTimeout(() => {
+          addLog(`⚠️ Timeout: Extension tidak merespon untuk ${sendingEntry.recipientName}. Melanjutkan otomatis...`, 'warning');
+          updateStatus(sendingEntry.id, 'sent');
+        }, 25000); // 25 seconds timeout
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [entries, isBlasting, settings.manualMode]);
+
   useEffect(() => {
     const handleExtensionMessage = (event: MessageEvent) => {
       // Check if message is from our extension
@@ -812,7 +826,11 @@ export default function App() {
               </div>
             </div>
             <div className="space-y-2">
-              <h3 className="text-xl font-bold">{isLongBreak ? '😴 Long Break Active' : 'Blasting in Progress...'}</h3>
+              <h3 className="text-xl font-bold">
+                {isLongBreak ? '😴 Long Break Active' : 
+                 entries.some(e => e.status === 'sending') ? '⏳ Menunggu WA Web...' : 
+                 'Blasting in Progress...'}
+              </h3>
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 Pesan terkirim: <span className="font-bold text-emerald-600 dark:text-emerald-400">{entries.filter(e => e.status === 'sent').length}</span> / <span className="font-bold">{entries.length}</span>
               </p>
@@ -821,12 +839,14 @@ export default function App() {
                 <div className="py-4">
                   <div className={cn(
                     "text-4xl font-black tabular-nums",
-                    isLongBreak ? "text-amber-500" : "text-emerald-600 dark:text-emerald-400"
+                    isLongBreak ? "text-amber-500" : 
+                    entries.some(e => e.status === 'sending') ? "text-blue-500 animate-pulse" :
+                    "text-emerald-600 dark:text-emerald-400"
                   )}>
-                    {Math.floor(countdown / 60)}:{(countdown % 60).toString().padStart(2, '0')}
+                    {entries.some(e => e.status === 'sending') ? '--:--' : `${Math.floor(countdown / 60)}:${(countdown % 60).toString().padStart(2, '0')}`}
                   </div>
                   <p className="text-[10px] text-gray-400 uppercase tracking-widest mt-1">
-                    {isLongBreak ? 'Break ends in' : 'Next message in'}
+                    {entries.some(e => e.status === 'sending') ? 'Memproses di WA Web' : isLongBreak ? 'Break ends in' : 'Next message in'}
                   </p>
                 </div>
               ) : (
@@ -848,12 +868,29 @@ export default function App() {
               </div>
             </div>
             <div className="flex flex-col gap-3">
+              {entries.some(e => e.status === 'sending') && (
+                <button
+                  onClick={() => {
+                    const sending = entries.find(e => e.status === 'sending');
+                    if (sending) {
+                      addLog(`⏭️ Paksa lanjut: Melewati konfirmasi untuk ${sending.recipientName}`, 'warning');
+                      updateStatus(sending.id, 'sent');
+                    }
+                  }}
+                  className="w-full py-3 bg-blue-600 text-white rounded-2xl font-bold shadow-lg shadow-blue-600/20 text-sm hover:bg-blue-700 transition-all"
+                >
+                  Paksa Lanjut ke Nomor Berikutnya
+                </button>
+              )}
               <button
                 onClick={() => {
                   const pending = entries.filter(e => e.status === 'pending');
                   if (pending.length > 0) {
                     const entry = pending[0];
-                    window.open(getWALink(entry), 'WAsenderTab');
+                    const newWindow = window.open(getWALink(entry), 'WAsenderTab');
+                    if (newWindow) {
+                      window.focus();
+                    }
                     updateStatus(entry.id, 'sent');
                   }
                 }}
