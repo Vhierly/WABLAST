@@ -30,7 +30,8 @@ import {
   RotateCcw,
   Shield,
   Puzzle,
-  Loader2
+  Loader2,
+  Zap
 } from 'lucide-react';
 import { Toaster, toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'motion/react';
@@ -425,21 +426,37 @@ export default function App() {
   };
 
   const calculateNextDelay = (sentCount: number, entry: BlastEntry) => {
-    let currentBaseDelay = settings.delay;
-    if (settings.randomizeDelay) {
-      currentBaseDelay = Math.floor(Math.random() * (settings.maxDelay - settings.delay + 1)) + settings.delay;
+    let minDelay = settings.delay;
+    let maxDelay = settings.maxDelay;
+    let useTyping = settings.simulateTyping;
+    let useAdaptive = settings.adaptiveDelay;
+
+    // Apply presets
+    if (settings.speedMode === 'safe') {
+      minDelay = 15000; maxDelay = 30000; useTyping = true; useAdaptive = true;
+    } else if (settings.speedMode === 'normal') {
+      minDelay = 8000; maxDelay = 15000; useTyping = true; useAdaptive = true;
+    } else if (settings.speedMode === 'fast') {
+      minDelay = 3000; maxDelay = 7000; useTyping = false; useAdaptive = false;
+    } else if (settings.speedMode === 'turbo') {
+      minDelay = 1000; maxDelay = 2000; useTyping = false; useAdaptive = false;
+    }
+
+    let currentBaseDelay = minDelay;
+    if (settings.randomizeDelay || settings.speedMode !== 'custom') {
+      currentBaseDelay = Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay;
     }
 
     let currentDelay = currentBaseDelay;
 
     // 1. Adaptive Delay
-    if (settings.adaptiveDelay) {
+    if (useAdaptive) {
       const increment = Math.floor(sentCount / 10) * 500;
       currentDelay += increment;
     }
 
     // 2. Typing Simulation
-    if (settings.simulateTyping) {
+    if (useTyping) {
       let templateText = activeTemplate.text;
       if (settings.rotateTemplates) {
         if (activeTemplate.variations && activeTemplate.variations.length > 0) {
@@ -703,17 +720,21 @@ export default function App() {
       if (pendingEntries.length > 0) {
         const entry = pendingEntries[0];
         
-        if (now >= nextActionTime) {
-          addLog(`📤 Membuka WhatsApp untuk ${entry.recipientName}...`, 'info');
-          const newWindow = window.open(getWALink(entry, sentCount), 'WAsenderTab');
-          
-          if (!newWindow) {
-            toast.error('Popup terblokir!');
-            setIsBlasting(false);
-            return;
-          }
+          if (now >= nextActionTime) {
+            const pending = entries.filter(e => e.status === 'pending');
+            if (pending.length === 0) return;
+            const entry = pending[0];
+            
+            addLog(`📤 Membuka WhatsApp untuk ${entry.recipientName}...`, 'info');
+            const newWindow = window.open(getWALink(entry, sentCount), 'WAsenderTab');
+            
+            if (!newWindow) {
+              // If popup is blocked, we don't stop, we just wait for user to click a button that will appear
+              addLog(`⚠️ Popup terblokir oleh browser. Menunggu klik manual...`, 'warning');
+              return;
+            }
 
-          window.focus();
+            window.focus();
 
           if (settings.autoSend) {
             updateStatus(entry.id, 'sending');
@@ -847,17 +868,48 @@ export default function App() {
               
               {!settings.manualMode ? (
                 <div className="py-4">
-                  <div className={cn(
-                    "text-4xl font-black tabular-nums",
-                    isLongBreak ? "text-amber-500" : 
-                    entries.some(e => e.status === 'sending') ? "text-blue-500 animate-pulse" :
-                    "text-emerald-600 dark:text-emerald-400"
-                  )}>
-                    {entries.some(e => e.status === 'sending') ? '--:--' : `${Math.floor(countdown / 60)}:${(countdown % 60).toString().padStart(2, '0')}`}
-                  </div>
-                  <p className="text-[10px] text-gray-400 uppercase tracking-widest mt-1">
-                    {entries.some(e => e.status === 'sending') ? 'Memproses di WA Web' : isLongBreak ? 'Break ends in' : 'Next message in'}
-                  </p>
+                  {Date.now() >= nextActionTime && entries.filter(e => e.status === 'pending').length > 0 && !entries.some(e => e.status === 'sending') ? (
+                    <div className="space-y-4">
+                      <button
+                        onClick={() => {
+                          const pending = entries.filter(e => e.status === 'pending');
+                          if (pending.length > 0) {
+                            const entry = pending[0];
+                            const sentCount = entries.filter(e => e.status === 'sent').length;
+                            const newWindow = window.open(getWALink(entry, sentCount), 'WAsenderTab');
+                            if (newWindow) {
+                              window.focus();
+                              if (settings.autoSend) {
+                                updateStatus(entry.id, 'sending');
+                              } else {
+                                updateStatus(entry.id, 'sent');
+                                const delay = calculateNextDelay(sentCount + 1, entries.filter(e => e.status === 'pending')[1] || entry);
+                                setNextActionTime(Date.now() + delay);
+                              }
+                            }
+                          }
+                        }}
+                        className="w-full py-6 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl font-black text-xl shadow-xl shadow-amber-500/30 animate-bounce flex items-center justify-center gap-3"
+                      >
+                        <Play fill="white" /> KLIK UNTUK LANJUT
+                      </button>
+                      <p className="text-xs text-amber-600 font-bold">Browser memblokir tab otomatis. Klik tombol di atas.</p>
+                    </div>
+                  ) : (
+                    <>
+                      <div className={cn(
+                        "text-4xl font-black tabular-nums",
+                        isLongBreak ? "text-amber-500" : 
+                        entries.some(e => e.status === 'sending') ? "text-blue-500 animate-pulse" :
+                        "text-emerald-600 dark:text-emerald-400"
+                      )}>
+                        {entries.some(e => e.status === 'sending') ? '--:--' : `${Math.floor(countdown / 60)}:${(countdown % 60).toString().padStart(2, '0')}`}
+                      </div>
+                      <p className="text-[10px] text-gray-400 uppercase tracking-widest mt-1">
+                        {entries.some(e => e.status === 'sending') ? 'Memproses di WA Web' : isLongBreak ? 'Break ends in' : 'Next message in'}
+                      </p>
+                    </>
+                  )}
                 </div>
               ) : (
                 <div className="py-6 space-y-2">
@@ -1683,24 +1735,6 @@ export default function App() {
                     <div className="space-y-4">
                       <div className="space-y-2">
                         <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
-                          <Timer size={14} /> Blast Delay (Milliseconds)
-                        </label>
-                        <input 
-                          type="number" 
-                          value={settings.delay}
-                          onChange={(e) => setSettings(prev => ({ ...prev, delay: parseInt(e.target.value) || 1000 }))}
-                          className="w-full px-4 py-3 bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-sm"
-                          placeholder="5000"
-                          min="1000"
-                          step="500"
-                        />
-                        <p className="text-[10px] text-gray-400 italic">
-                          Disarankan minimal 5000ms (5 detik) agar WhatsApp Web sempat memuat pesan.
-                        </p>
-                      </div>
-
-                      <div className="space-y-2">
-                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
                           <User size={14} /> Nama Pengirim
                         </label>
                         <input 
@@ -1711,6 +1745,70 @@ export default function App() {
                           placeholder="Admin JNT"
                         />
                       </div>
+
+                      {/* Speed Presets */}
+                      <div className="space-y-3 pt-2">
+                        <label className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                          <Zap size={14} className="text-amber-500" /> Pilih Kecepatan Blast
+                        </label>
+                        <div className="grid grid-cols-2 gap-2">
+                          {[
+                            { id: 'safe', label: 'Main Aman', desc: '15-30s', icon: '🛡️' },
+                            { id: 'normal', label: 'Normal', desc: '8-15s', icon: '⚖️' },
+                            { id: 'fast', label: 'Percepat', desc: '3-7s', icon: '⚡' },
+                            { id: 'turbo', label: 'Turbo', desc: '1-2s', icon: '🚀' },
+                          ].map((mode) => (
+                            <button
+                              key={mode.id}
+                              onClick={() => setSettings(prev => ({ ...prev, speedMode: mode.id as any }))}
+                              className={cn(
+                                "p-3 rounded-xl border text-left transition-all",
+                                settings.speedMode === mode.id 
+                                  ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-500 ring-1 ring-emerald-500" 
+                                  : "bg-white dark:bg-[#1A1D23] border-black/5 dark:border-white/5 hover:border-emerald-500/50"
+                              )}
+                            >
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="text-lg">{mode.icon}</span>
+                                {settings.speedMode === mode.id && <div className="w-2 h-2 bg-emerald-500 rounded-full" />}
+                              </div>
+                              <div className="text-xs font-bold">{mode.label}</div>
+                              <div className="text-[10px] text-gray-400">{mode.desc}</div>
+                            </button>
+                          ))}
+                          <button
+                            onClick={() => setSettings(prev => ({ ...prev, speedMode: 'custom' }))}
+                            className={cn(
+                              "col-span-2 p-3 rounded-xl border text-left transition-all",
+                              settings.speedMode === 'custom' 
+                                ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-500 ring-1 ring-emerald-500" 
+                                : "bg-white dark:bg-[#1A1D23] border-black/5 dark:border-white/5 hover:border-emerald-500/50"
+                            )}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="text-xs font-bold">⚙️ Custom (Atur Manual)</div>
+                              {settings.speedMode === 'custom' && <div className="w-2 h-2 bg-emerald-500 rounded-full" />}
+                            </div>
+                          </button>
+                        </div>
+                      </div>
+
+                      {settings.speedMode === 'custom' && (
+                        <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                          <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+                            <Timer size={14} /> Blast Delay (Milliseconds)
+                          </label>
+                          <input 
+                            type="number" 
+                            value={settings.delay}
+                            onChange={(e) => setSettings(prev => ({ ...prev, delay: parseInt(e.target.value) || 1000 }))}
+                            className="w-full px-4 py-3 bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-sm"
+                            placeholder="5000"
+                            min="1000"
+                            step="500"
+                          />
+                        </div>
+                      )}
 
                       <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-[#1C2128] rounded-2xl border border-gray-100 dark:border-white/5">
                         <div className="space-y-1">
