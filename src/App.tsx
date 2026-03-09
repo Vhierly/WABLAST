@@ -85,6 +85,7 @@ export default function App() {
     const saved = localStorage.getItem('wa_blast_theme');
     return saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches);
   });
+  const [nextActionTime, setNextActionTime] = useState(0);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -423,10 +424,58 @@ export default function App() {
     setEntries(prev => prev.map(e => e.id === id ? { ...e, isReceived: !e.isReceived } : e));
   };
 
+  const calculateNextDelay = (sentCount: number, entry: BlastEntry) => {
+    let currentBaseDelay = settings.delay;
+    if (settings.randomizeDelay) {
+      currentBaseDelay = Math.floor(Math.random() * (settings.maxDelay - settings.delay + 1)) + settings.delay;
+    }
+
+    let currentDelay = currentBaseDelay;
+
+    // 1. Adaptive Delay
+    if (settings.adaptiveDelay) {
+      const increment = Math.floor(sentCount / 10) * 500;
+      currentDelay += increment;
+    }
+
+    // 2. Typing Simulation
+    if (settings.simulateTyping) {
+      let templateText = activeTemplate.text;
+      if (settings.rotateTemplates) {
+        if (activeTemplate.variations && activeTemplate.variations.length > 0) {
+          templateText = activeTemplate.variations[sentCount % activeTemplate.variations.length];
+        } else {
+          templateText = templates[sentCount % templates.length].text;
+        }
+      }
+      const message = generateMessage(entry, templateText);
+      const typingDelay = Math.min(message.length * 50, 5000);
+      currentDelay += typingDelay;
+    }
+
+    // 3. Batch Pause
+    if (settings.batchSize > 0 && sentCount >= nextBatchPauseAt && nextBatchPauseAt > 0) {
+      currentDelay = settings.batchPause;
+      toast(`Anti-Spam: Istirahat sejenak selama ${settings.batchPause / 1000} detik...`, { icon: '🛡️' });
+      const jitter = Math.floor(Math.random() * 5) - 2;
+      setNextBatchPauseAt(sentCount + settings.batchSize + jitter);
+    }
+
+    // 4. Long Break
+    if (settings.longBreakAfter > 0 && sentCount > 0 && sentCount % settings.longBreakAfter === 0) {
+      currentDelay = settings.longBreakDuration * 60 * 1000;
+      setIsLongBreak(true);
+      addLog(`😴 Mengambil istirahat panjang selama ${settings.longBreakDuration} menit...`, 'warning');
+    } else {
+      setIsLongBreak(false);
+    }
+
+    return currentDelay;
+  };
+
   const startBlast = () => {
     if (!isExtensionDetected && !settings.manualMode) {
       toast.error('Extension tidak terdeteksi! Gunakan Mode Manual atau hubungkan extension.', { icon: '🔌' });
-      addLog(`🛑 Gagal memulai: Extension tidak terdeteksi`, 'error');
       return;
     }
 
@@ -436,45 +485,23 @@ export default function App() {
       return;
     }
 
-    // Open the first one immediately to "unlock" the popup blocker
     let entriesToProcess = [...pending];
-    
     if (settings.shuffleQueue) {
       entriesToProcess = entriesToProcess.sort(() => Math.random() - 0.5);
-      // Update entries state to reflect the shuffled order for the current blast
       setEntries(prev => {
         const nonPending = prev.filter(e => e.status !== 'pending');
         return [...nonPending, ...entriesToProcess];
       });
     }
 
-    const firstEntry = entriesToProcess[0];
     addLog(`🎬 Memulai proses blast...${settings.shuffleQueue ? ' (Urutan Diacak)' : ''}`, 'info');
-    const newWindow = window.open(getWALink(firstEntry), 'WAsenderTab');
-    
-    if (!newWindow) {
-      toast.error('Popup terblokir! Harap izinkan popup di browser Anda.', {
-        duration: 5000,
-        icon: '🚫'
-      });
-      return;
-    }
-
-    // Attempt to bring focus back to the app
-    window.focus();
-
-    if (settings.autoSend) {
-      updateStatus(firstEntry.id, 'sending');
-    } else {
-      updateStatus(firstEntry.id, 'sent');
-    }
     setIsBlasting(true);
     setCurrentIndex(0);
+    setNextActionTime(Date.now() + 1000); // Start first one in 1s
     
-    // Set next batch pause threshold with a little jitter (+/- 2)
-    const sentCount = entries.filter(e => e.status === 'sent').length + 1;
+    const sentCount = entries.filter(e => e.status === 'sent').length;
     if (settings.batchSize > 0) {
-      const jitter = Math.floor(Math.random() * 5) - 2; // -2 to +2
+      const jitter = Math.floor(Math.random() * 5) - 2;
       setNextBatchPauseAt(sentCount + settings.batchSize + jitter);
     }
   };
@@ -482,6 +509,7 @@ export default function App() {
   const stopBlast = () => {
     setIsBlasting(false);
     setCurrentIndex(-1);
+    setNextActionTime(0);
     addLog(`🛑 Proses blast dihentikan oleh pengguna`, 'warning');
   };
 
@@ -493,6 +521,14 @@ export default function App() {
         const timer = setTimeout(() => {
           addLog(`⚠️ Timeout: Extension tidak merespon untuk ${sendingEntry.recipientName}. Melanjutkan otomatis...`, 'warning');
           updateStatus(sendingEntry.id, 'sent');
+          
+          // Trigger next delay after timeout
+          const sentCount = entries.filter(e => e.status === 'sent').length + 1;
+          const pending = entries.filter(e => e.status === 'pending' && e.id !== sendingEntry.id);
+          if (pending.length > 0) {
+            const delay = calculateNextDelay(sentCount, pending[0]);
+            setNextActionTime(Date.now() + delay);
+          }
         }, 25000); // 25 seconds timeout
         return () => clearTimeout(timer);
       }
@@ -518,6 +554,14 @@ export default function App() {
             setSentThisHour(prev => prev + 1);
             addLog(`✅ Pesan terkirim ke ${name} (${resi})`, 'success');
             toast.success(`Pesan terkirim ke ${name}`, { id: `sent-${entryId}` });
+            
+            // Trigger next delay after confirmation
+            const sentCount = entries.filter(e => e.status === 'sent').length + 1;
+            const pending = entries.filter(e => e.status === 'pending' && e.id !== entryId);
+            if (pending.length > 0) {
+              const delay = calculateNextDelay(sentCount, pending[0]);
+              setNextActionTime(Date.now() + delay);
+            }
           } else if (waStatus === 'invalid') {
             const currentRetries = entry.retryCount || 0;
             
@@ -546,7 +590,7 @@ export default function App() {
     // Heartbeat check
     const heartbeatInterval = setInterval(() => {
       const now = Date.now();
-      if (lastHeartbeat > 0 && now - lastHeartbeat > 10000) {
+      if (lastHeartbeat > 0 && now - lastHeartbeat > 20000) {
         if (isExtensionDetected) {
           setIsExtensionDetected(false);
           addLog(`🔌 Extension terputus atau tidak terdeteksi`, 'warning');
@@ -594,13 +638,14 @@ export default function App() {
     };
   }, [isExtensionDetected]);
 
+  // Main Blast Engine
   useEffect(() => {
-    let timer: NodeJS.Timeout;
     let countdownInterval: NodeJS.Timeout;
 
     if (isBlasting && !settings.manualMode) {
-      // 0. Check for hourly limit
       const now = Date.now();
+      
+      // Reset hourly limit if needed
       if (now - lastHourReset > 3600000) {
         setSentThisHour(0);
         setLastHourReset(now);
@@ -608,24 +653,21 @@ export default function App() {
 
       if (sentThisHour >= settings.hourlyLimit) {
         setIsBlasting(false);
-        addLog(`⏳ Limit per jam tercapai (${settings.hourlyLimit}). Blast dihentikan otomatis.`, 'warning');
-        toast.error(`Limit per jam tercapai!`, { icon: '⏳' });
+        addLog(`⏳ Limit per jam tercapai (${settings.hourlyLimit}).`, 'warning');
         return;
       }
 
-      // 0.1 Check for consecutive errors
       if (consecutiveErrors >= settings.stopOnConsecutiveErrors) {
         setIsBlasting(false);
-        addLog(`🛑 Blast dihentikan: Terlalu banyak kegagalan berturut-turut (${consecutiveErrors}).`, 'error');
-        toast.error('Terlalu banyak kegagalan! Blast dihentikan.', { icon: '🛑' });
+        addLog(`🛑 Terlalu banyak kegagalan berturut-turut.`, 'error');
         return;
       }
 
       // Check extension presence
       if (!isExtensionDetected && !settings.manualMode) {
         setIsBlasting(false);
-        addLog(`🛑 Blast dihentikan: Extension tidak terdeteksi. Hubungkan extension untuk melanjutkan otomatis.`, 'error');
-        toast.error('Extension tidak terdeteksi! Blast dihentikan.', { icon: '🔌' });
+        addLog(`🛑 Blast dihentikan: Extension tidak terdeteksi.`, 'error');
+        toast.error('Extension tidak terdeteksi!');
         return;
       }
 
@@ -633,104 +675,49 @@ export default function App() {
       const sendingEntries = entries.filter(e => e.status === 'sending');
       const sentCount = entries.filter(e => e.status === 'sent').length;
       
-      // If we are already sending one (waiting for extension), don't start another
       if (sendingEntries.length > 0) return;
 
       if (pendingEntries.length > 0) {
         const entry = pendingEntries[0];
         
-        // Calculate delay
-        let currentBaseDelay = settings.delay;
-        if (settings.randomizeDelay) {
-          currentBaseDelay = Math.floor(Math.random() * (settings.maxDelay - settings.delay + 1)) + settings.delay;
-        }
-
-        let currentDelay = currentBaseDelay;
-
-        // 1. Adaptive Delay: Increase delay by 500ms for every 10 messages sent
-        if (settings.adaptiveDelay) {
-          const increment = Math.floor(sentCount / 10) * 500;
-          currentDelay += increment;
-        }
-
-        // 2. Typing Simulation: ~50ms per character
-        if (settings.simulateTyping) {
-          let templateText = activeTemplate.text;
-          if (settings.rotateTemplates) {
-            if (activeTemplate.variations && activeTemplate.variations.length > 0) {
-              templateText = activeTemplate.variations[sentCount % activeTemplate.variations.length];
-            } else {
-              templateText = templates[sentCount % templates.length].text;
-            }
-          }
-          const message = generateMessage(entry, templateText);
-          const typingDelay = Math.min(message.length * 50, 5000); // Max 5s extra for typing
-          currentDelay += typingDelay;
-        }
-
-        // 3. Check for batch pause
-        if (settings.batchSize > 0 && sentCount >= nextBatchPauseAt && nextBatchPauseAt > 0) {
-          currentDelay = settings.batchPause;
-          toast(`Anti-Spam: Istirahat sejenak selama ${settings.batchPause / 1000} detik...`, {
-            icon: '🛡️'
-          });
-          // Update next threshold for next time
-          const jitter = Math.floor(Math.random() * 5) - 2;
-          setNextBatchPauseAt(sentCount + settings.batchSize + jitter);
-        }
-
-        // 4. Check for Long Break
-        if (settings.longBreakAfter > 0 && sentCount > 0 && sentCount % settings.longBreakAfter === 0) {
-          currentDelay = settings.longBreakDuration * 60 * 1000;
-          setIsLongBreak(true);
-          addLog(`😴 Mengambil istirahat panjang selama ${settings.longBreakDuration} menit...`, 'warning');
-          toast(`Istirahat panjang: ${settings.longBreakDuration} menit...`, { icon: '😴', duration: 5000 });
-        } else {
-          setIsLongBreak(false);
-        }
-
-        setCountdown(Math.ceil(currentDelay / 1000));
-
-        countdownInterval = setInterval(() => {
-          setCountdown(prev => Math.max(0, prev - 1));
-        }, 1000);
-
-        timer = setTimeout(() => {
-          // Use a named window 'WAsenderTab' to reuse the same tab.
+        if (now >= nextActionTime) {
+          addLog(`📤 Membuka WhatsApp untuk ${entry.recipientName}...`, 'info');
           const newWindow = window.open(getWALink(entry, sentCount), 'WAsenderTab');
           
           if (!newWindow) {
-            toast.error('Popup terblokir! Harap izinkan popup di browser Anda.', {
-              duration: 8000,
-              icon: '🚫'
-            });
+            toast.error('Popup terblokir!');
             setIsBlasting(false);
             return;
           }
 
-          // Attempt to bring focus back to the app
           window.focus();
 
           if (settings.autoSend) {
             updateStatus(entry.id, 'sending');
           } else {
             updateStatus(entry.id, 'sent');
+            // If not auto-sending, we trigger next delay immediately
+            const delay = calculateNextDelay(sentCount + 1, pendingEntries[1] || entry);
+            setNextActionTime(Date.now() + delay);
           }
-        }, currentDelay);
+        } else {
+          // Update countdown
+          setCountdown(Math.ceil((nextActionTime - now) / 1000));
+          countdownInterval = setInterval(() => {
+            const remaining = Math.ceil((nextActionTime - Date.now()) / 1000);
+            setCountdown(Math.max(0, remaining));
+          }, 1000);
+        }
       } else {
         setIsBlasting(false);
-        addLog(`🏁 Proses blast selesai! Semua antrean telah diproses.`, 'success');
-        toast.success('Blast selesai!', {
-          icon: '✅'
-        });
+        addLog(`🏁 Proses blast selesai!`, 'success');
       }
     }
 
     return () => {
-      clearTimeout(timer);
       clearInterval(countdownInterval);
     };
-  }, [isBlasting, entries, settings.delay, settings.manualMode, settings.randomizeDelay, settings.maxDelay, settings.batchSize, settings.batchPause]);
+  }, [isBlasting, entries, nextActionTime, settings.manualMode, settings.hourlyLimit, settings.stopOnConsecutiveErrors, isExtensionDetected]);
 
   // Keyboard shortcut for manual mode
   useEffect(() => {
