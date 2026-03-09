@@ -119,6 +119,7 @@ export default function App() {
     if (savedActiveId) setActiveTemplateId(savedActiveId);
     if (savedSettings) setSettings(JSON.parse(savedSettings));
   }, []);
+
   // Save data
   useEffect(() => localStorage.setItem('wa_blast_entries', JSON.stringify(entries)), [entries]);
   useEffect(() => localStorage.setItem('wa_blast_templates', JSON.stringify(templates)), [templates]);
@@ -1904,6 +1905,7 @@ export default function App() {
           </div>
         )}
       </AnimatePresence>
+
       <footer className="max-w-7xl mx-auto px-6 py-12 border-t border-black/5 dark:border-white/5 text-center">
         <div className="text-[10px] text-gray-400 dark:text-gray-600 uppercase tracking-[0.3em] font-mono font-bold">
           WAsender PRO Engine • v2.0.0 • Enterprise Edition
