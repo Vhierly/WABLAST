@@ -195,16 +195,35 @@ export default function App() {
       const delimiter = line.includes('\t') ? '\t' : ',';
       const columns = line.split(delimiter).map(col => col.trim());
       
-      // Expected format: No, Resi/AWB, Nama Penerima, No HP, Alamat Lengkap, Tanda COD, Nominal COD, DFOD, Nama Barang
+      // Expected format: No, Resi/AWB, Nama Penerima, No HP, Alamat Lengkap, Tanda, Nominal COD, Nominal DFOD, Nama Barang
       if (columns.length >= 4) {
         // Skip header lines
         const firstCol = columns[0].toLowerCase();
         const secondCol = (columns[1] || '').toLowerCase();
         if (firstCol === 'no' || secondCol === 'resi/awb' || secondCol === 'resi') return;
 
-        const codValue = (columns[6] || '-').replace(/[^0-9.,-]/g, '');
-        const dfodValue = (columns[7] || '-').replace(/[^0-9.,-]/g, '');
+        const tanda = (columns[5] || '').toUpperCase();
+        const rawCod = columns[6] || '';
+        const rawDfod = columns[7] || '';
         const itemNameValue = columns[8] || '';
+
+        let cod = '';
+        let dfod = '';
+
+        // Rule: Nominal COD / Nominal DFOD if not a number then it's not there.
+        // Rule: Tanda if not COD or DFOD then it's not there.
+        
+        if (tanda === 'COD') {
+          const cleanCod = rawCod.replace(/[^0-9]/g, '');
+          if (cleanCod && !isNaN(Number(cleanCod))) {
+            cod = cleanCod;
+          }
+        } else if (tanda === 'DFOD') {
+          const cleanDfod = rawDfod.replace(/[^0-9]/g, '');
+          if (cleanDfod && !isNaN(Number(cleanDfod))) {
+            dfod = cleanDfod;
+          }
+        }
 
         newEntries.push({
           id: crypto.randomUUID(),
@@ -213,8 +232,8 @@ export default function App() {
           phone: columns[3] || '',
           address: columns[4] || '',
           itemName: itemNameValue, 
-          cod: (codValue === '-' || codValue === '0' || !codValue) ? '' : codValue,
-          dfod: (dfodValue === '--' || dfodValue === '-' || dfodValue === '0' || !dfodValue) ? '' : dfodValue,
+          cod: cod,
+          dfod: dfod,
           status: 'pending',
           isReceived: false,
           createdAt: Date.now()
@@ -1423,7 +1442,7 @@ export default function App() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="p-4 bg-emerald-50 dark:bg-emerald-900/10 rounded-2xl border border-emerald-100 dark:border-emerald-900/20">
                     <div className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-1">Step 1</div>
-                    <p className="text-xs text-emerald-800 dark:text-emerald-300">Kolom: No, Resi, Nama, HP, Alamat, Tanda COD, Nominal COD, DFOD, Barang</p>
+                    <p className="text-xs text-emerald-800 dark:text-emerald-300">Kolom: No, Resi, Nama, HP, Alamat, Tanda, Nominal COD, Nominal DFOD, Barang</p>
                   </div>
                   <div className="p-4 bg-blue-50 dark:bg-blue-900/10 rounded-2xl border border-blue-100 dark:border-blue-900/20">
                     <div className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-1">Step 2</div>
@@ -1433,7 +1452,7 @@ export default function App() {
                 <textarea
                   value={bulkData}
                   onChange={(e) => setBulkData(e.target.value)}
-                  placeholder="08123456789	Budi Santoso	Sepatu	JX123456	274,398..."
+                  placeholder="1	JX123456789	Budi Santoso	08123456789	Jl. Merdeka No. 1	COD	150000	0	Sepatu..."
                   className="w-full h-64 p-6 text-sm font-mono bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-[1.5rem] focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all resize-none dark:text-white custom-scrollbar"
                 />
                 <div className="flex gap-4">
