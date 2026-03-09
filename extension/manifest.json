@@ -4,20 +4,23 @@
   "version": "2.0",
   "description": "Advanced Auto-Send Helper for J&T Cargo WAsender",
   "permissions": ["tabs"],
-  "host_permissions": ["https://web.whatsapp.com/*"],
+  "host_permissions": [
+    "https://web.whatsapp.com/*",
+    "*://*.run.app/*"
+  ],
   "content_scripts": [
     {
       "matches": ["https://web.whatsapp.com/*"],
       "js": ["content.js"],
       "run_at": "document_idle"
+    },
+    {
+      "matches": ["*://*.run.app/*"],
+      "js": ["detector.js"],
+      "run_at": "document_start"
     }
   ],
   "background": {
     "service_worker": "background.js"
-  },
-  "icons": {
-    "16": "icon.png",
-    "48": "icon.png",
-    "128": "icon.png"
   }
 }

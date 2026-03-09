@@ -1,4 +1,57 @@
-// content.js
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
+
+const EXTENSION_FILES = {
+  'manifest.json': `{
+  "manifest_version": 3,
+  "name": "WAsender Pro Helper",
+  "version": "2.0",
+  "description": "Advanced Auto-Send Helper for J&T Cargo WAsender",
+  "permissions": ["tabs"],
+  "host_permissions": [
+    "https://web.whatsapp.com/*",
+    "*://*.run.app/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["https://web.whatsapp.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["*://*.run.app/*"],
+      "js": ["detector.js"],
+      "run_at": "document_start"
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  }
+}`,
+  'background.js': `// background.js
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === "closeTab" && sender.tab) {
+    console.log("Closing tab:", sender.tab.id);
+    chrome.tabs.remove(sender.tab.id);
+  }
+});`,
+  'detector.js': `// detector.js
+// This script runs on the webapp to notify it that the extension is installed.
+console.log("%c WAsender Extension Detector Active ", "background: #25D366; color: white; font-weight: bold;");
+
+function sendPong() {
+  window.postMessage({
+    source: 'wasender-extension',
+    type: 'EXTENSION_PONG'
+  }, '*');
+}
+
+// Send immediately
+sendPong();
+
+// Also send periodically to keep heartbeat alive
+setInterval(sendPong, 2000);`,
+  'content.js': `// content.js
 console.log("%c WAsender Helper Connected ", "background: #25D366; color: white; font-weight: bold;");
 
 const CONFIG = {
@@ -30,7 +83,7 @@ async function startAutoProcess() {
 
   if (!isAutoSend || !entryId) return;
 
-  console.log(`[WAsender] Processing entry: ${entryId}`);
+  console.log(\`[WAsender] Processing entry: \${entryId}\`);
 
   // 1. Wait for WhatsApp to load
   let attempts = 0;
@@ -132,4 +185,20 @@ if (document.readyState === "complete" || document.readyState === "interactive")
     watchForWarnings();
     notifyWebApp('EXTENSION_PONG');
   });
-}
+}`
+};
+
+export const downloadExtensionZip = async () => {
+  const zip = new JSZip();
+  
+  // Add all files to the zip
+  Object.entries(EXTENSION_FILES).forEach(([filename, content]) => {
+    zip.file(filename, content);
+  });
+  
+  // Generate the zip file
+  const blob = await zip.generateAsync({ type: 'blob' });
+  
+  // Trigger download
+  saveAs(blob, 'wasender-pro-helper.zip');
+};

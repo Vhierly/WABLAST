@@ -51,6 +51,7 @@ import {
   AppSettings, 
   DEFAULT_SETTINGS 
 } from './types';
+import { downloadExtensionZip } from './utils/extensionDownloader';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -837,6 +838,16 @@ export default function App() {
           </div>
           
           <div className="flex items-center gap-2 md:gap-3">
+            {!isExtensionDetected && (
+              <button 
+                onClick={downloadExtensionZip}
+                className="hidden sm:flex items-center gap-2 px-4 py-2 bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20 rounded-xl text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/20 transition-all"
+                title="Download Extension Helper"
+              >
+                <Puzzle size={18} />
+                <span className="text-xs font-bold uppercase tracking-wider">Setup Extension</span>
+              </button>
+            )}
             <button 
               onClick={handleResetDefault}
               className="p-2.5 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/20 rounded-xl text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/20 transition-all flex items-center gap-2"
@@ -1820,21 +1831,39 @@ export default function App() {
                       </div>
 
                       {settings.autoSend && (
-                        <div className="p-4 bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20 rounded-2xl space-y-3">
-                          <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
-                            <Puzzle size={16} />
-                            <span className="text-xs font-bold uppercase tracking-wider">Chrome Extension Required</span>
+                        <div className="p-4 bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20 rounded-2xl space-y-4">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
+                              <Puzzle size={16} />
+                              <span className="text-xs font-bold uppercase tracking-wider">Chrome Extension Required</span>
+                            </div>
+                            <div className={cn(
+                              "px-2 py-0.5 rounded text-[8px] font-bold uppercase",
+                              isExtensionDetected ? "bg-emerald-500 text-white" : "bg-amber-500 text-white"
+                            )}>
+                              {isExtensionDetected ? "Connected" : "Not Found"}
+                            </div>
                           </div>
+                          
                           <p className="text-[10px] leading-relaxed text-amber-800/70 dark:text-amber-400/70">
                             Fitur ini membutuhkan Chrome Extension khusus untuk menekan tombol kirim secara otomatis di WhatsApp Web.
                           </p>
+
+                          <button 
+                            onClick={downloadExtensionZip}
+                            className="w-full py-3 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-amber-600/20 transition-all"
+                          >
+                            <Download size={16} /> Download Extension (.zip)
+                          </button>
+
                           <div className="space-y-2">
-                            <div className="text-[10px] font-bold text-amber-900 dark:text-amber-300">Cara Instalasi:</div>
-                            <ol className="text-[10px] space-y-1 text-amber-800/70 dark:text-amber-400/70 list-decimal ml-4">
-                              <li>Download folder <code className="bg-amber-100 dark:bg-amber-800 px-1 rounded">extension</code> dari project ini.</li>
-                              <li>Buka <code className="bg-amber-100 dark:bg-amber-800 px-1 rounded">chrome://extensions</code> di browser.</li>
+                            <div className="text-[10px] font-bold text-amber-900 dark:text-amber-300">Cara Instalasi (Hanya 1 Menit):</div>
+                            <ol className="text-[10px] space-y-2 text-amber-800/70 dark:text-amber-400/70 list-decimal ml-4">
+                              <li>Klik tombol <b>Download Extension</b> di atas.</li>
+                              <li>Ekstrak file <code className="bg-amber-100 dark:bg-amber-800 px-1 rounded">wasender-pro-helper.zip</code> menjadi folder.</li>
+                              <li>Buka <code className="bg-amber-100 dark:bg-amber-800 px-1 rounded">chrome://extensions</code> di browser Chrome.</li>
                               <li>Aktifkan <b>Developer Mode</b> di pojok kanan atas.</li>
-                              <li>Klik <b>Load Unpacked</b> dan pilih folder extension tersebut.</li>
+                              <li>Klik <b>Load Unpacked</b> dan pilih folder hasil ekstrak tadi.</li>
                             </ol>
                           </div>
                         </div>
