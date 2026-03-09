@@ -28,7 +28,8 @@ import {
   Moon,
   Sun,
   RotateCcw,
-  Shield
+  Shield,
+  Puzzle
 } from 'lucide-react';
 import { Toaster, toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'motion/react';
@@ -353,7 +354,11 @@ export default function App() {
     
     const message = encodeURIComponent(generateMessage(entry, templateText));
     // Force WhatsApp Web instead of wa.me
-    return `https://web.whatsapp.com/send?phone=${phone}&text=${message}`;
+    let link = `https://web.whatsapp.com/send?phone=${phone}&text=${message}`;
+    if (settings.autoSend) {
+      link += '&autosend=true';
+    }
+    return link;
   };
 
   const handleSendManual = (entry: BlastEntry) => {
@@ -1437,7 +1442,8 @@ export default function App() {
                           { key: 'randomizeFormatting', label: 'Random Formatting', desc: 'Variasi spasi dan baris baru.' },
                           { key: 'rotateTemplates', label: 'Template Rotation', desc: 'Gunakan template berbeda bergantian.' },
                           { key: 'randomizeEmojis', label: 'Randomize Emojis', desc: 'Sisipkan emoji acak di setiap pesan.' },
-                          { key: 'useGlobalSpintax', label: 'Global Spintax', desc: 'Aktifkan parser {pilihan1|pilihan2}.' }
+                          { key: 'useGlobalSpintax', label: 'Global Spintax', desc: 'Aktifkan parser {pilihan1|pilihan2}.' },
+                          { key: 'autoSend', label: 'Auto Send Mode', desc: 'Kirim otomatis via Chrome Extension.' }
                         ].map((item) => (
                           <div key={item.key} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-[#1C2128] rounded-xl border border-gray-100 dark:border-white/5">
                             <div className="space-y-0.5">
@@ -1459,6 +1465,27 @@ export default function App() {
                           </div>
                         ))}
                       </div>
+
+                      {settings.autoSend && (
+                        <div className="p-4 bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20 rounded-2xl space-y-3">
+                          <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
+                            <Puzzle size={16} />
+                            <span className="text-xs font-bold uppercase tracking-wider">Chrome Extension Required</span>
+                          </div>
+                          <p className="text-[10px] leading-relaxed text-amber-800/70 dark:text-amber-400/70">
+                            Fitur ini membutuhkan Chrome Extension khusus untuk menekan tombol kirim secara otomatis di WhatsApp Web.
+                          </p>
+                          <div className="space-y-2">
+                            <div className="text-[10px] font-bold text-amber-900 dark:text-amber-300">Cara Instalasi:</div>
+                            <ol className="text-[10px] space-y-1 text-amber-800/70 dark:text-amber-400/70 list-decimal ml-4">
+                              <li>Download folder <code className="bg-amber-100 dark:bg-amber-800 px-1 rounded">extension</code> dari project ini.</li>
+                              <li>Buka <code className="bg-amber-100 dark:bg-amber-800 px-1 rounded">chrome://extensions</code> di browser.</li>
+                              <li>Aktifkan <b>Developer Mode</b> di pojok kanan atas.</li>
+                              <li>Klik <b>Load Unpacked</b> dan pilih folder extension tersebut.</li>
+                            </ol>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}

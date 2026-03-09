@@ -91,6 +91,7 @@ export interface AppSettings {
   rotateTemplates: boolean;
   randomizeEmojis: boolean;
   useGlobalSpintax: boolean;
+  autoSend: boolean;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -110,5 +111,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
   randomizeFormatting: true,
   rotateTemplates: false,
   randomizeEmojis: true,
-  useGlobalSpintax: true
+  useGlobalSpintax: true,
+  autoSend: false
 };
