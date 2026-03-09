@@ -29,7 +29,8 @@ import {
   Sun,
   RotateCcw,
   Shield,
-  Puzzle
+  Puzzle,
+  Loader2
 } from 'lucide-react';
 import { Toaster, toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'motion/react';
@@ -44,6 +45,7 @@ import {
 } from 'recharts';
 import { 
   BlastEntry, 
+  LogEntry,
   MessageTemplate, 
   DEFAULT_TEMPLATES, 
   AppSettings, 
@@ -62,6 +64,7 @@ export default function App() {
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [isBlasting, setIsBlasting] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(-1);
+  const [logs, setLogs] = useState<LogEntry[]>([]);
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
@@ -71,6 +74,12 @@ export default function App() {
   const [bulkData, setBulkData] = useState('');
   const [isConfirmingClear, setIsConfirmingClear] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isExtensionDetected, setIsExtensionDetected] = useState(false);
+  const [lastHeartbeat, setLastHeartbeat] = useState(0);
+  const [consecutiveErrors, setConsecutiveErrors] = useState(0);
+  const [sentThisHour, setSentThisHour] = useState(0);
+  const [lastHourReset, setLastHourReset] = useState(Date.now());
+  const [isLongBreak, setIsLongBreak] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const saved = localStorage.getItem('wa_blast_theme');
     return saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches);
@@ -129,6 +138,7 @@ export default function App() {
 
   const handleResetDefault = () => {
     if (window.confirm('Apakah Anda yakin ingin menghapus semua data dan kembali ke pengaturan awal? Semua antrean dan template custom akan hilang.')) {
+      addLog(`🔄 Sistem direset ke pengaturan awal`, 'warning');
       localStorage.clear();
       window.location.reload();
     }
@@ -166,6 +176,7 @@ export default function App() {
 
     setEntries(prev => [newEntry, ...prev]);
     setFormData({ phone: '', recipientName: '', itemName: '', receiptNumber: '', address: '', cod: '', dfod: '' });
+    addLog(`➕ Data ditambahkan: ${newEntry.recipientName} (${newEntry.phone})`, 'info');
     toast.success('Data ditambahkan');
   };
 
@@ -215,6 +226,7 @@ export default function App() {
       setEntries(prev => [...newEntries, ...prev]);
       setBulkData('');
       setShowBulkModal(false);
+      addLog(`📥 Bulk Import: ${successCount} data berhasil diimpor`, 'success');
       toast.success(`${successCount} data berhasil diimpor`);
     } else {
       toast.error('Format data tidak valid.');
@@ -224,6 +236,7 @@ export default function App() {
   const clearAll = () => {
     setEntries([]);
     setIsConfirmingClear(false);
+    addLog(`🗑️ Semua data antrean dihapus`, 'warning');
     toast.success('Semua data dihapus');
   };
 
@@ -358,13 +371,25 @@ export default function App() {
     if (settings.autoSend) {
       link += '&autosend=true';
     }
+    link += `&entryid=${entry.id}`;
     return link;
   };
 
   const handleSendManual = (entry: BlastEntry) => {
     // Use a named window to reuse the same tab and avoid popup blockers
     window.open(getWALink(entry), 'WAsenderTab');
+    addLog(`🚀 Mengirim manual ke ${entry.recipientName} (${entry.receiptNumber})`, 'info');
     updateStatus(entry.id, 'sent');
+  };
+
+  const addLog = (message: string, type: LogEntry['type'] = 'info') => {
+    const newLog: LogEntry = {
+      id: crypto.randomUUID(),
+      timestamp: Date.now(),
+      message,
+      type
+    };
+    setLogs(prev => [newLog, ...prev].slice(0, 100));
   };
 
   const updateStatus = (id: string, status: BlastEntry['status']) => {
@@ -376,6 +401,12 @@ export default function App() {
   };
 
   const startBlast = () => {
+    if (!isExtensionDetected && !settings.manualMode) {
+      toast.error('Extension tidak terdeteksi! Gunakan Mode Manual atau hubungkan extension.', { icon: '🔌' });
+      addLog(`🛑 Gagal memulai: Extension tidak terdeteksi`, 'error');
+      return;
+    }
+
     const pending = entries.filter(e => e.status === 'pending');
     if (pending.length === 0) {
       toast.error('Tidak ada pesan pending');
@@ -383,7 +414,19 @@ export default function App() {
     }
 
     // Open the first one immediately to "unlock" the popup blocker
-    const firstEntry = pending[0];
+    let entriesToProcess = [...pending];
+    
+    if (settings.shuffleQueue) {
+      entriesToProcess = entriesToProcess.sort(() => Math.random() - 0.5);
+      // Update entries state to reflect the shuffled order for the current blast
+      setEntries(prev => {
+        const nonPending = prev.filter(e => e.status !== 'pending');
+        return [...nonPending, ...entriesToProcess];
+      });
+    }
+
+    const firstEntry = entriesToProcess[0];
+    addLog(`🎬 Memulai proses blast...${settings.shuffleQueue ? ' (Urutan Diacak)' : ''}`, 'info');
     const newWindow = window.open(getWALink(firstEntry), 'WAsenderTab');
     
     if (!newWindow) {
@@ -394,7 +437,11 @@ export default function App() {
       return;
     }
 
-    updateStatus(firstEntry.id, 'sent');
+    if (settings.autoSend) {
+      updateStatus(firstEntry.id, 'sending');
+    } else {
+      updateStatus(firstEntry.id, 'sent');
+    }
     setIsBlasting(true);
     setCurrentIndex(0);
     
@@ -409,16 +456,126 @@ export default function App() {
   const stopBlast = () => {
     setIsBlasting(false);
     setCurrentIndex(-1);
+    addLog(`🛑 Proses blast dihentikan oleh pengguna`, 'warning');
   };
+
+  useEffect(() => {
+    const handleExtensionMessage = (event: MessageEvent) => {
+      // Check if message is from our extension
+      if (event.data && event.data.source === 'wasender-extension') {
+        const { type, entryId, status: waStatus } = event.data;
+        
+        if (type === 'WA_STATUS_UPDATE') {
+          const entry = entries.find(e => e.id === entryId);
+          if (!entry) return;
+
+          const name = entry.recipientName;
+          const resi = entry.receiptNumber;
+
+          if (waStatus === 'sent') {
+            updateStatus(entryId, 'sent');
+            setConsecutiveErrors(0);
+            setSentThisHour(prev => prev + 1);
+            addLog(`✅ Pesan terkirim ke ${name} (${resi})`, 'success');
+            toast.success(`Pesan terkirim ke ${name}`, { id: `sent-${entryId}` });
+          } else if (waStatus === 'invalid') {
+            const currentRetries = entry.retryCount || 0;
+            
+            if (settings.autoRetry && currentRetries < settings.maxRetries) {
+              const nextRetry = currentRetries + 1;
+              setEntries(prev => prev.map(e => e.id === entryId ? { ...e, status: 'pending', retryCount: nextRetry } : e));
+              addLog(`🔄 Nomor ${name} gagal, mencoba ulang (${nextRetry}/${settings.maxRetries})...`, 'warning');
+              toast(`Mencoba ulang untuk ${name} (${nextRetry}/${settings.maxRetries})`, { icon: '🔄' });
+            } else {
+              updateStatus(entryId, 'failed');
+              setConsecutiveErrors(prev => prev + 1);
+              addLog(`❌ Nomor tidak valid: ${name} (${resi})`, 'error');
+              toast.error(`Nomor tidak valid: ${name}`, { id: `err-${entryId}` });
+            }
+          }
+        } else if (type === 'WA_WARNING_DETECTED') {
+          stopBlast();
+          addLog(`🚨 PERINGATAN SPAM TERDETEKSI OLEH WHATSAPP! Blast dihentikan demi keamanan.`, 'error');
+          toast.error('PERINGATAN SPAM! Blast dihentikan.', { duration: 10000, icon: '🚨' });
+        }
+      }
+    };
+
+    window.addEventListener('message', handleExtensionMessage);
+    
+    // Heartbeat check
+    const heartbeatInterval = setInterval(() => {
+      const now = Date.now();
+      if (lastHeartbeat > 0 && now - lastHeartbeat > 10000) {
+        if (isExtensionDetected) {
+          setIsExtensionDetected(false);
+          addLog(`🔌 Extension terputus atau tidak terdeteksi`, 'warning');
+        }
+      }
+    }, 5000);
+
+    return () => {
+      window.removeEventListener('message', handleExtensionMessage);
+      clearInterval(heartbeatInterval);
+    };
+  }, [entries, lastHeartbeat, isExtensionDetected, settings.autoRetry, settings.maxRetries]);
+
+  useEffect(() => {
+    const handlePing = (event: MessageEvent) => {
+      if (event.data && event.data.source === 'wasender-extension' && event.data.type === 'EXTENSION_PONG') {
+        if (!isExtensionDetected) {
+          setIsExtensionDetected(true);
+          addLog(`🔌 Extension terdeteksi dan aktif`, 'success');
+        }
+        setLastHeartbeat(Date.now());
+      }
+    };
+    window.addEventListener('message', handlePing);
+    return () => window.removeEventListener('message', handlePing);
+  }, [isExtensionDetected]);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
     let countdownInterval: NodeJS.Timeout;
 
     if (isBlasting && !settings.manualMode) {
+      // 0. Check for hourly limit
+      const now = Date.now();
+      if (now - lastHourReset > 3600000) {
+        setSentThisHour(0);
+        setLastHourReset(now);
+      }
+
+      if (sentThisHour >= settings.hourlyLimit) {
+        setIsBlasting(false);
+        addLog(`⏳ Limit per jam tercapai (${settings.hourlyLimit}). Blast dihentikan otomatis.`, 'warning');
+        toast.error(`Limit per jam tercapai!`, { icon: '⏳' });
+        return;
+      }
+
+      // 0.1 Check for consecutive errors
+      if (consecutiveErrors >= settings.stopOnConsecutiveErrors) {
+        setIsBlasting(false);
+        addLog(`🛑 Blast dihentikan: Terlalu banyak kegagalan berturut-turut (${consecutiveErrors}).`, 'error');
+        toast.error('Terlalu banyak kegagalan! Blast dihentikan.', { icon: '🛑' });
+        return;
+      }
+
+      // Check extension presence
+      if (!isExtensionDetected && !settings.manualMode) {
+        setIsBlasting(false);
+        addLog(`🛑 Blast dihentikan: Extension tidak terdeteksi. Hubungkan extension untuk melanjutkan otomatis.`, 'error');
+        toast.error('Extension tidak terdeteksi! Blast dihentikan.', { icon: '🔌' });
+        return;
+      }
+
       const pendingEntries = entries.filter(e => e.status === 'pending');
+      const sendingEntries = entries.filter(e => e.status === 'sending');
       const sentCount = entries.filter(e => e.status === 'sent').length;
       
+      // If we are already sending one (waiting for extension), don't start another
+      if (sendingEntries.length > 0) return;
+
       if (pendingEntries.length > 0) {
         const entry = pendingEntries[0];
         
@@ -462,6 +619,16 @@ export default function App() {
           setNextBatchPauseAt(sentCount + settings.batchSize + jitter);
         }
 
+        // 4. Check for Long Break
+        if (settings.longBreakAfter > 0 && sentCount > 0 && sentCount % settings.longBreakAfter === 0) {
+          currentDelay = settings.longBreakDuration * 60 * 1000;
+          setIsLongBreak(true);
+          addLog(`😴 Mengambil istirahat panjang selama ${settings.longBreakDuration} menit...`, 'warning');
+          toast(`Istirahat panjang: ${settings.longBreakDuration} menit...`, { icon: '😴', duration: 5000 });
+        } else {
+          setIsLongBreak(false);
+        }
+
         setCountdown(Math.ceil(currentDelay / 1000));
 
         countdownInterval = setInterval(() => {
@@ -481,10 +648,15 @@ export default function App() {
             return;
           }
 
-          updateStatus(entry.id, 'sent');
+          if (settings.autoSend) {
+            updateStatus(entry.id, 'sending');
+          } else {
+            updateStatus(entry.id, 'sent');
+          }
         }, currentDelay);
       } else {
         setIsBlasting(false);
+        addLog(`🏁 Proses blast selesai! Semua antrean telah diproses.`, 'success');
         toast.success('Blast selesai!', {
           icon: '✅'
         });
@@ -534,6 +706,21 @@ export default function App() {
     ];
   }, [entries]);
 
+  const safetyScore = useMemo(() => {
+    let score = 0;
+    if (settings.delay >= 5000) score += 20;
+    if (settings.randomizeDelay) score += 15;
+    if (settings.batchSize > 0 && settings.batchSize <= 15) score += 10;
+    if (settings.useRandomGreetings) score += 5;
+    if (settings.useInvisibleChars) score += 5;
+    if (settings.simulateTyping) score += 10;
+    if (settings.adaptiveDelay) score += 5;
+    if (settings.rotateTemplates) score += 10;
+    if (settings.hourlyLimit <= 50) score += 10;
+    if (settings.shuffleQueue) score += 10;
+    return Math.min(100, score);
+  }, [settings]);
+
   const exportToCSV = () => {
     if (entries.length === 0) return;
     const headers = ['Phone', 'Name', 'Item', 'Receipt', 'Status', 'Received', 'Created At'];
@@ -576,17 +763,22 @@ export default function App() {
               </div>
             </div>
             <div className="space-y-2">
-              <h3 className="text-xl font-bold">Blasting in Progress...</h3>
+              <h3 className="text-xl font-bold">{isLongBreak ? '😴 Long Break Active' : 'Blasting in Progress...'}</h3>
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 Pesan terkirim: <span className="font-bold text-emerald-600 dark:text-emerald-400">{entries.filter(e => e.status === 'sent').length}</span> / <span className="font-bold">{entries.length}</span>
               </p>
               
               {!settings.manualMode ? (
                 <div className="py-4">
-                  <div className="text-4xl font-black text-emerald-600 dark:text-emerald-400 tabular-nums">
-                    {countdown}s
+                  <div className={cn(
+                    "text-4xl font-black tabular-nums",
+                    isLongBreak ? "text-amber-500" : "text-emerald-600 dark:text-emerald-400"
+                  )}>
+                    {Math.floor(countdown / 60)}:{(countdown % 60).toString().padStart(2, '0')}
                   </div>
-                  <p className="text-[10px] text-gray-400 uppercase tracking-widest mt-1">Next message in</p>
+                  <p className="text-[10px] text-gray-400 uppercase tracking-widest mt-1">
+                    {isLongBreak ? 'Break ends in' : 'Next message in'}
+                  </p>
                 </div>
               ) : (
                 <div className="py-6 space-y-2">
@@ -880,7 +1072,16 @@ export default function App() {
                 className="w-full pl-12 pr-4 py-3 bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-sm dark:text-white"
               />
             </div>
-            <div className="flex gap-3">
+            <div className="flex gap-3 items-center">
+              <div className={cn(
+                "flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold border transition-all",
+                isExtensionDetected 
+                  ? "bg-emerald-50 dark:bg-emerald-900/10 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-900/20" 
+                  : "bg-gray-50 dark:bg-gray-900/10 text-gray-400 dark:text-gray-500 border-gray-100 dark:border-gray-900/20"
+              )}>
+                <Puzzle size={12} className={isExtensionDetected ? "animate-pulse" : ""} />
+                {isExtensionDetected ? "Extension Connected" : "Extension Disconnected"}
+              </div>
               <button 
                 onClick={() => setShowBulkModal(true)}
                 className="px-6 py-3 bg-emerald-50 dark:bg-emerald-900/10 text-emerald-700 dark:text-emerald-400 rounded-2xl font-bold text-sm hover:bg-emerald-100 dark:hover:bg-emerald-900/20 transition-all flex items-center gap-2"
@@ -1008,6 +1209,42 @@ export default function App() {
             </form>
           </section>
 
+          {/* Console Log */}
+          <section className="bg-gray-50 dark:bg-black rounded-3xl p-4 shadow-sm dark:shadow-xl border border-gray-200 dark:border-white/5 overflow-hidden">
+            <div className="flex items-center justify-between mb-3 px-2">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <h2 className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-[0.2em]">System Console</h2>
+              </div>
+              <button 
+                onClick={() => setLogs([])}
+                className="text-[9px] font-bold text-gray-400 dark:text-gray-500 hover:text-gray-900 dark:hover:text-white uppercase tracking-widest transition-colors"
+              >
+                Clear Logs
+              </button>
+            </div>
+            <div className="h-32 overflow-y-auto custom-scrollbar font-mono text-[11px] space-y-1 px-2">
+              {logs.length === 0 ? (
+                <div className="text-gray-400 dark:text-gray-600 italic">Waiting for system actions...</div>
+              ) : (
+                logs.map(log => (
+                  <div key={log.id} className="flex gap-3 leading-relaxed group">
+                    <span className="text-gray-400 dark:text-gray-600 shrink-0">[{new Date(log.timestamp).toLocaleTimeString([], { hour12: false })}]</span>
+                    <span className={cn(
+                      "break-all",
+                      log.type === 'success' ? "text-emerald-600 dark:text-emerald-400" :
+                      log.type === 'error' ? "text-red-600 dark:text-red-400" :
+                      log.type === 'warning' ? "text-amber-600 dark:text-amber-400" :
+                      "text-blue-600 dark:text-blue-400"
+                    )}>
+                      {log.message}
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
+          </section>
+
           {/* Queue Table */}
           <div className="bg-white dark:bg-[#16191F] rounded-3xl shadow-sm border border-black/5 dark:border-white/5 overflow-hidden">
             <div className="p-6 border-b border-black/5 dark:border-white/5 flex items-center justify-between">
@@ -1084,9 +1321,13 @@ export default function App() {
                               "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest",
                               entry.status === 'sent' 
                                 ? "bg-emerald-100 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400" 
+                                : entry.status === 'sending'
+                                ? "bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 animate-pulse"
+                                : entry.status === 'failed'
+                                ? "bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400"
                                 : "bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400"
                             )}>
-                              {entry.status === 'sent' ? <CheckCircle2 size={10} /> : <Clock size={10} />}
+                              {entry.status === 'sent' ? <CheckCircle2 size={10} /> : entry.status === 'sending' ? <Loader2 size={10} className="animate-spin" /> : entry.status === 'failed' ? <AlertCircle size={10} /> : <Clock size={10} />}
                               {entry.status}
                             </div>
                           </td>
@@ -1302,6 +1543,32 @@ export default function App() {
               </div>
 
               <div className="p-6 overflow-y-auto custom-scrollbar flex-1">
+                {activeSettingsTab === 'antispam' && (
+                  <div className="mb-6 p-4 bg-emerald-50 dark:bg-emerald-900/10 rounded-2xl border border-emerald-100 dark:border-emerald-900/20">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-widest">Safety Score</span>
+                      <span className={cn(
+                        "text-xs font-black",
+                        safetyScore > 80 ? "text-emerald-600" : safetyScore > 50 ? "text-amber-600" : "text-red-600"
+                      )}>{safetyScore}%</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
+                      <motion.div 
+                        initial={{ width: 0 }}
+                        animate={{ width: `${safetyScore}%` }}
+                        className={cn(
+                          "h-full transition-all duration-500",
+                          safetyScore > 80 ? "bg-emerald-500" : safetyScore > 50 ? "bg-amber-500" : "bg-red-500"
+                        )}
+                      />
+                    </div>
+                    <p className="text-[9px] text-gray-500 dark:text-gray-400 mt-2 italic">
+                      {safetyScore > 80 ? "Sangat Aman: Pola pengiriman sangat mirip manusia." : 
+                       safetyScore > 50 ? "Cukup Aman: Disarankan menambah jeda atau variasi pesan." : 
+                       "Beresiko Tinggi: Akun Anda rentan terkena banned!"}
+                    </p>
+                  </div>
+                )}
                 {activeSettingsTab === 'general' ? (
                   <div className="space-y-6">
                     <div className="space-y-4">
@@ -1354,6 +1621,41 @@ export default function App() {
                           )} />
                         </button>
                       </div>
+
+                      <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-[#1C2128] rounded-2xl border border-gray-100 dark:border-white/5">
+                        <div className="space-y-1">
+                          <div className="text-xs font-bold">Auto Retry</div>
+                          <div className="text-[10px] text-gray-400">Coba kirim ulang otomatis jika gagal.</div>
+                        </div>
+                        <button 
+                          onClick={() => setSettings(prev => ({ ...prev, autoRetry: !prev.autoRetry }))}
+                          className={cn(
+                            "w-12 h-6 rounded-full transition-all relative",
+                            settings.autoRetry ? "bg-emerald-500" : "bg-gray-300 dark:bg-gray-700"
+                          )}
+                        >
+                          <div className={cn(
+                            "absolute top-1 w-4 h-4 bg-white rounded-full transition-all",
+                            settings.autoRetry ? "left-7" : "left-1"
+                          )} />
+                        </button>
+                      </div>
+
+                      {settings.autoRetry && (
+                        <div className="space-y-2">
+                          <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+                            <RotateCcw size={14} /> Max Retries
+                          </label>
+                          <input 
+                            type="number" 
+                            value={settings.maxRetries}
+                            onChange={(e) => setSettings(prev => ({ ...prev, maxRetries: parseInt(e.target.value) || 1 }))}
+                            className="w-full px-4 py-3 bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-sm"
+                            min="1"
+                            max="10"
+                          />
+                        </div>
+                      )}
 
                       <div className="pt-2">
                         <button 
@@ -1432,8 +1734,59 @@ export default function App() {
                         </div>
                       </div>
 
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold text-gray-500 uppercase">Hourly Limit</label>
+                          <input 
+                            type="number" 
+                            value={settings.hourlyLimit}
+                            onChange={(e) => setSettings(prev => ({ ...prev, hourlyLimit: parseInt(e.target.value) || 0 }))}
+                            className="w-full px-3 py-2 bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-lg text-xs"
+                            placeholder="50"
+                          />
+                          <p className="text-[8px] text-gray-400 italic">Maks pesan per jam.</p>
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold text-gray-500 uppercase">Stop on Errors</label>
+                          <input 
+                            type="number" 
+                            value={settings.stopOnConsecutiveErrors}
+                            onChange={(e) => setSettings(prev => ({ ...prev, stopOnConsecutiveErrors: parseInt(e.target.value) || 0 }))}
+                            className="w-full px-3 py-2 bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-lg text-xs"
+                            placeholder="3"
+                          />
+                          <p className="text-[8px] text-gray-400 italic">Stop jika X gagal urut.</p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold text-gray-500 uppercase">Long Break After</label>
+                          <input 
+                            type="number" 
+                            value={settings.longBreakAfter}
+                            onChange={(e) => setSettings(prev => ({ ...prev, longBreakAfter: parseInt(e.target.value) || 0 }))}
+                            className="w-full px-3 py-2 bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-lg text-xs"
+                            placeholder="25"
+                          />
+                          <p className="text-[8px] text-gray-400 italic">Istirahat tiap X pesan.</p>
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold text-gray-500 uppercase">Duration (min)</label>
+                          <input 
+                            type="number" 
+                            value={settings.longBreakDuration}
+                            onChange={(e) => setSettings(prev => ({ ...prev, longBreakDuration: parseInt(e.target.value) || 0 }))}
+                            className="w-full px-3 py-2 bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-lg text-xs"
+                            placeholder="10"
+                          />
+                          <p className="text-[8px] text-gray-400 italic">Lama istirahat (menit).</p>
+                        </div>
+                      </div>
+
                       <div className="grid grid-cols-1 gap-3">
                         {[
+                          { key: 'shuffleQueue', label: 'Shuffle Queue', desc: 'Acak urutan antrean saat memulai blast.' },
                           { key: 'useRandomGreetings', label: 'Random Greetings', desc: 'Variasi kata sapaan otomatis.' },
                           { key: 'addRandomSuffix', label: 'Random Suffix (Ref ID)', desc: 'Tambah ID unik di akhir pesan.' },
                           { key: 'useInvisibleChars', label: 'Invisible Characters', desc: 'Sisipkan karakter tak terlihat.' },

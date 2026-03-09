@@ -1,3 +1,10 @@
+export interface LogEntry {
+  id: string;
+  timestamp: number;
+  message: string;
+  type: 'info' | 'success' | 'error' | 'warning';
+}
+
 export interface BlastEntry {
   id: string;
   phone: string;
@@ -7,9 +14,10 @@ export interface BlastEntry {
   address: string;
   cod: string;
   dfod: string;
-  status: 'pending' | 'sent' | 'failed';
+  status: 'pending' | 'sending' | 'sent' | 'failed';
   isReceived: boolean;
   createdAt: number;
+  retryCount?: number;
 }
 
 export interface MessageTemplate {
@@ -92,6 +100,14 @@ export interface AppSettings {
   randomizeEmojis: boolean;
   useGlobalSpintax: boolean;
   autoSend: boolean;
+  autoRetry: boolean;
+  maxRetries: number;
+  // New deep-dive anti-spam settings
+  shuffleQueue: boolean;
+  hourlyLimit: number;
+  stopOnConsecutiveErrors: number;
+  longBreakAfter: number; // messages
+  longBreakDuration: number; // minutes
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -112,5 +128,12 @@ export const DEFAULT_SETTINGS: AppSettings = {
   rotateTemplates: false,
   randomizeEmojis: true,
   useGlobalSpintax: true,
-  autoSend: false
+  autoSend: false,
+  autoRetry: true,
+  maxRetries: 3,
+  shuffleQueue: true,
+  hourlyLimit: 50,
+  stopOnConsecutiveErrors: 3,
+  longBreakAfter: 25,
+  longBreakDuration: 10
 };

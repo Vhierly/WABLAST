@@ -1,12 +1,10 @@
 {
   "manifest_version": 3,
-  "name": "J&T Cargo Blast Helper",
-  "version": "1.0",
-  "description": "Helper for J&T Cargo WhatsApp Blaster to auto-send messages.",
-  "permissions": ["tabs", "storage"],
-  "action": {
-    "default_popup": "index.html"
-  },
+  "name": "WAsender Pro Helper",
+  "version": "2.0",
+  "description": "Advanced Auto-Send Helper for J&T Cargo WAsender",
+  "permissions": ["tabs"],
+  "host_permissions": ["https://web.whatsapp.com/*"],
   "content_scripts": [
     {
       "matches": ["https://web.whatsapp.com/*"],
@@ -14,5 +12,12 @@
       "run_at": "document_idle"
     }
   ],
-  "host_permissions": ["https://web.whatsapp.com/*"]
+  "background": {
+    "service_worker": "background.js"
+  },
+  "icons": {
+    "16": "icon.png",
+    "48": "icon.png",
+    "128": "icon.png"
+  }
 }
