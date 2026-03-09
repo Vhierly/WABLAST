@@ -494,10 +494,33 @@ export default function App() {
       });
     }
 
+    const firstEntry = entriesToProcess[0];
     addLog(`🎬 Memulai proses blast...${settings.shuffleQueue ? ' (Urutan Diacak)' : ''}`, 'info');
+    
+    // Open the first one immediately to "unlock" the popup blocker
+    const newWindow = window.open(getWALink(firstEntry), 'WAsenderTab');
+    
+    if (!newWindow) {
+      toast.error('Popup terblokir! Harap izinkan popup di browser Anda.', {
+        duration: 8000,
+        icon: '🚫'
+      });
+      return;
+    }
+
+    window.focus();
+    
+    if (settings.autoSend) {
+      updateStatus(firstEntry.id, 'sending');
+    } else {
+      updateStatus(firstEntry.id, 'sent');
+      // If not auto-sending, start countdown for next
+      const delay = calculateNextDelay(entries.filter(e => e.status === 'sent').length + 1, entriesToProcess[1] || firstEntry);
+      setNextActionTime(Date.now() + delay);
+    }
+
     setIsBlasting(true);
     setCurrentIndex(0);
-    setNextActionTime(Date.now() + 1000); // Start first one in 1s
     
     const sentCount = entries.filter(e => e.status === 'sent').length;
     if (settings.batchSize > 0) {
