@@ -90,6 +90,7 @@ export interface AppSettings {
   maxDelay: number;
   batchSize: number;
   batchPause: number;
+  speedMode: 'safe' | 'normal' | 'fast' | 'turbo' | 'custom';
   useRandomGreetings: boolean;
   addRandomSuffix: boolean;
   useInvisibleChars: boolean;
@@ -119,6 +120,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   maxDelay: 10000,
   batchSize: 10,
   batchPause: 30000,
+  speedMode: 'normal',
   useRandomGreetings: true,
   addRandomSuffix: false,
   useInvisibleChars: true,
