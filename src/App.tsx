@@ -680,12 +680,12 @@ export default function App() {
 
   // Main Blast Engine
   useEffect(() => {
-    let countdownInterval: NodeJS.Timeout;
+    let timer: NodeJS.Timeout;
 
     if (isBlasting && !settings.manualMode) {
       const now = Date.now();
       
-      // Reset hourly limit if needed
+      // 1. Check Limits
       if (now - lastHourReset > 3600000) {
         setSentThisHour(0);
         setLastHourReset(now);
@@ -693,75 +693,69 @@ export default function App() {
 
       if (sentThisHour >= settings.hourlyLimit) {
         setIsBlasting(false);
-        addLog(`⏳ Limit per jam tercapai (${settings.hourlyLimit}).`, 'warning');
+        addLog(`⏳ Limit per jam tercapai.`, 'warning');
         return;
       }
 
-      if (consecutiveErrors >= settings.stopOnConsecutiveErrors) {
-        setIsBlasting(false);
-        addLog(`🛑 Terlalu banyak kegagalan berturut-turut.`, 'error');
-        return;
-      }
-
-      // Check extension presence
-      if (!isExtensionDetected && !settings.manualMode) {
-        setIsBlasting(false);
-        addLog(`🛑 Blast dihentikan: Extension tidak terdeteksi.`, 'error');
-        toast.error('Extension tidak terdeteksi!');
-        return;
+      // 2. Check Extension (Only if not in manual mode)
+      if (!isExtensionDetected) {
+        // We don't stop immediately, maybe it's just a hiccup
+        // but we log it
       }
 
       const pendingEntries = entries.filter(e => e.status === 'pending');
       const sendingEntries = entries.filter(e => e.status === 'sending');
-      const sentCount = entries.filter(e => e.status === 'sent').length;
       
+      // 3. If already sending, wait for extension
       if (sendingEntries.length > 0) return;
 
       if (pendingEntries.length > 0) {
         const entry = pendingEntries[0];
         
-          if (now >= nextActionTime) {
-            const pending = entries.filter(e => e.status === 'pending');
-            if (pending.length === 0) return;
-            const entry = pending[0];
-            
-            addLog(`📤 Membuka WhatsApp untuk ${entry.recipientName}...`, 'info');
-            const newWindow = window.open(getWALink(entry, sentCount), 'WAsenderTab');
-            
-            if (!newWindow) {
-              // If popup is blocked, we don't stop, we just wait for user to click a button that will appear
-              addLog(`⚠️ Popup terblokir oleh browser. Menunggu klik manual...`, 'warning');
-              return;
-            }
+        if (now >= nextActionTime) {
+          // TIME TO SEND
+          addLog(`🚀 Mengirim ke ${entry.recipientName}...`, 'info');
+          
+          const waLink = getWALink(entry, entries.filter(e => e.status === 'sent').length);
+          const newWindow = window.open(waLink, 'WAsenderTab');
+          
+          if (!newWindow) {
+            addLog(`⚠️ Browser memblokir pembukaan tab otomatis.`, 'warning');
+            // We don't return here, we try to proceed or show the button
+            // but we'll set a small delay to avoid tight loop
+            setNextActionTime(Date.now() + 2000); 
+            return;
+          }
 
-            window.focus();
+          window.focus();
 
           if (settings.autoSend) {
             updateStatus(entry.id, 'sending');
           } else {
             updateStatus(entry.id, 'sent');
-            // If not auto-sending, we trigger next delay immediately
-            const delay = calculateNextDelay(sentCount + 1, pendingEntries[1] || entry);
+            const delay = calculateNextDelay(entries.filter(e => e.status === 'sent').length + 1, pendingEntries[1] || entry);
             setNextActionTime(Date.now() + delay);
           }
         } else {
-          // Update countdown
-          setCountdown(Math.ceil((nextActionTime - now) / 1000));
-          countdownInterval = setInterval(() => {
-            const remaining = Math.ceil((nextActionTime - Date.now()) / 1000);
-            setCountdown(Math.max(0, remaining));
-          }, 1000);
+          // WAITING DELAY
+          const remaining = Math.ceil((nextActionTime - now) / 1000);
+          setCountdown(Math.max(0, remaining));
+          
+          // Re-check every 500ms
+          timer = setTimeout(() => {
+            setCountdown(prev => prev); // trigger re-render
+          }, 500);
         }
       } else {
         setIsBlasting(false);
-        addLog(`🏁 Proses blast selesai!`, 'success');
+        addLog(`🏁 Blast selesai!`, 'success');
       }
     }
 
     return () => {
-      clearInterval(countdownInterval);
+      if (timer) clearTimeout(timer);
     };
-  }, [isBlasting, entries, nextActionTime, settings.manualMode, settings.hourlyLimit, settings.stopOnConsecutiveErrors, isExtensionDetected]);
+  }, [isBlasting, entries, nextActionTime, settings.manualMode, settings.hourlyLimit, isExtensionDetected, sentThisHour]);
 
   // Keyboard shortcut for manual mode
   useEffect(() => {
@@ -868,8 +862,20 @@ export default function App() {
               
               {!settings.manualMode ? (
                 <div className="py-4">
-                  {Date.now() >= nextActionTime && entries.filter(e => e.status === 'pending').length > 0 && !entries.some(e => e.status === 'sending') ? (
-                    <div className="space-y-4">
+                  <div className={cn(
+                    "text-4xl font-black tabular-nums",
+                    isLongBreak ? "text-amber-500" : 
+                    entries.some(e => e.status === 'sending') ? "text-blue-500 animate-pulse" :
+                    "text-emerald-600 dark:text-emerald-400"
+                  )}>
+                    {entries.some(e => e.status === 'sending') ? '--:--' : `${Math.floor(countdown / 60)}:${(countdown % 60).toString().padStart(2, '0')}`}
+                  </div>
+                  <p className="text-[10px] text-gray-400 uppercase tracking-widest mt-1">
+                    {entries.some(e => e.status === 'sending') ? 'Memproses di WA Web' : isLongBreak ? 'Break ends in' : 'Next message in'}
+                  </p>
+                  
+                  {Date.now() >= nextActionTime && entries.filter(e => e.status === 'pending').length > 0 && !entries.some(e => e.status === 'sending') && (
+                    <div className="mt-4 animate-in fade-in zoom-in duration-300">
                       <button
                         onClick={() => {
                           const pending = entries.filter(e => e.status === 'pending');
@@ -889,26 +895,11 @@ export default function App() {
                             }
                           }
                         }}
-                        className="w-full py-6 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl font-black text-xl shadow-xl shadow-amber-500/30 animate-bounce flex items-center justify-center gap-3"
+                        className="w-full py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold text-sm shadow-lg flex items-center justify-center gap-2"
                       >
-                        <Play fill="white" /> KLIK UNTUK LANJUT
+                        <Play size={14} fill="white" /> Klik jika tab tidak terbuka otomatis
                       </button>
-                      <p className="text-xs text-amber-600 font-bold">Browser memblokir tab otomatis. Klik tombol di atas.</p>
                     </div>
-                  ) : (
-                    <>
-                      <div className={cn(
-                        "text-4xl font-black tabular-nums",
-                        isLongBreak ? "text-amber-500" : 
-                        entries.some(e => e.status === 'sending') ? "text-blue-500 animate-pulse" :
-                        "text-emerald-600 dark:text-emerald-400"
-                      )}>
-                        {entries.some(e => e.status === 'sending') ? '--:--' : `${Math.floor(countdown / 60)}:${(countdown % 60).toString().padStart(2, '0')}`}
-                      </div>
-                      <p className="text-[10px] text-gray-400 uppercase tracking-widest mt-1">
-                        {entries.some(e => e.status === 'sending') ? 'Memproses di WA Web' : isLongBreak ? 'Break ends in' : 'Next message in'}
-                      </p>
-                    </>
                   )}
                 </div>
               ) : (
