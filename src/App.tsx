@@ -58,6 +58,13 @@ function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+// Utility to nicely format numbers into Rupiah currency
+const formatCurrency = (val: string) => {
+  if (!val) return '';
+  const num = parseInt(val.replace(/\D/g, ''));
+  return isNaN(num) ? val : new Intl.NumberFormat('id-ID').format(num);
+};
+
 export default function App() {
   const [entries, setEntries] = useState<BlastEntry[]>([]);
   const [templates, setTemplates] = useState<MessageTemplate[]>(DEFAULT_TEMPLATES);
@@ -109,7 +116,6 @@ export default function App() {
     if (savedEntries) setEntries(JSON.parse(savedEntries));
     if (savedTemplates) {
       const parsedTemplates: MessageTemplate[] = JSON.parse(savedTemplates);
-      // Merge saved templates with defaults to ensure new default templates appear
       const mergedTemplates = [...parsedTemplates];
       DEFAULT_TEMPLATES.forEach(def => {
         if (!mergedTemplates.find(t => t.id === def.id)) {
@@ -197,9 +203,7 @@ export default function App() {
       const delimiter = line.includes('\t') ? '\t' : ',';
       const columns = line.split(delimiter).map(col => col.trim());
       
-      // Expected format: No, Resi/AWB, Nama Penerima, No HP, Alamat Lengkap, Tanda, Nominal COD, Nominal DFOD, Nama Barang
       if (columns.length >= 4) {
-        // Skip header lines
         const firstCol = columns[0].toLowerCase();
         const secondCol = (columns[1] || '').toLowerCase();
         if (firstCol === 'no' || secondCol === 'resi/awb' || secondCol === 'resi') return;
@@ -211,20 +215,13 @@ export default function App() {
 
         let cod = '';
         let dfod = '';
-
-        // Rule: Nominal COD / Nominal DFOD if not a number then it's not there.
-        // Rule: Tanda if not COD or DFOD then it's not there.
         
         if (tanda === 'COD') {
           const cleanCod = rawCod.replace(/[^0-9]/g, '');
-          if (cleanCod && !isNaN(Number(cleanCod))) {
-            cod = cleanCod;
-          }
+          if (cleanCod && !isNaN(Number(cleanCod))) cod = cleanCod;
         } else if (tanda === 'DFOD') {
           const cleanDfod = rawDfod.replace(/[^0-9]/g, '');
-          if (cleanDfod && !isNaN(Number(cleanDfod))) {
-            dfod = cleanDfod;
-          }
+          if (cleanDfod && !isNaN(Number(cleanDfod))) dfod = cleanDfod;
         }
 
         newEntries.push({
@@ -278,14 +275,9 @@ export default function App() {
         `Halo Kak, Selamat ${base}`,
         `Permisi, Selamat ${base}`,
         `Halo`,
-        `Pagi/Siang/Sore/Malam` // This is just a placeholder for the logic below
+        base
       ];
-      
-      // Filter out the placeholder and use real variations
-      const realVariations = variations.filter(v => v !== 'Pagi/Siang/Sore/Malam');
-      realVariations.push(base); // Just "Pagi", "Siang", etc.
-      
-      return realVariations[Math.floor(Math.random() * realVariations.length)];
+      return variations[Math.floor(Math.random() * variations.length)];
     }
 
     return `Selamat ${base}`;
@@ -294,8 +286,7 @@ export default function App() {
   const generateMessage = (entry: BlastEntry, templateText?: string) => {
     let text = templateText || activeTemplate.text;
 
-    // Handle conditional blocks
-    // {if_cod}Text {cod}{/if_cod}
+    // Handle conditional blocks {if_cod}...{/if_cod}
     if (!entry.cod) {
       text = text.replace(/{if_cod}[\s\S]*?{\/if_cod}/gi, '');
     } else {
@@ -315,10 +306,9 @@ export default function App() {
       .replace(/{barang}/gi, entry.itemName || '-')
       .replace(/{resi}/gi, entry.receiptNumber || '-')
       .replace(/{alamat}/gi, entry.address || '-')
-      .replace(/{cod}/gi, entry.cod ? `Rp ${entry.cod}` : '-')
-      .replace(/{dfod}/gi, entry.dfod ? `Rp ${entry.dfod}` : '-');
+      .replace(/{cod}/gi, entry.cod ? `Rp ${formatCurrency(entry.cod)}` : '-')
+      .replace(/{dfod}/gi, entry.dfod ? `Rp ${formatCurrency(entry.dfod)}` : '-');
 
-    // Handle Spintax: {Halo|Hai|Pagi}
     if (settings.useGlobalSpintax) {
       finalMessage = finalMessage.replace(/{([^{}]+)}/g, (match, p1) => {
         if (p1.includes('|')) {
@@ -330,35 +320,28 @@ export default function App() {
     }
 
     if (settings.randomizeEmojis) {
-      const emojis = ['😊', '🙏', '📦', '🚚', '✨', '✅', '📍', '🚚', '📦', '🚛', ' cargo ', ' cargo ', ' jnt ', ' jnt '];
+      const emojis = ['😊', '🙏', '📦', '🚚', '✨', '✅', '📍', '🚚', '📦', '🚛'];
       const words = finalMessage.split(' ');
       finalMessage = words.map(word => {
-        if (Math.random() > 0.9) {
-          return word + ' ' + emojis[Math.floor(Math.random() * emojis.length)];
-        }
+        if (Math.random() > 0.9) return word + ' ' + emojis[Math.floor(Math.random() * emojis.length)];
         return word;
       }).join(' ');
     }
 
     if (settings.addRandomSuffix) {
-      const suffix = `\n\n_Ref: ${Math.random().toString(36).substring(7).toUpperCase()}_`;
-      finalMessage += suffix;
+      finalMessage += `\n\n_Ref: ${Math.random().toString(36).substring(7).toUpperCase()}_`;
     }
 
     if (settings.useInvisibleChars) {
-      // Inject invisible characters (Zero Width Space) at random positions to make message hash unique
       const zwsp = '\u200B';
       const words = finalMessage.split(' ');
       finalMessage = words.map(word => {
-        if (Math.random() > 0.7) {
-          return word + zwsp;
-        }
+        if (Math.random() > 0.7) return word + zwsp;
         return word;
       }).join(' ');
     }
 
     if (settings.randomizeFormatting) {
-      // Randomly change double line breaks to single or triple to vary message structure
       const paragraphs = finalMessage.split('\n\n');
       finalMessage = paragraphs.map((p, i) => {
         if (i === paragraphs.length - 1) return p;
@@ -387,32 +370,21 @@ export default function App() {
     }
     
     const message = encodeURIComponent(generateMessage(entry, templateText));
-    // Force WhatsApp Web instead of wa.me
     let link = `https://web.whatsapp.com/send?phone=${phone}&text=${message}`;
-    if (settings.autoSend) {
-      link += '&autosend=true';
-    }
+    if (settings.autoSend) link += '&autosend=true';
     link += `&entryid=${entry.id}`;
     return link;
   };
 
   const handleSendManual = (entry: BlastEntry) => {
-    // Use a named window to reuse the same tab and avoid popup blockers
     const newWindow = window.open(getWALink(entry), 'WAsenderTab');
-    if (newWindow) {
-      window.focus(); // Attempt to bring focus back to the app
-    }
+    if (newWindow) window.focus();
     addLog(`🚀 Mengirim manual ke ${entry.recipientName} (${entry.receiptNumber})`, 'info');
     updateStatus(entry.id, 'sent');
   };
 
   const addLog = (message: string, type: LogEntry['type'] = 'info') => {
-    const newLog: LogEntry = {
-      id: crypto.randomUUID(),
-      timestamp: Date.now(),
-      message,
-      type
-    };
+    const newLog: LogEntry = { id: crypto.randomUUID(), timestamp: Date.now(), message, type };
     setLogs(prev => [newLog, ...prev].slice(0, 100));
   };
 
@@ -430,7 +402,6 @@ export default function App() {
     let useTyping = settings.simulateTyping;
     let useAdaptive = settings.adaptiveDelay;
 
-    // Apply presets
     if (settings.speedMode === 'safe') {
       minDelay = 15000; maxDelay = 30000; useTyping = true; useAdaptive = true;
     } else if (settings.speedMode === 'normal') {
@@ -441,20 +412,12 @@ export default function App() {
       minDelay = 1000; maxDelay = 2000; useTyping = false; useAdaptive = false;
     }
 
-    let currentBaseDelay = minDelay;
-    if (settings.randomizeDelay || settings.speedMode !== 'custom') {
-      currentBaseDelay = Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay;
-    }
+    let currentDelay = settings.randomizeDelay || settings.speedMode !== 'custom' 
+      ? Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay 
+      : minDelay;
 
-    let currentDelay = currentBaseDelay;
+    if (useAdaptive) currentDelay += Math.floor(sentCount / 10) * 500;
 
-    // 1. Adaptive Delay
-    if (useAdaptive) {
-      const increment = Math.floor(sentCount / 10) * 500;
-      currentDelay += increment;
-    }
-
-    // 2. Typing Simulation
     if (useTyping) {
       let templateText = activeTemplate.text;
       if (settings.rotateTemplates) {
@@ -464,19 +427,15 @@ export default function App() {
         templateText = variations[sentCount % variations.length];
       }
       const message = generateMessage(entry, templateText);
-      const typingDelay = Math.min(message.length * 50, 5000);
-      currentDelay += typingDelay;
+      currentDelay += Math.min(message.length * 50, 5000);
     }
 
-    // 3. Batch Pause
     if (settings.batchSize > 0 && sentCount >= nextBatchPauseAt && nextBatchPauseAt > 0) {
       currentDelay = settings.batchPause;
       toast(`Anti-Spam: Istirahat sejenak selama ${settings.batchPause / 1000} detik...`, { icon: '🛡️' });
-      const jitter = Math.floor(Math.random() * 5) - 2;
-      setNextBatchPauseAt(sentCount + settings.batchSize + jitter);
+      setNextBatchPauseAt(sentCount + settings.batchSize + (Math.floor(Math.random() * 5) - 2));
     }
 
-    // 4. Long Break
     if (settings.longBreakAfter > 0 && sentCount > 0 && sentCount % settings.longBreakAfter === 0) {
       currentDelay = settings.longBreakDuration * 60 * 1000;
       setIsLongBreak(true);
@@ -503,44 +462,31 @@ export default function App() {
     let entriesToProcess = [...pending];
     if (settings.shuffleQueue) {
       entriesToProcess = entriesToProcess.sort(() => Math.random() - 0.5);
-      setEntries(prev => {
-        const nonPending = prev.filter(e => e.status !== 'pending');
-        return [...nonPending, ...entriesToProcess];
-      });
+      setEntries(prev => [...prev.filter(e => e.status !== 'pending'), ...entriesToProcess]);
     }
 
     const firstEntry = entriesToProcess[0];
     addLog(`🎬 Memulai proses blast...${settings.shuffleQueue ? ' (Urutan Diacak)' : ''}`, 'info');
     
-    // Open the first one immediately to "unlock" the popup blocker
     const newWindow = window.open(getWALink(firstEntry), 'WAsenderTab');
-    
     if (!newWindow) {
-      toast.error('Popup terblokir! Harap izinkan popup di browser Anda.', {
-        duration: 8000,
-        icon: '🚫'
-      });
+      toast.error('Popup terblokir! Harap izinkan popup di browser Anda.', { duration: 8000, icon: '🚫' });
       return;
     }
-
     window.focus();
     
     if (settings.autoSend) {
       updateStatus(firstEntry.id, 'sending');
     } else {
       updateStatus(firstEntry.id, 'sent');
-      // If not auto-sending, start countdown for next
-      const delay = calculateNextDelay(entries.filter(e => e.status === 'sent').length + 1, entriesToProcess[1] || firstEntry);
-      setNextActionTime(Date.now() + delay);
+      setNextActionTime(Date.now() + calculateNextDelay(entries.filter(e => e.status === 'sent').length + 1, entriesToProcess[1] || firstEntry));
     }
 
     setIsBlasting(true);
     setCurrentIndex(0);
     
-    const sentCount = entries.filter(e => e.status === 'sent').length;
     if (settings.batchSize > 0) {
-      const jitter = Math.floor(Math.random() * 5) - 2;
-      setNextBatchPauseAt(sentCount + settings.batchSize + jitter);
+      setNextBatchPauseAt(entries.filter(e => e.status === 'sent').length + settings.batchSize + (Math.floor(Math.random() * 5) - 2));
     }
   };
 
@@ -551,13 +497,11 @@ export default function App() {
     addLog(`🛑 Proses blast dihentikan oleh pengguna`, 'warning');
   };
 
-  // Auto-recovery for stuck 'sending' status
   useEffect(() => {
     if (isBlasting && !settings.manualMode) {
       const sendingEntry = entries.find(e => e.status === 'sending');
       if (sendingEntry) {
-        // Dynamic timeout based on speed mode
-        let timeoutDuration = 25000; // Default 25s
+        let timeoutDuration = 25000;
         if (settings.speedMode === 'turbo') timeoutDuration = 5000;
         else if (settings.speedMode === 'fast') timeoutDuration = 10000;
         else if (settings.speedMode === 'normal') timeoutDuration = 15000;
@@ -566,12 +510,10 @@ export default function App() {
           addLog(`⏭️ Auto-Next: Melanjutkan otomatis untuk ${sendingEntry.recipientName}...`, 'info');
           updateStatus(sendingEntry.id, 'sent');
           
-          // Trigger next delay after timeout
           const sentCount = entries.filter(e => e.status === 'sent').length + 1;
           const pending = entries.filter(e => e.status === 'pending' && e.id !== sendingEntry.id);
           if (pending.length > 0) {
-            const delay = calculateNextDelay(sentCount, pending[0]);
-            setNextActionTime(Date.now() + delay);
+            setNextActionTime(Date.now() + calculateNextDelay(sentCount, pending[0]));
           }
         }, timeoutDuration);
         return () => clearTimeout(timer);
@@ -581,43 +523,34 @@ export default function App() {
 
   useEffect(() => {
     const handleExtensionMessage = (event: MessageEvent) => {
-      // Check if message is from our extension
       if (event.data && event.data.source === 'wasender-extension') {
         const { type, entryId, status: waStatus } = event.data;
         
         if (type === 'WA_STATUS_UPDATE') {
-          // Use functional update to ensure we have latest state
           setEntries(currentEntries => {
             const entry = currentEntries.find(e => e.id === entryId);
             if (!entry || entry.status === 'sent') return currentEntries;
 
-            const name = entry.recipientName;
-            const resi = entry.receiptNumber;
-
             if (waStatus === 'sent') {
               setConsecutiveErrors(0);
               setSentThisHour(prev => prev + 1);
-              addLog(`✅ Pesan terkirim ke ${name} (${resi})`, 'success');
+              addLog(`✅ Pesan terkirim ke ${entry.recipientName} (${entry.receiptNumber})`, 'success');
               
-              // Trigger next delay after confirmation
               const sentCount = currentEntries.filter(e => e.status === 'sent').length + 1;
               const pending = currentEntries.filter(e => e.status === 'pending' && e.id !== entryId);
               if (pending.length > 0) {
-                const delay = calculateNextDelay(sentCount, pending[0]);
-                setNextActionTime(Date.now() + delay);
+                setNextActionTime(Date.now() + calculateNextDelay(sentCount, pending[0]));
               }
               
               return currentEntries.map(e => e.id === entryId ? { ...e, status: 'sent' } : e);
             } else if (waStatus === 'invalid') {
               const currentRetries = entry.retryCount || 0;
-              
               if (settings.autoRetry && currentRetries < settings.maxRetries) {
-                const nextRetry = currentRetries + 1;
-                addLog(`🔄 Nomor ${name} gagal, mencoba ulang (${nextRetry}/${settings.maxRetries})...`, 'warning');
-                return currentEntries.map(e => e.id === entryId ? { ...e, status: 'pending', retryCount: nextRetry } : e);
+                addLog(`🔄 Nomor ${entry.recipientName} gagal, mencoba ulang (${currentRetries + 1}/${settings.maxRetries})...`, 'warning');
+                return currentEntries.map(e => e.id === entryId ? { ...e, status: 'pending', retryCount: currentRetries + 1 } : e);
               } else {
                 setConsecutiveErrors(prev => prev + 1);
-                addLog(`❌ Nomor tidak valid: ${name} (${resi})`, 'error');
+                addLog(`❌ Nomor tidak valid: ${entry.recipientName} (${entry.receiptNumber})`, 'error');
                 return currentEntries.map(e => e.id === entryId ? { ...e, status: 'failed' } : e);
               }
             }
@@ -632,15 +565,10 @@ export default function App() {
     };
 
     window.addEventListener('message', handleExtensionMessage);
-    
-    // Heartbeat check
     const heartbeatInterval = setInterval(() => {
-      const now = Date.now();
-      if (lastHeartbeat > 0 && now - lastHeartbeat > 20000) {
-        if (isExtensionDetected) {
-          setIsExtensionDetected(false);
-          addLog(`🔌 Extension terputus atau tidak terdeteksi`, 'warning');
-        }
+      if (lastHeartbeat > 0 && Date.now() - lastHeartbeat > 20000 && isExtensionDetected) {
+        setIsExtensionDetected(false);
+        addLog(`🔌 Extension terputus atau tidak terdeteksi`, 'warning');
       }
     }, 5000);
 
@@ -662,7 +590,6 @@ export default function App() {
     };
     window.addEventListener('message', handlePing);
     
-    // Check for DOM attribute (more reliable)
     const checkAttr = () => {
       if (document.documentElement.getAttribute('data-wasender-extension') === 'active') {
         if (!isExtensionDetected) {
@@ -671,7 +598,6 @@ export default function App() {
         }
         setLastHeartbeat(Date.now());
       }
-      // Also ping extension
       window.postMessage({ type: 'EXTENSION_PING' }, '*');
     };
 
@@ -684,7 +610,6 @@ export default function App() {
     };
   }, [isExtensionDetected]);
 
-  // Main Blast Engine
   useEffect(() => {
     if (!isBlasting || settings.manualMode) {
       setCountdown(0);
@@ -694,7 +619,6 @@ export default function App() {
     const engineTick = () => {
       const now = Date.now();
       
-      // 1. Check Hourly Limit
       if (now - lastHourReset > 3600000) {
         setSentThisHour(0);
         setLastHourReset(now);
@@ -709,7 +633,6 @@ export default function App() {
       const pendingEntries = entries.filter(e => e.status === 'pending');
       const sendingEntries = entries.filter(e => e.status === 'sending');
       
-      // 2. If already sending, wait for extension or timeout
       if (sendingEntries.length > 0) {
         setCountdown(0);
         return;
@@ -719,7 +642,6 @@ export default function App() {
         const entry = pendingEntries[0];
         
         if (now >= nextActionTime) {
-          // 3. TIME TO SEND
           addLog(`🚀 Mengirim ke ${entry.recipientName}...`, 'info');
           
           const waLink = getWALink(entry, entries.filter(e => e.status === 'sent').length);
@@ -727,7 +649,6 @@ export default function App() {
           
           if (!newWindow) {
             addLog(`⚠️ Browser memblokir pembukaan tab otomatis.`, 'warning');
-            // Set a small retry delay to avoid tight loop if blocked
             setNextActionTime(Date.now() + 3000); 
             return;
           }
@@ -738,13 +659,10 @@ export default function App() {
             updateStatus(entry.id, 'sending');
           } else {
             updateStatus(entry.id, 'sent');
-            const delay = calculateNextDelay(entries.filter(e => e.status === 'sent').length + 1, pendingEntries[1] || entry);
-            setNextActionTime(Date.now() + delay);
+            setNextActionTime(Date.now() + calculateNextDelay(entries.filter(e => e.status === 'sent').length + 1, pendingEntries[1] || entry));
           }
         } else {
-          // 4. WAITING DELAY - Update Countdown
-          const remaining = Math.ceil((nextActionTime - now) / 1000);
-          setCountdown(Math.max(0, remaining));
+          setCountdown(Math.max(0, Math.ceil((nextActionTime - now) / 1000)));
         }
       } else {
         setIsBlasting(false);
@@ -752,14 +670,12 @@ export default function App() {
       }
     };
 
-    // Run immediately then every 1s
     engineTick();
     const interval = setInterval(engineTick, 1000);
 
     return () => clearInterval(interval);
   }, [isBlasting, entries, nextActionTime, settings.manualMode, settings.hourlyLimit, isExtensionDetected, sentThisHour, lastHourReset]);
 
-  // Keyboard shortcut for manual mode
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (isBlasting && settings.manualMode && (e.code === 'Space' || e.code === 'Enter')) {
@@ -841,7 +757,6 @@ export default function App() {
     )}>
       <Toaster position="top-right" />
 
-      {/* Blast Progress Overlay */}
       {isBlasting && (
         <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-6">
           <div className="bg-white dark:bg-[#16191F] rounded-3xl p-8 max-w-md w-full shadow-2xl border border-white/10 text-center space-y-6">
@@ -891,8 +806,7 @@ export default function App() {
                                 updateStatus(entry.id, 'sending');
                               } else {
                                 updateStatus(entry.id, 'sent');
-                                const delay = calculateNextDelay(sentCount + 1, entries.filter(e => e.status === 'pending')[1] || entry);
-                                setNextActionTime(Date.now() + delay);
+                                setNextActionTime(Date.now() + calculateNextDelay(sentCount + 1, entries.filter(e => e.status === 'pending')[1] || entry));
                               }
                             }
                           }
@@ -943,9 +857,7 @@ export default function App() {
                   if (pending.length > 0) {
                     const entry = pending[0];
                     const newWindow = window.open(getWALink(entry), 'WAsenderTab');
-                    if (newWindow) {
-                      window.focus();
-                    }
+                    if (newWindow) window.focus();
                     updateStatus(entry.id, 'sent');
                   }
                 }}
@@ -964,7 +876,6 @@ export default function App() {
         </div>
       )}
       
-      {/* Sidebar-like Header */}
       <header className="bg-white dark:bg-[#16191F] border-b border-black/5 dark:border-white/5 sticky top-0 z-30 backdrop-blur-md bg-white/80 dark:bg-[#16191F]/80">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -1026,10 +937,7 @@ export default function App() {
 
       <main className="max-w-7xl mx-auto px-6 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
         
-        {/* Left Column: Stats & Config */}
         <div className="lg:col-span-4 space-y-6">
-          
-          {/* Stats Card */}
           <section className="bg-white dark:bg-[#16191F] rounded-3xl p-6 shadow-sm border border-black/5 dark:border-white/5">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-2">
@@ -1072,7 +980,6 @@ export default function App() {
             </div>
           </section>
 
-          {/* Settings Card */}
           <section className="bg-white dark:bg-[#16191F] rounded-3xl p-6 shadow-sm border border-black/5 dark:border-white/5">
             <div className="flex items-center gap-2 mb-6">
               <Timer size={18} className="text-emerald-500" />
@@ -1111,7 +1018,6 @@ export default function App() {
             </div>
           </section>
 
-          {/* Template Editor */}
           <section className="bg-white dark:bg-[#16191F] rounded-3xl p-6 shadow-sm border border-black/5 dark:border-white/5">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
@@ -1157,7 +1063,6 @@ export default function App() {
               ))}
             </div>
 
-            {/* Variation Selector */}
             <div className="flex items-center gap-2 mb-3">
               <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mr-2">Variasi:</span>
               {[0, 1, 2].map(idx => (
@@ -1208,10 +1113,7 @@ export default function App() {
           </section>
         </div>
 
-        {/* Right Column: Queue & Input */}
         <div className="lg:col-span-8 space-y-6">
-          
-          {/* Action Bar */}
           <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between bg-white dark:bg-[#16191F] p-4 rounded-3xl border border-black/5 dark:border-white/5 shadow-sm">
             <div className="relative flex-1">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" size={18} />
@@ -1262,17 +1164,15 @@ export default function App() {
             </div>
           </div>
 
-          {/* Popup Warning */}
           {!isBlasting && entries.length > 0 && (
             <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20 rounded-2xl p-4 flex items-start gap-3">
               <AlertCircle className="text-amber-600 dark:text-amber-400 shrink-0" size={18} />
               <div className="text-xs text-amber-800 dark:text-amber-300 leading-relaxed">
-                <span className="font-bold">PENTING:</span> Mesin akan membuka <span className="font-bold">WhatsApp Web</span> di tab yang sama secara bergantian. Pastikan Anda telah <span className="font-bold">MENGIZINKAN POPUP</span> di browser Anda (klik ikon gembok/popup di bar alamat browser). Gunakan delay minimal 5 detik agar WA Web sempat memuat pesan.
+                <span className="font-bold">PENTING:</span> Mesin akan membuka <span className="font-bold">WhatsApp Web</span> di tab yang sama secara bergantian. Pastikan Anda telah <span className="font-bold">MENGIZINKAN POPUP</span> di browser Anda.
               </div>
             </div>
           )}
 
-          {/* Quick Add Form */}
           <section className="bg-white dark:bg-[#16191F] rounded-3xl p-6 shadow-sm border border-black/5 dark:border-white/5">
             <form onSubmit={handleAddEntry} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1360,7 +1260,6 @@ export default function App() {
             </form>
           </section>
 
-          {/* Console Log */}
           <section className="bg-gray-50 dark:bg-black rounded-3xl p-4 shadow-sm dark:shadow-xl border border-gray-200 dark:border-white/5 overflow-hidden">
             <div className="flex items-center justify-between mb-3 px-2">
               <div className="flex items-center gap-2">
@@ -1396,7 +1295,6 @@ export default function App() {
             </div>
           </section>
 
-          {/* Queue Table */}
           <div className="bg-white dark:bg-[#16191F] rounded-3xl shadow-sm border border-black/5 dark:border-white/5 overflow-hidden">
             <div className="p-6 border-b border-black/5 dark:border-white/5 flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -1462,8 +1360,8 @@ export default function App() {
                               <div className="text-[10px] text-gray-400 dark:text-gray-500 font-mono uppercase tracking-wider">Resi: {entry.receiptNumber || '-'}</div>
                               {entry.address && <div className="text-[10px] text-gray-400 dark:text-gray-500 truncate max-w-[200px]" title={entry.address}>{entry.address}</div>}
                               <div className="flex gap-2">
-                                {entry.cod && <div className="text-[10px] text-amber-600 dark:text-amber-500 font-bold uppercase tracking-wider">COD: Rp {entry.cod}</div>}
-                                {entry.dfod && <div className="text-[10px] text-blue-600 dark:text-blue-500 font-bold uppercase tracking-wider">DFOD: Rp {entry.dfod}</div>}
+                                {entry.cod && <div className="text-[10px] text-amber-600 dark:text-amber-500 font-bold uppercase tracking-wider">COD: Rp {formatCurrency(entry.cod)}</div>}
+                                {entry.dfod && <div className="text-[10px] text-blue-600 dark:text-blue-500 font-bold uppercase tracking-wider">DFOD: Rp {formatCurrency(entry.dfod)}</div>}
                               </div>
                             </div>
                           </td>
@@ -1624,9 +1522,7 @@ export default function App() {
                           if (entry) {
                             const sentCount = entries.filter(e => e.status === 'sent').length;
                             const newWindow = window.open(getWALink(entry, sentCount), 'WAsenderTab');
-                            if (newWindow) {
-                              window.focus();
-                            }
+                            if (newWindow) window.focus();
                             updateStatus(entry.id, 'sent');
                             setShowPreviewModal(false);
                           }
