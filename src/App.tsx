@@ -1,56 +1,19 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
-  Plus, 
-  Send, 
-  Trash2, 
-  Play, 
-  Square, 
-  MessageSquare, 
-  User, 
-  Package, 
-  Hash, 
-  Phone,
-  FileText,
-  CheckCircle2,
-  Clock,
-  AlertCircle,
-  Settings2,
-  Download,
-  FileSpreadsheet,
-  X,
-  Search,
-  Sparkles,
-  BarChart3,
-  History,
-  Timer,
-  ExternalLink,
-  ChevronRight,
-  Moon,
-  Sun,
-  RotateCcw,
-  Shield,
-  Puzzle,
-  Loader2,
-  Zap
+  Plus, Send, Trash2, Play, Square, MessageSquare, User, Package, Hash, Phone,
+  FileText, CheckCircle2, Clock, AlertCircle, Settings2, Download, FileSpreadsheet,
+  X, Search, Sparkles, BarChart3, History, Timer, ExternalLink, ChevronRight, Moon,
+  Sun, RotateCcw, Shield, Puzzle, Loader2, Zap
 } from 'lucide-react';
 import { Toaster, toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { 
-  PieChart, 
-  Pie, 
-  Cell, 
-  ResponsiveContainer, 
-  Tooltip as RechartsTooltip 
+  PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip 
 } from 'recharts';
 import { 
-  BlastEntry, 
-  LogEntry,
-  MessageTemplate, 
-  DEFAULT_TEMPLATES, 
-  AppSettings, 
-  DEFAULT_SETTINGS 
+  BlastEntry, LogEntry, MessageTemplate, DEFAULT_TEMPLATES, AppSettings, DEFAULT_SETTINGS 
 } from './types';
 import { downloadExtensionZip } from './utils/extensionDownloader';
 
@@ -706,9 +669,9 @@ export default function App() {
     const pending = entries.filter(e => e.status === 'pending').length;
     const received = entries.filter(e => e.isReceived).length;
     return [
-      { name: 'Sent', value: sent, color: '#10b981' },
-      { name: 'Pending', value: pending, color: '#f59e0b' },
-      { name: 'Received', value: received, color: '#3b82f6' }
+      { name: 'Sent', value: sent, color: '#10b981' }, // Emerald
+      { name: 'Pending', value: pending, color: '#f59e0b' }, // Amber
+      { name: 'Received', value: received, color: '#0ea5e9' } // Sky
     ];
   }, [entries]);
 
@@ -752,47 +715,57 @@ export default function App() {
 
   return (
     <div className={cn(
-      "min-h-screen bg-[#F8F9FA] dark:bg-[#0F1115] text-[#1A1A1A] dark:text-[#E4E6EB] font-sans selection:bg-emerald-100 dark:selection:bg-emerald-900/30 transition-colors duration-300",
+      "min-h-screen bg-slate-50 dark:bg-[#09090b] text-slate-800 dark:text-slate-200 font-sans selection:bg-emerald-200 dark:selection:bg-emerald-900/40 transition-colors duration-500 relative pb-12",
       isDarkMode && "dark"
     )}>
-      <Toaster position="top-right" />
+      {/* Background Ambient Decor */}
+      <div className="fixed top-0 left-0 w-full h-96 bg-gradient-to-b from-emerald-500/10 to-transparent pointer-events-none -z-10" />
+
+      <Toaster position="top-right" toastOptions={{ 
+        className: 'dark:bg-zinc-800 dark:text-white border border-slate-200 dark:border-zinc-700 rounded-2xl shadow-lg' 
+      }} />
 
       {isBlasting && (
-        <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-6">
-          <div className="bg-white dark:bg-[#16191F] rounded-3xl p-8 max-w-md w-full shadow-2xl border border-white/10 text-center space-y-6">
-            <div className="relative w-24 h-24 mx-auto">
-              <div className="absolute inset-0 border-4 border-emerald-500/20 rounded-full" />
-              <div className="absolute inset-0 border-4 border-emerald-500 rounded-full border-t-transparent animate-spin" />
+        <div className="fixed inset-0 z-[100] bg-slate-900/60 dark:bg-black/80 backdrop-blur-sm flex items-center justify-center p-6">
+          <motion.div 
+            initial={{ scale: 0.95, opacity: 0, y: 10 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            className="bg-white dark:bg-zinc-900 rounded-[2rem] p-8 max-w-md w-full shadow-2xl border border-white/20 dark:border-zinc-800 text-center space-y-6"
+          >
+            <div className="relative w-28 h-28 mx-auto">
+              <div className="absolute inset-0 bg-emerald-100 dark:bg-emerald-900/30 rounded-full animate-pulse" />
+              <div className="absolute inset-2 border-4 border-emerald-500 rounded-full border-t-transparent animate-spin" />
               <div className="absolute inset-0 flex items-center justify-center">
-                <Play size={32} className="text-emerald-500 fill-current" />
+                <Play size={36} className="text-emerald-500 fill-current translate-x-1" />
               </div>
             </div>
-            <div className="space-y-2">
-              <h3 className="text-xl font-bold">
+            
+            <div className="space-y-3">
+              <h3 className="text-2xl font-bold tracking-tight">
                 {isLongBreak ? '😴 Long Break Active' : 
                  entries.some(e => e.status === 'sending') ? '⏳ Menunggu WA Web...' : 
                  'Blasting in Progress...'}
               </h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                Pesan terkirim: <span className="font-bold text-emerald-600 dark:text-emerald-400">{entries.filter(e => e.status === 'sent').length}</span> / <span className="font-bold">{entries.length}</span>
+              <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
+                Pesan terkirim: <span className="text-emerald-600 dark:text-emerald-400 font-bold">{entries.filter(e => e.status === 'sent').length}</span> / <span className="font-bold">{entries.length}</span>
               </p>
               
               {!settings.manualMode ? (
-                <div className="py-4">
+                <div className="py-6">
                   <div className={cn(
-                    "text-4xl font-black tabular-nums",
+                    "text-5xl font-black tabular-nums tracking-tighter",
                     isLongBreak ? "text-amber-500" : 
                     entries.some(e => e.status === 'sending') ? "text-blue-500 animate-pulse" :
-                    "text-emerald-600 dark:text-emerald-400"
+                    "text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-500 dark:from-emerald-400 dark:to-teal-300"
                   )}>
                     {entries.some(e => e.status === 'sending') ? '--:--' : `${Math.floor(countdown / 60)}:${(countdown % 60).toString().padStart(2, '0')}`}
                   </div>
-                  <p className="text-[10px] text-gray-400 uppercase tracking-widest mt-1">
+                  <p className="text-[11px] text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mt-3 font-semibold">
                     {entries.some(e => e.status === 'sending') ? 'Memproses di WA Web' : isLongBreak ? 'Break ends in' : 'Next message in'}
                   </p>
                   
                   {Date.now() >= nextActionTime && entries.filter(e => e.status === 'pending').length > 0 && !entries.some(e => e.status === 'sending') && (
-                    <div className="mt-4 animate-in fade-in zoom-in duration-300">
+                    <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="mt-6">
                       <button
                         onClick={() => {
                           const pending = entries.filter(e => e.status === 'pending');
@@ -811,32 +784,33 @@ export default function App() {
                             }
                           }
                         }}
-                        className="w-full py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold text-sm shadow-lg flex items-center justify-center gap-2"
+                        className="w-full py-4 px-6 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white rounded-2xl font-bold text-sm shadow-xl shadow-amber-500/20 active:scale-95 transition-all flex items-center justify-center gap-2"
                       >
-                        <Play size={14} fill="white" /> Klik jika tab tidak terbuka otomatis
+                        <Play size={16} fill="white" /> Paksa Lanjut (Tab Terblokir)
                       </button>
-                    </div>
+                    </motion.div>
                   )}
                 </div>
               ) : (
-                <div className="py-6 space-y-2">
-                  <div className="px-4 py-2 bg-emerald-50 dark:bg-emerald-900/10 text-emerald-700 dark:text-emerald-400 rounded-xl text-xs font-bold border border-emerald-100 dark:border-emerald-900/20">
+                <div className="py-6 space-y-3">
+                  <div className="inline-block px-4 py-2 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-full text-xs font-bold border border-emerald-200 dark:border-emerald-500/20">
                     MODE MANUAL AKTIF
                   </div>
-                  <p className="text-[10px] text-gray-400">Tekan [SPASI] atau klik tombol di bawah untuk lanjut.</p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Tekan [SPASI] atau klik tombol di bawah untuk lanjut.</p>
                 </div>
               )}
 
-              <div className="pt-2 flex flex-col gap-2">
+              <div className="pt-4 flex flex-col gap-2">
                 <p className="text-[10px] text-amber-600 dark:text-amber-400 font-bold uppercase tracking-widest animate-pulse">
-                  PENTING: Tekan [ENTER] pada tab WhatsApp untuk mengirim!
+                  PENTING: Tekan [ENTER] pada tab WhatsApp
                 </p>
-                <p className="text-[9px] text-gray-400 italic">
-                  Browser tidak mengizinkan klik otomatis di dalam WhatsApp. Tekan Enter setiap kali pesan muncul.
+                <p className="text-[10px] text-slate-400 dark:text-slate-500">
+                  Browser tidak mengizinkan aksi klik otomatis tanpa interaksi manusia.
                 </p>
               </div>
             </div>
-            <div className="flex flex-col gap-3">
+
+            <div className="flex flex-col gap-3 pt-2">
               {entries.some(e => e.status === 'sending') && (
                 <button
                   onClick={() => {
@@ -846,7 +820,7 @@ export default function App() {
                       updateStatus(sending.id, 'sent');
                     }
                   }}
-                  className="w-full py-3 bg-blue-600 text-white rounded-2xl font-bold shadow-lg shadow-blue-600/20 text-sm hover:bg-blue-700 transition-all"
+                  className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-2xl font-bold shadow-lg shadow-blue-500/20 text-sm active:scale-95 transition-all"
                 >
                   Paksa Lanjut ke Nomor Berikutnya
                 </button>
@@ -861,30 +835,33 @@ export default function App() {
                     updateStatus(entry.id, 'sent');
                   }
                 }}
-                className="w-full py-3 bg-emerald-100 dark:bg-emerald-900/10 text-emerald-700 dark:text-emerald-400 rounded-2xl font-bold text-sm hover:bg-emerald-200 transition-all border border-emerald-200 dark:border-emerald-900/30"
+                className="w-full py-4 bg-slate-100 dark:bg-zinc-800/50 text-slate-700 dark:text-slate-300 rounded-2xl font-bold text-sm hover:bg-slate-200 dark:hover:bg-zinc-800 transition-all active:scale-95"
               >
-                Kirim Berikutnya (Manual)
+                Kirim Manual
               </button>
               <button
                 onClick={stopBlast}
-                className="w-full py-3 bg-red-500 hover:bg-red-600 text-white rounded-2xl font-bold transition-all shadow-lg shadow-red-500/20 text-sm"
+                className="w-full py-4 bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-400 hover:to-rose-500 text-white rounded-2xl font-bold shadow-lg shadow-red-500/20 text-sm active:scale-95 transition-all"
               >
-                Berhenti
+                Hentikan Proses
               </button>
             </div>
-          </div>
+          </motion.div>
         </div>
       )}
       
-      <header className="bg-white dark:bg-[#16191F] border-b border-black/5 dark:border-white/5 sticky top-0 z-30 backdrop-blur-md bg-white/80 dark:bg-[#16191F]/80">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+      {/* Floating Modern Header */}
+      <header className="sticky top-4 z-30 mx-6 mb-8 max-w-7xl lg:mx-auto lg:px-6">
+        <div className="bg-white/70 dark:bg-zinc-900/70 backdrop-blur-xl border border-slate-200/50 dark:border-zinc-800/50 rounded-3xl shadow-sm px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-emerald-600/20">
-              <Send size={20} />
+            <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-emerald-500/20">
+              <Send size={22} className="translate-x-[1px]" />
             </div>
             <div>
-              <h1 className="text-xl font-bold tracking-tight">WAsender <span className="text-emerald-600">PRO</span></h1>
-              <p className="text-[10px] text-gray-400 font-mono uppercase tracking-widest">Advanced WhatsApp Blast Engine</p>
+              <h1 className="text-xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+                WAsender <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 to-teal-400">PRO</span>
+              </h1>
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 font-mono uppercase tracking-widest font-semibold mt-0.5">Blast Engine Studio</p>
             </div>
           </div>
           
@@ -892,114 +869,125 @@ export default function App() {
             {!isExtensionDetected && (
               <button 
                 onClick={downloadExtensionZip}
-                className="hidden sm:flex items-center gap-2 px-4 py-2 bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20 rounded-xl text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/20 transition-all"
+                className="hidden sm:flex items-center gap-2 px-4 py-2.5 bg-amber-50 dark:bg-amber-500/10 border border-amber-200/50 dark:border-amber-500/20 rounded-2xl text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-500/20 transition-all active:scale-95"
                 title="Download Extension Helper"
               >
                 <Puzzle size={18} />
-                <span className="text-xs font-bold uppercase tracking-wider">Setup Extension</span>
+                <span className="text-[11px] font-bold uppercase tracking-wider">Setup Extension</span>
               </button>
             )}
             <button 
               onClick={handleResetDefault}
-              className="p-2.5 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/20 rounded-xl text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/20 transition-all flex items-center gap-2"
+              className="p-3 bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 rounded-2xl text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/20 transition-all active:scale-95 hidden sm:flex items-center gap-2"
               title="Reset ke Pengaturan Awal"
             >
               <RotateCcw size={18} />
-              <span className="hidden lg:inline text-xs font-bold uppercase tracking-wider">Reset</span>
             </button>
             <button 
               onClick={() => setIsDarkMode(!isDarkMode)}
-              className="p-2.5 bg-gray-50 dark:bg-[#1C2128] border border-black/5 dark:border-white/5 rounded-xl text-gray-500 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-all"
+              className="p-3 bg-slate-100 dark:bg-zinc-800/80 border border-transparent rounded-2xl text-slate-600 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 transition-all active:scale-95"
               title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
             >
               {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
             </button>
             <button 
               onClick={() => setShowSettingsModal(true)}
-              className="p-2.5 bg-gray-50 dark:bg-[#1C2128] border border-black/5 dark:border-white/5 rounded-xl text-gray-500 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-all"
+              className="p-3 bg-slate-100 dark:bg-zinc-800/80 border border-transparent rounded-2xl text-slate-600 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 transition-all active:scale-95"
               title="Settings"
             >
               <Settings2 size={18} />
             </button>
-            <div className="hidden md:flex items-center gap-2 px-4 py-2 bg-gray-50 dark:bg-[#1C2128] rounded-full border border-black/5 dark:border-white/5">
-              <div className={cn("w-2 h-2 rounded-full animate-pulse", isBlasting ? "bg-emerald-500" : "bg-gray-300 dark:bg-gray-700")} />
-              <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{isBlasting ? 'System Active' : 'System Idle'}</span>
+            <div className="hidden lg:flex items-center gap-2 px-4 py-2.5 bg-slate-100 dark:bg-zinc-800/80 rounded-2xl">
+              <div className={cn("w-2 h-2 rounded-full", isBlasting ? "bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" : "bg-slate-300 dark:bg-zinc-600")} />
+              <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">{isBlasting ? 'Active' : 'Idle'}</span>
             </div>
             <button 
               onClick={exportToCSV}
-              className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+              className="hidden md:flex items-center gap-2 px-4 py-2.5 bg-slate-100 dark:bg-zinc-800/80 rounded-2xl text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 transition-all active:scale-95"
             >
-              <Download size={14} /> Export
+              <Download size={16} /> Export
             </button>
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-6 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <main className="max-w-7xl mx-auto px-6 grid grid-cols-1 xl:grid-cols-12 gap-8">
         
-        <div className="lg:col-span-4 space-y-6">
-          <section className="bg-white dark:bg-[#16191F] rounded-3xl p-6 shadow-sm border border-black/5 dark:border-white/5">
+        {/* Left Sidebar */}
+        <div className="xl:col-span-4 flex flex-col gap-6">
+          {/* Overview Card */}
+          <section className="bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md rounded-3xl p-6 shadow-sm border border-slate-200/60 dark:border-zinc-800/60 transition-all hover:shadow-md">
             <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-2">
-                <BarChart3 size={18} className="text-emerald-500" />
-                <h2 className="font-bold">Overview</h2>
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-emerald-50 dark:bg-emerald-500/10 rounded-lg">
+                  <BarChart3 size={20} className="text-emerald-500" />
+                </div>
+                <h2 className="font-bold text-slate-800 dark:text-white tracking-tight">System Overview</h2>
               </div>
-              <History size={16} className="text-gray-300 dark:text-gray-600" />
+              <History size={16} className="text-slate-300 dark:text-zinc-600" />
             </div>
-            <div className="h-48 w-full">
+            <div className="h-48 w-full mb-2">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
                     data={statsData}
-                    innerRadius={60}
-                    outerRadius={80}
-                    paddingAngle={5}
+                    innerRadius={65}
+                    outerRadius={85}
+                    paddingAngle={6}
                     dataKey="value"
+                    stroke="none"
                   >
                     {statsData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
                   <RechartsTooltip 
+                    cursor={false}
                     contentStyle={{ 
-                      backgroundColor: isDarkMode ? '#16191F' : '#FFFFFF',
-                      borderColor: isDarkMode ? '#2D333B' : '#E5E7EB',
-                      color: isDarkMode ? '#E4E6EB' : '#1A1A1A'
+                      backgroundColor: isDarkMode ? '#18181b' : '#ffffff',
+                      borderColor: isDarkMode ? '#27272a' : '#e2e8f0',
+                      borderRadius: '16px',
+                      color: isDarkMode ? '#f8fafc' : '#0f172a',
+                      fontWeight: 600,
+                      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
                     }}
                   />
                 </PieChart>
               </ResponsiveContainer>
             </div>
-            <div className="grid grid-cols-3 gap-3 mt-4">
+            <div className="grid grid-cols-3 gap-3">
               {statsData.map(s => (
-                <div key={s.name} className="p-3 rounded-2xl bg-gray-50 dark:bg-[#1C2128] border border-black/5 dark:border-white/5">
-                  <div className="text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider truncate">{s.name}</div>
-                  <div className="text-lg font-bold" style={{ color: s.color }}>{s.value}</div>
+                <div key={s.name} className="p-3 rounded-2xl bg-slate-50 dark:bg-zinc-800/50 border border-slate-100 dark:border-zinc-800 text-center transition-transform hover:-translate-y-1">
+                  <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">{s.name}</div>
+                  <div className="text-2xl font-black" style={{ color: s.color }}>{s.value}</div>
                 </div>
               ))}
             </div>
           </section>
 
-          <section className="bg-white dark:bg-[#16191F] rounded-3xl p-6 shadow-sm border border-black/5 dark:border-white/5">
-            <div className="flex items-center gap-2 mb-6">
-              <Timer size={18} className="text-emerald-500" />
-              <h2 className="font-bold">Engine Settings</h2>
+          {/* Settings Quick Access */}
+          <section className="bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md rounded-3xl p-6 shadow-sm border border-slate-200/60 dark:border-zinc-800/60 transition-all hover:shadow-md">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 bg-teal-50 dark:bg-teal-500/10 rounded-lg">
+                <Timer size={20} className="text-teal-500" />
+              </div>
+              <h2 className="font-bold text-slate-800 dark:text-white tracking-tight">Quick Settings</h2>
             </div>
             <div className="space-y-6">
               <div className="space-y-2">
-                <label className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Nama Pengirim</label>
+                <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest ml-1">Nama Pengirim</label>
                 <input
                   type="text"
                   value={settings.senderName}
                   onChange={(e) => setSettings(prev => ({ ...prev, senderName: e.target.value }))}
                   placeholder="Contoh: Admin JNT"
-                  className="w-full p-3 text-sm bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-xl focus:border-emerald-500 outline-none dark:text-white"
+                  className="w-full px-4 py-3 text-sm bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-2xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all dark:text-white"
                 />
               </div>
-              <div className="space-y-3">
+              <div className="space-y-3 p-4 bg-slate-50 dark:bg-zinc-800/30 rounded-2xl border border-slate-100 dark:border-zinc-800/50">
                 <div className="flex justify-between items-center">
-                  <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Blast Delay</label>
-                  <span className="text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400">{settings.delay / 1000}s</span>
+                  <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Blast Delay</label>
+                  <span className="text-[11px] font-mono font-bold bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded-full">{settings.delay / 1000}s</span>
                 </div>
                 <input 
                   type="range" 
@@ -1008,9 +996,9 @@ export default function App() {
                   step="500"
                   value={settings.delay}
                   onChange={(e) => setSettings(prev => ({ ...prev, delay: parseInt(e.target.value) }))}
-                  className="w-full h-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                  className="w-full h-2 bg-slate-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-emerald-500"
                 />
-                <div className="flex justify-between text-[10px] text-gray-400 dark:text-gray-600 font-mono">
+                <div className="flex justify-between text-[10px] text-slate-400 dark:text-slate-500 font-bold tracking-widest">
                   <span>FAST</span>
                   <span>SAFE</span>
                 </div>
@@ -1018,31 +1006,32 @@ export default function App() {
             </div>
           </section>
 
-          <section className="bg-white dark:bg-[#16191F] rounded-3xl p-6 shadow-sm border border-black/5 dark:border-white/5">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <Settings2 size={18} className="text-emerald-500" />
-                <h2 className="font-bold">Templates</h2>
+          {/* Templates */}
+          <section className="bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md rounded-3xl p-6 shadow-sm border border-slate-200/60 dark:border-zinc-800/60 transition-all hover:shadow-md flex flex-col">
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-indigo-50 dark:bg-indigo-500/10 rounded-lg">
+                  <MessageSquare size={20} className="text-indigo-500" />
+                </div>
+                <h2 className="font-bold text-slate-800 dark:text-white tracking-tight">Templates</h2>
               </div>
-              <div className="flex items-center gap-1">
-                <span className="text-[9px] font-bold text-emerald-500 uppercase tracking-tighter mr-2 animate-pulse">Auto-saved</span>
-                <button 
-                  onClick={() => {
-                    const def = DEFAULT_TEMPLATES.find(t => t.id === activeTemplateId);
-                    if (def && confirm('Reset template ini ke pengaturan awal?')) {
-                      setTemplates(prev => prev.map(t => t.id === activeTemplateId ? { ...def } : t));
-                      setActiveVariationIndex(0);
-                      toast.success('Template direset ke default');
-                    }
-                  }}
-                  className="p-2 text-gray-400 dark:text-gray-500 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/10 rounded-xl transition-all"
-                  title="Reset to Default"
-                >
-                  <History size={18} />
-                </button>
-              </div>
+              <button 
+                onClick={() => {
+                  const def = DEFAULT_TEMPLATES.find(t => t.id === activeTemplateId);
+                  if (def && confirm('Reset template ini ke pengaturan awal?')) {
+                    setTemplates(prev => prev.map(t => t.id === activeTemplateId ? { ...def } : t));
+                    setActiveVariationIndex(0);
+                    toast.success('Template direset ke default');
+                  }
+                }}
+                className="p-2 text-slate-400 dark:text-slate-500 hover:text-rose-500 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-xl transition-all"
+                title="Reset to Default"
+              >
+                <History size={18} />
+              </button>
             </div>
             
+            {/* Template Selector */}
             <div className="flex gap-2 mb-4 overflow-x-auto pb-2 custom-scrollbar">
               {templates.map(t => (
                 <button
@@ -1052,10 +1041,10 @@ export default function App() {
                     setActiveVariationIndex(0);
                   }}
                   className={cn(
-                    "whitespace-nowrap px-4 py-2 rounded-xl text-xs font-bold transition-all border",
+                    "whitespace-nowrap px-5 py-2.5 rounded-2xl text-xs font-bold transition-all border",
                     activeTemplateId === t.id 
-                      ? "bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-600/20" 
-                      : "bg-gray-50 dark:bg-[#1C2128] text-gray-500 dark:text-gray-400 border-gray-200 dark:border-white/5 hover:bg-gray-100 dark:hover:bg-gray-800"
+                      ? "bg-slate-900 text-white border-slate-900 dark:bg-white dark:text-slate-900 dark:border-white shadow-md shadow-slate-900/10" 
+                      : "bg-slate-50 dark:bg-zinc-800/50 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-zinc-700 hover:bg-slate-100 dark:hover:bg-zinc-800"
                   )}
                 >
                   {t.name}
@@ -1063,231 +1052,248 @@ export default function App() {
               ))}
             </div>
 
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mr-2">Variasi:</span>
+            {/* Variation Selector */}
+            <div className="flex items-center gap-2 mb-4 bg-slate-50 dark:bg-zinc-800/30 p-1.5 rounded-2xl w-max">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mx-2">Variasi</span>
               {[0, 1, 2].map(idx => (
                 <button
                   key={idx}
                   onClick={() => setActiveVariationIndex(idx)}
                   className={cn(
-                    "w-8 h-8 rounded-lg text-xs font-bold transition-all border flex items-center justify-center",
+                    "w-8 h-8 rounded-xl text-xs font-bold transition-all flex items-center justify-center",
                     activeVariationIndex === idx
-                      ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800"
-                      : "bg-gray-50 dark:bg-[#1C2128] text-gray-400 border-gray-100 dark:border-white/5"
+                      ? "bg-white dark:bg-zinc-700 text-slate-900 dark:text-white shadow-sm"
+                      : "text-slate-500 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-zinc-800"
                   )}
                 >
                   {idx + 1}
                 </button>
               ))}
-              <div className="ml-auto text-[9px] text-gray-400 italic">
-                {settings.rotateTemplates ? "Rotasi Aktif" : "Rotasi Mati"}
-              </div>
             </div>
 
             <textarea
               value={currentTemplateText}
               onChange={(e) => updateActiveTemplateText(e.target.value)}
-              className="w-full h-40 p-4 text-sm bg-gray-50 dark:bg-[#1C2128] border border-gray-200 dark:border-white/5 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all resize-none leading-relaxed dark:text-white custom-scrollbar"
+              className="w-full flex-1 min-h-[160px] p-5 text-sm bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-2xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all resize-none leading-relaxed dark:text-slate-200 custom-scrollbar shadow-inner"
               placeholder="Tulis template pesan..."
             />
-            <div className="mt-3 flex flex-wrap gap-2">
+            
+            <div className="mt-4 flex flex-wrap gap-2">
               {['{salam}', '{pengirim}', '{nama}', '{barang}', '{resi}', '{alamat}', '{cod}', '{dfod}', '{if_cod}', '{/if_cod}', '{if_dfod}', '{/if_dfod}'].map(tag => (
                 <button
                   key={tag}
                   onClick={() => updateActiveTemplateText(currentTemplateText + ' ' + tag)}
-                  className="text-[10px] font-bold tracking-wider px-3 py-1.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg text-gray-600 dark:text-gray-400 transition-colors"
+                  className="text-[10px] font-mono font-bold px-3 py-1.5 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 rounded-lg text-slate-600 dark:text-slate-300 transition-colors active:scale-95 border border-slate-200 dark:border-zinc-700"
                 >
                   {tag}
                 </button>
               ))}
             </div>
-            <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/20 rounded-xl">
-              <div className="flex items-center gap-2 mb-1">
-                <Sparkles size={12} className="text-blue-600 dark:text-blue-400" />
-                <span className="text-[10px] font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wider">Anti-Ban Tip: Spintax</span>
+            <div className="mt-5 p-4 bg-blue-50/80 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 rounded-2xl">
+              <div className="flex items-center gap-2 mb-2">
+                <Sparkles size={14} className="text-blue-500" />
+                <span className="text-[10px] font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wider">Spintax Tip</span>
               </div>
-              <p className="text-[10px] text-blue-600 dark:text-blue-300 leading-relaxed">
-                Gunakan format <span className="font-mono font-bold bg-blue-100 dark:bg-blue-900/30 px-1 rounded">{"{Halo|Hai|Pagi}"}</span> agar pesan diacak otomatis.
+              <p className="text-[11px] text-blue-600 dark:text-blue-300/80 leading-relaxed font-medium">
+                Gunakan format <span className="font-mono font-bold bg-white dark:bg-zinc-900 px-1.5 py-0.5 rounded-md border border-blue-200 dark:border-blue-500/30">{"{Halo|Hai|Pagi}"}</span> agar teks awal lebih bervariasi dan aman dari blokir.
               </p>
             </div>
           </section>
         </div>
 
-        <div className="lg:col-span-8 space-y-6">
-          <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between bg-white dark:bg-[#16191F] p-4 rounded-3xl border border-black/5 dark:border-white/5 shadow-sm">
+        {/* Right Content */}
+        <div className="xl:col-span-8 flex flex-col gap-6">
+          
+          {/* Main Action Bar */}
+          <div className="bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md p-4 rounded-3xl border border-slate-200/60 dark:border-zinc-800/60 shadow-sm flex flex-col lg:flex-row gap-4 items-stretch lg:items-center justify-between transition-all hover:shadow-md">
             <div className="relative flex-1">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" size={18} />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={18} />
               <input 
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Cari nama, nomor, atau resi..."
-                className="w-full pl-12 pr-4 py-3 bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-sm dark:text-white"
+                className="w-full pl-12 pr-4 py-3.5 bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-2xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all text-sm dark:text-white"
               />
             </div>
-            <div className="flex gap-3 items-center">
+            <div className="flex gap-3 items-center flex-wrap sm:flex-nowrap">
               <div className={cn(
-                "flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold border transition-all",
+                "hidden md:flex items-center gap-2 px-4 py-2 rounded-2xl text-[10px] font-bold border transition-all h-[52px]",
                 isExtensionDetected 
-                  ? "bg-emerald-50 dark:bg-emerald-900/10 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-900/20" 
-                  : "bg-gray-50 dark:bg-gray-900/10 text-gray-400 dark:text-gray-500 border-gray-100 dark:border-gray-900/20"
+                  ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20" 
+                  : "bg-slate-50 dark:bg-zinc-800/50 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-zinc-700"
               )}>
-                <Puzzle size={12} className={isExtensionDetected ? "animate-pulse" : ""} />
-                {isExtensionDetected ? "Extension Connected" : "Extension Disconnected"}
+                <Puzzle size={16} className={isExtensionDetected ? "animate-pulse" : ""} />
+                {isExtensionDetected ? "Extension Ready" : "No Extension"}
               </div>
               <button 
                 onClick={() => setShowBulkModal(true)}
-                className="px-6 py-3 bg-emerald-50 dark:bg-emerald-900/10 text-emerald-700 dark:text-emerald-400 rounded-2xl font-bold text-sm hover:bg-emerald-100 dark:hover:bg-emerald-900/20 transition-all flex items-center gap-2"
+                className="flex-1 sm:flex-none h-[52px] px-6 bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-slate-300 rounded-2xl font-bold text-sm hover:bg-slate-200 dark:hover:bg-zinc-700 transition-all flex items-center justify-center gap-2 active:scale-95"
               >
-                <FileSpreadsheet size={18} /> Bulk Import
+                <FileSpreadsheet size={18} /> <span className="hidden sm:inline">Bulk Import</span>
               </button>
               <button
                 onClick={() => setShowPreviewModal(true)}
                 disabled={entries.filter(e => e.status === 'pending').length === 0}
-                className="px-6 py-3 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-2xl font-bold text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition-all flex items-center gap-2 disabled:opacity-50"
+                className="flex-1 sm:flex-none h-[52px] px-6 bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-slate-300 rounded-2xl font-bold text-sm hover:bg-slate-200 dark:hover:bg-zinc-700 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:active:scale-100 active:scale-95"
               >
-                <Search size={18} /> Preview
+                <Search size={18} /> <span className="hidden sm:inline">Preview</span>
               </button>
               <button
                 onClick={isBlasting ? stopBlast : startBlast}
                 disabled={entries.length === 0}
                 className={cn(
-                  "px-8 py-3 rounded-2xl font-bold text-sm transition-all flex items-center gap-2 shadow-lg",
+                  "flex-1 sm:flex-none h-[52px] px-8 rounded-2xl font-extrabold text-sm transition-all flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 disabled:active:scale-100 active:scale-95",
                   isBlasting 
-                    ? "bg-red-500 text-white shadow-red-500/20" 
-                    : "bg-black dark:bg-emerald-600 text-white shadow-black/20 dark:shadow-emerald-600/20 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
+                    ? "bg-gradient-to-r from-red-500 to-rose-600 text-white shadow-red-500/20 hover:from-red-400 hover:to-rose-500" 
+                    : "bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-emerald-500/20 hover:from-emerald-400 hover:to-teal-500"
                 )}
               >
                 {isBlasting ? <Square size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" />}
-                {isBlasting ? 'Stop Blast' : 'Start Engine'}
+                {isBlasting ? 'Stop' : 'Start Engine'}
               </button>
             </div>
           </div>
 
           {!isBlasting && entries.length > 0 && (
-            <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20 rounded-2xl p-4 flex items-start gap-3">
-              <AlertCircle className="text-amber-600 dark:text-amber-400 shrink-0" size={18} />
-              <div className="text-xs text-amber-800 dark:text-amber-300 leading-relaxed">
-                <span className="font-bold">PENTING:</span> Mesin akan membuka <span className="font-bold">WhatsApp Web</span> di tab yang sama secara bergantian. Pastikan Anda telah <span className="font-bold">MENGIZINKAN POPUP</span> di browser Anda.
+            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="bg-amber-50/80 dark:bg-amber-500/10 backdrop-blur border border-amber-200/50 dark:border-amber-500/20 rounded-2xl p-4 flex items-start gap-3 shadow-sm">
+              <AlertCircle className="text-amber-500 shrink-0" size={20} />
+              <div className="text-[11px] text-amber-800 dark:text-amber-200/80 leading-relaxed font-medium mt-0.5">
+                <span className="font-extrabold">NOTE:</span> Mesin akan membuka <span className="font-bold underline decoration-amber-300 underline-offset-2">WhatsApp Web</span>. Pastikan Anda telah <b>MENGIZINKAN POPUP</b> di pengaturan browser Anda.
               </div>
-            </div>
+            </motion.div>
           )}
 
-          <section className="bg-white dark:bg-[#16191F] rounded-3xl p-6 shadow-sm border border-black/5 dark:border-white/5">
-            <form onSubmit={handleAddEntry} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Form Card */}
+          <section className="bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md rounded-3xl p-6 lg:p-8 shadow-sm border border-slate-200/60 dark:border-zinc-800/60 transition-all hover:shadow-md">
+            <form onSubmit={handleAddEntry} className="space-y-5">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Phone</label>
+                  <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest ml-1">Phone Number</label>
                   <input
                     type="text"
                     value={formData.phone}
                     onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
                     placeholder="0812..."
-                    className="w-full p-3 text-sm bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-xl focus:border-emerald-500 outline-none dark:text-white"
+                    className="w-full px-4 py-3.5 text-sm bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-2xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all dark:text-white"
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Name</label>
+                  <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest ml-1">Recipient Name</label>
                   <input
                     type="text"
                     value={formData.recipientName}
                     onChange={(e) => setFormData(prev => ({ ...prev, recipientName: e.target.value }))}
-                    placeholder="Recipient Name"
-                    className="w-full p-3 text-sm bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-xl focus:border-emerald-500 outline-none dark:text-white"
+                    placeholder="Nama Pelanggan"
+                    className="w-full px-4 py-3.5 text-sm bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-2xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all dark:text-white"
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Item Name</label>
+                  <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest ml-1">Item Name</label>
                   <input
                     type="text"
                     value={formData.itemName}
                     onChange={(e) => setFormData(prev => ({ ...prev, itemName: e.target.value }))}
                     placeholder="Nama Barang"
-                    className="w-full p-3 text-sm bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-xl focus:border-emerald-500 outline-none dark:text-white"
+                    className="w-full px-4 py-3.5 text-sm bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-2xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all dark:text-white"
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Resi</label>
+                  <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest ml-1">Resi / AWB</label>
                   <input
                     type="text"
                     value={formData.receiptNumber}
                     onChange={(e) => setFormData(prev => ({ ...prev, receiptNumber: e.target.value }))}
-                    placeholder="Resi Number"
-                    className="w-full p-3 text-sm bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-xl focus:border-emerald-500 outline-none dark:text-white"
+                    placeholder="Nomor Resi"
+                    className="w-full px-4 py-3.5 text-sm bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-2xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all dark:text-white"
                   />
                 </div>
                 <div className="space-y-2 md:col-span-2">
-                  <label className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Address</label>
+                  <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest ml-1">Address Details</label>
                   <input
                     type="text"
                     value={formData.address}
                     onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
                     placeholder="Alamat Lengkap"
-                    className="w-full p-3 text-sm bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-xl focus:border-emerald-500 outline-none dark:text-white"
+                    className="w-full px-4 py-3.5 text-sm bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-2xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all dark:text-white"
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-5 items-end">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">COD</label>
-                  <input
-                    type="text"
-                    value={formData.cod}
-                    onChange={(e) => setFormData(prev => ({ ...prev, cod: e.target.value.replace(/[^0-9.,]/g, '') }))}
-                    placeholder="274,398"
-                    className="w-full p-3 text-sm bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-xl focus:border-emerald-500 outline-none dark:text-white"
-                  />
+                  <label className="text-[10px] font-bold text-amber-500 uppercase tracking-widest ml-1">COD Amount</label>
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-bold">Rp</span>
+                    <input
+                      type="text"
+                      value={formData.cod}
+                      onChange={(e) => setFormData(prev => ({ ...prev, cod: e.target.value.replace(/[^0-9.,]/g, '') }))}
+                      placeholder="0"
+                      className="w-full pl-10 pr-4 py-3.5 text-sm bg-amber-50/30 dark:bg-amber-500/5 border border-amber-200 dark:border-amber-500/20 rounded-2xl focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none transition-all dark:text-white"
+                    />
+                  </div>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">DFOD</label>
-                  <input
-                    type="text"
-                    value={formData.dfod}
-                    onChange={(e) => setFormData(prev => ({ ...prev, dfod: e.target.value.replace(/[^0-9.,]/g, '') }))}
-                    placeholder="10,000"
-                    className="w-full p-3 text-sm bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-xl focus:border-emerald-500 outline-none dark:text-white"
-                  />
+                  <label className="text-[10px] font-bold text-blue-500 uppercase tracking-widest ml-1">DFOD Amount</label>
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-bold">Rp</span>
+                    <input
+                      type="text"
+                      value={formData.dfod}
+                      onChange={(e) => setFormData(prev => ({ ...prev, dfod: e.target.value.replace(/[^0-9.,]/g, '') }))}
+                      placeholder="0"
+                      className="w-full pl-10 pr-4 py-3.5 text-sm bg-blue-50/30 dark:bg-blue-500/5 border border-blue-200 dark:border-blue-500/20 rounded-2xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all dark:text-white"
+                    />
+                  </div>
                 </div>
-                <button
-                  type="submit"
-                  className="py-3 bg-emerald-600 text-white rounded-xl font-bold text-sm hover:bg-emerald-700 transition-all flex items-center justify-center gap-2"
-                >
-                  <Plus size={18} /> Add to Queue
-                </button>
+                <div className="md:col-span-2">
+                  <button
+                    type="submit"
+                    className="w-full h-[52px] bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl font-bold text-sm shadow-xl shadow-slate-900/10 dark:shadow-white/10 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 active:scale-95"
+                  >
+                    <Plus size={18} /> Add to Queue
+                  </button>
+                </div>
               </div>
             </form>
           </section>
 
-          <section className="bg-gray-50 dark:bg-black rounded-3xl p-4 shadow-sm dark:shadow-xl border border-gray-200 dark:border-white/5 overflow-hidden">
-            <div className="flex items-center justify-between mb-3 px-2">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <h2 className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-[0.2em]">System Console</h2>
+          {/* Terminal Console */}
+          <section className="bg-[#0c0c0e] rounded-3xl p-5 shadow-inner border border-zinc-800/80 overflow-hidden relative group">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 via-teal-500 to-transparent opacity-50" />
+            <div className="flex items-center justify-between mb-4 px-2">
+              <div className="flex items-center gap-3">
+                <div className="flex gap-1.5">
+                  <div className="w-3 h-3 rounded-full bg-red-500/80" />
+                  <div className="w-3 h-3 rounded-full bg-amber-500/80" />
+                  <div className="w-3 h-3 rounded-full bg-emerald-500/80" />
+                </div>
+                <h2 className="text-[11px] font-mono font-bold text-slate-400 uppercase tracking-[0.2em] ml-2">System.Terminal</h2>
               </div>
               <button 
                 onClick={() => setLogs([])}
-                className="text-[9px] font-bold text-gray-400 dark:text-gray-500 hover:text-gray-900 dark:hover:text-white uppercase tracking-widest transition-colors"
+                className="text-[10px] font-bold font-mono text-zinc-500 hover:text-white uppercase tracking-widest transition-colors opacity-0 group-hover:opacity-100"
               >
-                Clear Logs
+                Clear
               </button>
             </div>
-            <div className="h-32 overflow-y-auto custom-scrollbar font-mono text-[11px] space-y-1 px-2">
+            <div className="h-40 overflow-y-auto custom-scrollbar font-mono text-[11px] space-y-1.5 px-2">
               {logs.length === 0 ? (
-                <div className="text-gray-400 dark:text-gray-600 italic">Waiting for system actions...</div>
+                <div className="text-zinc-600 italic mt-2">Waiting for commands...</div>
               ) : (
                 logs.map(log => (
-                  <div key={log.id} className="flex gap-3 leading-relaxed group">
-                    <span className="text-gray-400 dark:text-gray-600 shrink-0">[{new Date(log.timestamp).toLocaleTimeString([], { hour12: false })}]</span>
+                  <div key={log.id} className="flex gap-4 leading-relaxed hover:bg-white/5 px-2 py-0.5 rounded transition-colors">
+                    <span className="text-zinc-500 shrink-0">[{new Date(log.timestamp).toLocaleTimeString([], { hour12: false })}]</span>
                     <span className={cn(
                       "break-all",
-                      log.type === 'success' ? "text-emerald-600 dark:text-emerald-400" :
-                      log.type === 'error' ? "text-red-600 dark:text-red-400" :
-                      log.type === 'warning' ? "text-amber-600 dark:text-amber-400" :
-                      "text-blue-600 dark:text-blue-400"
+                      log.type === 'success' ? "text-emerald-400" :
+                      log.type === 'error' ? "text-red-400" :
+                      log.type === 'warning' ? "text-amber-400" :
+                      "text-blue-400"
                     )}>
-                      {log.message}
+                      {log.type === 'success' ? '➔ ' : log.type === 'error' ? '✖ ' : log.type === 'warning' ? '⚠ ' : 'ℹ '}{log.message}
                     </span>
                   </div>
                 ))
@@ -1295,44 +1301,47 @@ export default function App() {
             </div>
           </section>
 
-          <div className="bg-white dark:bg-[#16191F] rounded-3xl shadow-sm border border-black/5 dark:border-white/5 overflow-hidden">
-            <div className="p-6 border-b border-black/5 dark:border-white/5 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <FileText size={18} className="text-emerald-500" />
-                <h2 className="font-bold">Queue Management</h2>
-                <span className="ml-2 px-2 py-0.5 bg-gray-100 dark:bg-gray-800 text-[10px] font-bold text-gray-500 dark:text-gray-400 rounded-md">{filteredEntries.length} items</span>
+          {/* Data Table */}
+          <div className="bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md rounded-3xl shadow-sm border border-slate-200/60 dark:border-zinc-800/60 overflow-hidden transition-all hover:shadow-md flex flex-col">
+            <div className="p-6 border-b border-slate-100 dark:border-zinc-800/50 flex items-center justify-between bg-slate-50/50 dark:bg-zinc-800/20">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-slate-100 dark:bg-zinc-800 rounded-lg">
+                  <FileText size={18} className="text-slate-600 dark:text-slate-300" />
+                </div>
+                <h2 className="font-bold text-slate-800 dark:text-white tracking-tight">Queue Data</h2>
+                <span className="ml-2 px-2.5 py-1 bg-slate-200 dark:bg-zinc-700 text-[10px] font-bold text-slate-600 dark:text-slate-300 rounded-full">{filteredEntries.length} items</span>
               </div>
               
               {isConfirmingClear ? (
-                <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-2">
-                  <span className="text-[10px] font-bold text-red-600 dark:text-red-400 uppercase">Confirm?</span>
-                  <button onClick={clearAll} className="px-3 py-1.5 text-[10px] font-bold uppercase bg-red-500 text-white rounded-lg">Yes</button>
-                  <button onClick={() => setIsConfirmingClear(false)} className="px-3 py-1.5 text-[10px] font-bold uppercase bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-lg">No</button>
+                <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-4">
+                  <span className="text-[10px] font-bold text-red-500 uppercase">Clear All?</span>
+                  <button onClick={clearAll} className="px-4 py-2 text-[10px] font-bold uppercase bg-red-500 text-white rounded-xl shadow-lg shadow-red-500/20 active:scale-95">Yes</button>
+                  <button onClick={() => setIsConfirmingClear(false)} className="px-4 py-2 text-[10px] font-bold uppercase bg-slate-200 dark:bg-zinc-700 text-slate-700 dark:text-slate-300 rounded-xl active:scale-95">No</button>
                 </div>
               ) : (
-                <button onClick={() => setIsConfirmingClear(true)} className="p-2 text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 transition-colors">
+                <button onClick={() => setIsConfirmingClear(true)} className="p-2 text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 bg-white dark:bg-zinc-800 rounded-xl shadow-sm border border-slate-200 dark:border-zinc-700 transition-colors active:scale-95">
                   <Trash2 size={18} />
                 </button>
               )}
             </div>
 
-            <div className="overflow-x-auto custom-scrollbar">
-              <table className="w-full text-left">
+            <div className="overflow-x-auto custom-scrollbar flex-1">
+              <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-gray-50/50 dark:bg-gray-900/20">
-                    <th className="px-6 py-4 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Recipient</th>
-                    <th className="px-6 py-4 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Details</th>
-                    <th className="px-6 py-4 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Status</th>
-                    <th className="px-6 py-4 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Received</th>
-                    <th className="px-6 py-4 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest text-right">Actions</th>
+                  <tr className="bg-white dark:bg-zinc-900 border-b border-slate-100 dark:border-zinc-800/50">
+                    <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest whitespace-nowrap">Recipient Info</th>
+                    <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest whitespace-nowrap">Package Details</th>
+                    <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest whitespace-nowrap">Status</th>
+                    <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest whitespace-nowrap">Received</th>
+                    <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest text-right whitespace-nowrap">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-black/5 dark:divide-white/5">
+                <tbody className="divide-y divide-slate-100 dark:divide-zinc-800/50">
                   <AnimatePresence mode="popLayout">
                     {filteredEntries.length === 0 ? (
                       <motion.tr initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center">
-                        <td colSpan={4} className="px-6 py-16 text-gray-400 dark:text-gray-600 text-sm italic">
-                          No matching records found.
+                        <td colSpan={5} className="px-6 py-20 text-slate-400 dark:text-zinc-600 text-sm font-medium">
+                          No data available in queue.
                         </td>
                       </motion.tr>
                     ) : (
@@ -1342,67 +1351,67 @@ export default function App() {
                           layout
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, x: -10 }}
+                          exit={{ opacity: 0, scale: 0.95 }}
                           className={cn(
-                            "group transition-all",
+                            "group transition-colors",
                             isBlasting && index === currentIndex 
-                              ? "bg-emerald-50/80 dark:bg-emerald-900/10" 
-                              : "hover:bg-gray-50/50 dark:hover:bg-gray-900/10"
+                              ? "bg-emerald-50/50 dark:bg-emerald-500/5" 
+                              : "hover:bg-slate-50 dark:hover:bg-zinc-800/30 bg-white dark:bg-zinc-900"
                           )}
                         >
-                          <td className="px-6 py-5">
-                            <div className="font-bold text-sm">{entry.recipientName}</div>
-                            <div className="text-xs text-gray-400 dark:text-gray-500 font-mono">{entry.phone}</div>
+                          <td className="px-6 py-4">
+                            <div className="font-bold text-sm text-slate-800 dark:text-slate-200">{entry.recipientName}</div>
+                            <div className="text-xs text-slate-500 dark:text-slate-400 font-mono mt-0.5">{entry.phone}</div>
                           </td>
-                          <td className="px-6 py-5">
-                            <div className="text-sm font-medium truncate max-w-[200px]" title={entry.itemName}>{entry.itemName || '-'}</div>
-                            <div className="flex flex-col gap-1">
-                              <div className="text-[10px] text-gray-400 dark:text-gray-500 font-mono uppercase tracking-wider">Resi: {entry.receiptNumber || '-'}</div>
-                              {entry.address && <div className="text-[10px] text-gray-400 dark:text-gray-500 truncate max-w-[200px]" title={entry.address}>{entry.address}</div>}
-                              <div className="flex gap-2">
-                                {entry.cod && <div className="text-[10px] text-amber-600 dark:text-amber-500 font-bold uppercase tracking-wider">COD: Rp {formatCurrency(entry.cod)}</div>}
-                                {entry.dfod && <div className="text-[10px] text-blue-600 dark:text-blue-500 font-bold uppercase tracking-wider">DFOD: Rp {formatCurrency(entry.dfod)}</div>}
+                          <td className="px-6 py-4">
+                            <div className="text-sm font-semibold truncate max-w-[200px] text-slate-700 dark:text-slate-300" title={entry.itemName}>{entry.itemName || '-'}</div>
+                            <div className="flex flex-col gap-1.5 mt-1">
+                              <div className="text-[10px] text-slate-400 dark:text-slate-500 font-mono tracking-wider">Resi: {entry.receiptNumber || '-'}</div>
+                              {entry.address && <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-[200px]" title={entry.address}>{entry.address}</div>}
+                              <div className="flex gap-2 mt-0.5">
+                                {entry.cod && <div className="text-[10px] bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded font-bold uppercase tracking-wider">COD: Rp {formatCurrency(entry.cod)}</div>}
+                                {entry.dfod && <div className="text-[10px] bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded font-bold uppercase tracking-wider">DFOD: Rp {formatCurrency(entry.dfod)}</div>}
                               </div>
                             </div>
                           </td>
-                          <td className="px-6 py-5">
+                          <td className="px-6 py-4">
                             <div className={cn(
-                              "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest",
+                              "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-extrabold uppercase tracking-widest shadow-sm",
                               entry.status === 'sent' 
-                                ? "bg-emerald-100 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400" 
+                                ? "bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-transparent" 
                                 : entry.status === 'sending'
-                                ? "bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 animate-pulse"
+                                ? "bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-transparent animate-pulse"
                                 : entry.status === 'failed'
-                                ? "bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400"
-                                : "bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400"
+                                ? "bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-transparent"
+                                : "bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-transparent"
                             )}>
-                              {entry.status === 'sent' ? <CheckCircle2 size={10} /> : entry.status === 'sending' ? <Loader2 size={10} className="animate-spin" /> : entry.status === 'failed' ? <AlertCircle size={10} /> : <Clock size={10} />}
+                              {entry.status === 'sent' ? <CheckCircle2 size={12} /> : entry.status === 'sending' ? <Loader2 size={12} className="animate-spin" /> : entry.status === 'failed' ? <AlertCircle size={12} /> : <Clock size={12} />}
                               {entry.status}
                             </div>
                           </td>
-                          <td className="px-6 py-5">
+                          <td className="px-6 py-4">
                             <button 
                               onClick={() => toggleReceived(entry.id)}
                               className={cn(
-                                "flex items-center gap-2 px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all",
+                                "flex items-center gap-2 px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95",
                                 entry.isReceived 
-                                  ? "bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-900/30" 
-                                  : "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 border border-transparent"
+                                  ? "bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-md" 
+                                  : "bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-zinc-700"
                               )}
                             >
                               <div className={cn(
-                                "w-3 h-3 rounded-sm border flex items-center justify-center transition-all",
-                                entry.isReceived ? "bg-blue-600 border-blue-600" : "border-gray-300 dark:border-gray-700"
+                                "w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center transition-all",
+                                entry.isReceived ? "border-white dark:border-slate-900" : "border-slate-300 dark:border-slate-500"
                               )}>
-                                {entry.isReceived && <CheckCircle2 size={10} className="text-white" />}
+                                {entry.isReceived && <CheckCircle2 size={10} className="text-white dark:text-slate-900" strokeWidth={4} />}
                               </div>
                               {entry.isReceived ? 'Diterima' : 'Belum'}
                             </button>
                           </td>
-                          <td className="px-6 py-5 text-right">
-                            <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <button onClick={() => handleSendManual(entry)} className="p-2 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-xl"><ExternalLink size={16} /></button>
-                              <button onClick={() => setEntries(prev => prev.filter(e => e.id !== entry.id))} className="p-2 text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 rounded-xl"><Trash2 size={16} /></button>
+                          <td className="px-6 py-4 text-right">
+                            <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button onClick={() => handleSendManual(entry)} className="p-2.5 bg-slate-100 dark:bg-zinc-800 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/20 rounded-xl transition-all active:scale-95"><ExternalLink size={16} /></button>
+                              <button onClick={() => setEntries(prev => prev.filter(e => e.id !== entry.id))} className="p-2.5 bg-slate-100 dark:bg-zinc-800 text-slate-400 dark:text-slate-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-all active:scale-95"><Trash2 size={16} /></button>
                             </div>
                           </td>
                         </motion.tr>
@@ -1420,43 +1429,44 @@ export default function App() {
       <AnimatePresence>
         {showBulkModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowBulkModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-md" />
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowBulkModal(false)} className="absolute inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-md" />
             <motion.div 
               initial={{ opacity: 0, scale: 0.95, y: 20 }} 
               animate={{ opacity: 1, scale: 1, y: 0 }} 
               exit={{ opacity: 0, scale: 0.95, y: 20 }} 
-              className="relative w-full max-w-2xl max-h-[90vh] bg-white dark:bg-[#16191F] rounded-[2rem] shadow-2xl overflow-hidden border border-black/5 dark:border-white/10 flex flex-col"
+              transition={{ type: "spring", duration: 0.5, bounce: 0.3 }}
+              className="relative w-full max-w-2xl max-h-[90vh] bg-white dark:bg-zinc-900 rounded-[2.5rem] shadow-2xl overflow-hidden border border-white/20 dark:border-zinc-800 flex flex-col"
             >
-              <div className="p-8 border-b border-black/5 dark:border-white/5 flex items-center justify-between bg-gray-50/50 dark:bg-gray-900/20 shrink-0">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-xl flex items-center justify-center"><FileSpreadsheet size={20} /></div>
+              <div className="p-8 border-b border-slate-100 dark:border-zinc-800 flex items-center justify-between bg-slate-50/50 dark:bg-zinc-900/50 shrink-0">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-2xl flex items-center justify-center"><FileSpreadsheet size={24} /></div>
                   <div>
-                    <h2 className="text-xl font-bold">Bulk Import</h2>
-                    <p className="text-xs text-gray-400 dark:text-gray-500">Copy-paste data from Excel or CSV</p>
+                    <h2 className="text-xl font-extrabold text-slate-800 dark:text-white tracking-tight">Bulk Import Data</h2>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">Copy-paste langsung dari Excel atau Google Sheets</p>
                   </div>
                 </div>
-                <button onClick={() => setShowBulkModal(false)} className="p-2 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-full transition-colors"><X size={20} /></button>
+                <button onClick={() => setShowBulkModal(false)} className="p-2.5 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 rounded-full transition-colors"><X size={20} className="text-slate-500" /></button>
               </div>
               <div className="p-8 space-y-6 overflow-y-auto custom-scrollbar flex-1">
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="p-4 bg-emerald-50 dark:bg-emerald-900/10 rounded-2xl border border-emerald-100 dark:border-emerald-900/20">
-                    <div className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-1">Step 1</div>
-                    <p className="text-xs text-emerald-800 dark:text-emerald-300">Kolom: No, Resi, Nama, HP, Alamat, Tanda, Nominal COD, Nominal DFOD, Barang</p>
+                  <div className="p-5 bg-emerald-50/80 dark:bg-emerald-500/5 rounded-2xl border border-emerald-100 dark:border-emerald-500/20">
+                    <div className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-2">Step 1: Format Kolom</div>
+                    <p className="text-xs text-emerald-800 dark:text-emerald-300 font-medium">No, Resi, Nama, HP, Alamat, Tanda, Nominal COD, Nominal DFOD, Barang</p>
                   </div>
-                  <div className="p-4 bg-blue-50 dark:bg-blue-900/10 rounded-2xl border border-blue-100 dark:border-blue-900/20">
-                    <div className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-1">Step 2</div>
-                    <p className="text-xs text-blue-800 dark:text-blue-300">Copy range dari Excel & Paste di bawah</p>
+                  <div className="p-5 bg-blue-50/80 dark:bg-blue-500/5 rounded-2xl border border-blue-100 dark:border-blue-500/20">
+                    <div className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-2">Step 2: Paste Area</div>
+                    <p className="text-xs text-blue-800 dark:text-blue-300 font-medium">Blok cell di Excel, lalu Copy & Paste di area teks bawah ini.</p>
                   </div>
                 </div>
                 <textarea
                   value={bulkData}
                   onChange={(e) => setBulkData(e.target.value)}
                   placeholder="1	JX123456789	Budi Santoso	08123456789	Jl. Merdeka No. 1	COD	150000	0	Sepatu..."
-                  className="w-full h-64 p-6 text-sm font-mono bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-[1.5rem] focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all resize-none dark:text-white custom-scrollbar"
+                  className="w-full h-64 p-6 text-sm font-mono bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-[1.5rem] focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all resize-none dark:text-slate-300 custom-scrollbar shadow-inner"
                 />
                 <div className="flex gap-4">
-                  <button onClick={() => setShowBulkModal(false)} className="flex-1 py-4 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-2xl font-bold hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">Cancel</button>
-                  <button onClick={handleBulkImport} className="flex-[2] py-4 bg-emerald-600 text-white rounded-2xl font-bold shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all">Import Data</button>
+                  <button onClick={() => setShowBulkModal(false)} className="flex-1 py-4 bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-slate-300 rounded-2xl font-bold hover:bg-slate-200 dark:hover:bg-zinc-700 transition-all active:scale-95">Cancel</button>
+                  <button onClick={handleBulkImport} className="flex-[2] py-4 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-2xl font-bold shadow-xl shadow-emerald-500/20 hover:from-emerald-400 hover:to-teal-500 transition-all active:scale-95">Import Data</button>
                 </div>
               </div>
             </motion.div>
@@ -1468,37 +1478,38 @@ export default function App() {
       <AnimatePresence>
         {showPreviewModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowPreviewModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-md" />
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowPreviewModal(false)} className="absolute inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-md" />
             <motion.div 
               initial={{ opacity: 0, scale: 0.95, y: 20 }} 
               animate={{ opacity: 1, scale: 1, y: 0 }} 
               exit={{ opacity: 0, scale: 0.95, y: 20 }} 
-              className="relative w-full max-w-lg max-h-[90vh] bg-white dark:bg-[#16191F] rounded-[2rem] shadow-2xl overflow-hidden border border-black/5 dark:border-white/10 flex flex-col"
+              transition={{ type: "spring", duration: 0.5, bounce: 0.3 }}
+              className="relative w-full max-w-lg max-h-[90vh] bg-white dark:bg-zinc-900 rounded-[2.5rem] shadow-2xl overflow-hidden border border-white/20 dark:border-zinc-800 flex flex-col"
             >
-              <div className="p-6 border-b border-black/5 dark:border-white/5 flex items-center justify-between bg-gray-50/50 dark:bg-gray-900/20 shrink-0">
+              <div className="p-6 border-b border-slate-100 dark:border-zinc-800 flex items-center justify-between bg-slate-50/50 dark:bg-zinc-900/50 shrink-0">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-xl flex items-center justify-center"><MessageSquare size={20} /></div>
+                  <div className="w-10 h-10 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-xl flex items-center justify-center"><MessageSquare size={20} /></div>
                   <div>
-                    <h2 className="text-lg font-bold">Message Preview</h2>
-                    <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wider">First Pending Entry</p>
+                    <h2 className="text-lg font-bold text-slate-800 dark:text-white">Message Preview</h2>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-widest font-bold">First Pending Item</p>
                   </div>
                 </div>
-                <button onClick={() => setShowPreviewModal(false)} className="p-2 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-full transition-colors"><X size={20} /></button>
+                <button onClick={() => setShowPreviewModal(false)} className="p-2.5 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 rounded-full transition-colors"><X size={20} className="text-slate-500" /></button>
               </div>
-              <div className="p-6 space-y-4 overflow-y-auto custom-scrollbar flex-1">
+              <div className="p-6 space-y-4 overflow-y-auto custom-scrollbar flex-1 bg-slate-50/50 dark:bg-zinc-950/50">
                 {entries.find(e => e.status === 'pending') ? (
                   <>
-                    <div className="p-4 bg-gray-50 dark:bg-[#1C2128] rounded-2xl border border-gray-100 dark:border-white/5">
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className="w-8 h-8 bg-emerald-100 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-lg flex items-center justify-center text-xs font-bold">
+                    <div className="p-5 bg-white dark:bg-zinc-900 rounded-3xl border border-slate-200 dark:border-zinc-800 shadow-sm">
+                      <div className="flex items-center gap-4 mb-4 pb-4 border-b border-slate-100 dark:border-zinc-800">
+                        <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-teal-500 text-white rounded-xl flex items-center justify-center text-sm font-extrabold shadow-md">
                           {entries.find(e => e.status === 'pending')?.recipientName.charAt(0)}
                         </div>
                         <div>
-                          <div className="text-xs font-bold">{entries.find(e => e.status === 'pending')?.recipientName}</div>
-                          <div className="text-[10px] text-gray-400 font-mono">{entries.find(e => e.status === 'pending')?.phone}</div>
+                          <div className="text-sm font-bold text-slate-800 dark:text-white">{entries.find(e => e.status === 'pending')?.recipientName}</div>
+                          <div className="text-[11px] text-slate-500 font-mono mt-0.5">{entries.find(e => e.status === 'pending')?.phone}</div>
                         </div>
                       </div>
-                      <div className="bg-white dark:bg-[#16191F] p-4 rounded-xl border border-black/5 dark:border-white/10 text-sm whitespace-pre-wrap leading-relaxed dark:text-gray-300 font-sans">
+                      <div className="text-sm whitespace-pre-wrap leading-relaxed dark:text-slate-300 font-sans">
                         {(() => {
                           const entry = entries.find(e => e.status === 'pending');
                           if (!entry) return '';
@@ -1514,8 +1525,8 @@ export default function App() {
                         })()}
                       </div>
                     </div>
-                    <div className="flex gap-3">
-                      <button onClick={() => setShowPreviewModal(false)} className="flex-1 py-3 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-xl font-bold text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">Close</button>
+                    <div className="flex gap-3 pt-2">
+                      <button onClick={() => setShowPreviewModal(false)} className="flex-1 py-4 bg-slate-200 dark:bg-zinc-800 text-slate-700 dark:text-slate-300 rounded-2xl font-bold text-sm hover:bg-slate-300 dark:hover:bg-zinc-700 transition-all active:scale-95">Close</button>
                       <button 
                         onClick={() => {
                           const entry = entries.find(e => e.status === 'pending');
@@ -1527,16 +1538,16 @@ export default function App() {
                             setShowPreviewModal(false);
                           }
                         }} 
-                        className="flex-1 py-3 bg-emerald-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all flex items-center justify-center gap-2"
+                        className="flex-1 py-4 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-2xl font-bold text-sm shadow-xl shadow-emerald-500/20 hover:from-emerald-400 hover:to-teal-500 transition-all active:scale-95 flex items-center justify-center gap-2"
                       >
-                        <Send size={16} /> Send Now
+                        <Send size={16} /> Send Manual
                       </button>
                     </div>
                   </>
                 ) : (
-                  <div className="text-center py-12">
-                    <Clock size={48} className="mx-auto text-gray-200 dark:text-gray-800 mb-4" />
-                    <p className="text-gray-400 dark:text-gray-600 text-sm italic">No pending entries to preview.</p>
+                  <div className="text-center py-16">
+                    <Clock size={48} className="mx-auto text-slate-300 dark:text-zinc-700 mb-4" />
+                    <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">No pending entries to preview.</p>
                   </div>
                 )}
               </div>
@@ -1549,97 +1560,99 @@ export default function App() {
       <AnimatePresence>
         {showSettingsModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowSettingsModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-md" />
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowSettingsModal(false)} className="absolute inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-md" />
             <motion.div 
               initial={{ opacity: 0, scale: 0.95, y: 20 }} 
               animate={{ opacity: 1, scale: 1, y: 0 }} 
               exit={{ opacity: 0, scale: 0.95, y: 20 }} 
-              className="relative w-full max-w-md max-h-[90vh] bg-white dark:bg-[#16191F] rounded-[2rem] shadow-2xl overflow-hidden border border-black/5 dark:border-white/10 flex flex-col"
+              transition={{ type: "spring", duration: 0.5, bounce: 0.3 }}
+              className="relative w-full max-w-md max-h-[90vh] bg-white dark:bg-zinc-900 rounded-[2.5rem] shadow-2xl overflow-hidden border border-white/20 dark:border-zinc-800 flex flex-col"
             >
-              <div className="p-6 border-b border-black/5 dark:border-white/5 flex items-center justify-between bg-gray-50/50 dark:bg-gray-900/20 shrink-0">
+              <div className="p-6 border-b border-slate-100 dark:border-zinc-800 flex items-center justify-between bg-slate-50/50 dark:bg-zinc-900/50 shrink-0">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-xl flex items-center justify-center"><Settings2 size={20} /></div>
+                  <div className="w-10 h-10 bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-slate-300 rounded-xl flex items-center justify-center"><Settings2 size={20} /></div>
                   <div>
-                    <h2 className="text-lg font-bold">Settings</h2>
-                    <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wider">Engine Configuration</p>
+                    <h2 className="text-lg font-bold text-slate-800 dark:text-white">Settings</h2>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-widest font-bold">Engine Configuration</p>
                   </div>
                 </div>
-                <button onClick={() => setShowSettingsModal(false)} className="p-2 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-full transition-colors"><X size={20} /></button>
+                <button onClick={() => setShowSettingsModal(false)} className="p-2.5 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 rounded-full transition-colors"><X size={20} className="text-slate-500" /></button>
               </div>
 
               {/* Tabs */}
-              <div className="flex px-6 pt-4 gap-4 border-b border-black/5 dark:border-white/5 shrink-0">
+              <div className="flex px-6 pt-4 gap-6 border-b border-slate-100 dark:border-zinc-800 shrink-0 bg-white dark:bg-zinc-900">
                 <button 
                   onClick={() => setActiveSettingsTab('general')}
                   className={cn(
-                    "pb-3 text-xs font-bold uppercase tracking-widest transition-all relative",
-                    activeSettingsTab === 'general' ? "text-emerald-600 dark:text-emerald-400" : "text-gray-400"
+                    "pb-3 text-[11px] font-extrabold uppercase tracking-widest transition-all relative",
+                    activeSettingsTab === 'general' ? "text-emerald-600 dark:text-emerald-400" : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
                   )}
                 >
                   General
-                  {activeSettingsTab === 'general' && <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-500 rounded-full" />}
+                  {activeSettingsTab === 'general' && <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-500 rounded-t-full" />}
                 </button>
                 <button 
                   onClick={() => setActiveSettingsTab('antispam')}
                   className={cn(
-                    "pb-3 text-xs font-bold uppercase tracking-widest transition-all relative",
-                    activeSettingsTab === 'antispam' ? "text-emerald-600 dark:text-emerald-400" : "text-gray-400"
+                    "pb-3 text-[11px] font-extrabold uppercase tracking-widest transition-all relative",
+                    activeSettingsTab === 'antispam' ? "text-emerald-600 dark:text-emerald-400" : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
                   )}
                 >
                   Anti-Spam
-                  {activeSettingsTab === 'antispam' && <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-500 rounded-full" />}
+                  {activeSettingsTab === 'antispam' && <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-500 rounded-t-full" />}
                 </button>
               </div>
 
-              <div className="p-6 overflow-y-auto custom-scrollbar flex-1">
+              <div className="p-6 overflow-y-auto custom-scrollbar flex-1 bg-slate-50/30 dark:bg-zinc-950/30">
                 {activeSettingsTab === 'antispam' && (
-                  <div className="mb-6 p-4 bg-emerald-50 dark:bg-emerald-900/10 rounded-2xl border border-emerald-100 dark:border-emerald-900/20">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-widest">Safety Score</span>
+                  <div className="mb-6 p-5 bg-white dark:bg-zinc-900 rounded-3xl border border-slate-200 dark:border-zinc-800 shadow-sm">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-widest">Safety Score</span>
                       <span className={cn(
-                        "text-xs font-black",
-                        safetyScore > 80 ? "text-emerald-600" : safetyScore > 50 ? "text-amber-600" : "text-red-600"
+                        "text-sm font-black px-2.5 py-1 rounded-lg bg-slate-50 dark:bg-zinc-800",
+                        safetyScore > 80 ? "text-emerald-500" : safetyScore > 50 ? "text-amber-500" : "text-red-500"
                       )}>{safetyScore}%</span>
                     </div>
-                    <div className="h-1.5 w-full bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
+                    <div className="h-2 w-full bg-slate-100 dark:bg-zinc-800 rounded-full overflow-hidden mb-3">
                       <motion.div 
                         initial={{ width: 0 }}
                         animate={{ width: `${safetyScore}%` }}
                         className={cn(
-                          "h-full transition-all duration-500",
-                          safetyScore > 80 ? "bg-emerald-500" : safetyScore > 50 ? "bg-amber-500" : "bg-red-500"
+                          "h-full transition-all duration-1000 ease-out",
+                          safetyScore > 80 ? "bg-gradient-to-r from-emerald-400 to-emerald-500" : safetyScore > 50 ? "bg-gradient-to-r from-amber-400 to-amber-500" : "bg-gradient-to-r from-red-400 to-red-500"
                         )}
                       />
                     </div>
-                    <p className="text-[9px] text-gray-500 dark:text-gray-400 mt-2 italic">
-                      {safetyScore > 80 ? "Sangat Aman: Pola pengiriman sangat mirip manusia." : 
-                       safetyScore > 50 ? "Cukup Aman: Disarankan menambah jeda atau variasi pesan." : 
-                       "Beresiko Tinggi: Akun Anda rentan terkena banned!"}
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                      {safetyScore > 80 ? "✅ Sangat Aman: Pola pengiriman sangat mirip manusia." : 
+                       safetyScore > 50 ? "⚠ Cukup Aman: Disarankan menambah jeda atau variasi." : 
+                       "❌ Beresiko Tinggi: Akun Anda rentan terkena banned!"}
                     </p>
                   </div>
                 )}
+                
                 {activeSettingsTab === 'general' ? (
                   <div className="space-y-6">
-                    <div className="space-y-4">
+                    <div className="space-y-5">
                       <div className="space-y-2">
-                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
-                          <User size={14} /> Nama Pengirim
+                        <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                          <User size={14} /> Nama Pengirim Default
                         </label>
                         <input 
                           type="text" 
                           value={settings.senderName}
                           onChange={(e) => setSettings(prev => ({ ...prev, senderName: e.target.value }))}
-                          className="w-full px-4 py-3 bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-sm"
+                          className="w-full px-4 py-3.5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all text-sm shadow-sm"
                           placeholder="Admin JNT"
                         />
                       </div>
 
                       {/* Speed Presets */}
-                      <div className="space-y-3 pt-2">
-                        <label className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
-                          <Zap size={14} className="text-amber-500" /> Pilih Kecepatan Blast
+                      <div className="space-y-3">
+                        <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                          <Zap size={14} className="text-amber-500" /> Profil Kecepatan
                         </label>
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="grid grid-cols-2 gap-3">
                           {[
                             { id: 'safe', label: 'Main Aman', desc: '15-30s', icon: '🛡️' },
                             { id: 'normal', label: 'Normal', desc: '8-15s', icon: '⚖️' },
@@ -1650,109 +1663,116 @@ export default function App() {
                               key={mode.id}
                               onClick={() => setSettings(prev => ({ ...prev, speedMode: mode.id as any }))}
                               className={cn(
-                                "p-3 rounded-xl border text-left transition-all",
+                                "p-4 rounded-2xl border text-left transition-all active:scale-95",
                                 settings.speedMode === mode.id 
-                                  ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-500 ring-1 ring-emerald-500" 
-                                  : "bg-white dark:bg-[#1A1D23] border-black/5 dark:border-white/5 hover:border-emerald-500/50"
+                                  ? "bg-emerald-50/50 dark:bg-emerald-500/10 border-emerald-500 shadow-sm" 
+                                  : "bg-white dark:bg-zinc-900 border-slate-200 dark:border-zinc-800 hover:border-emerald-500/30"
                               )}
                             >
-                              <div className="flex items-center justify-between mb-1">
-                                <span className="text-lg">{mode.icon}</span>
-                                {settings.speedMode === mode.id && <div className="w-2 h-2 bg-emerald-500 rounded-full" />}
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-xl">{mode.icon}</span>
+                                <div className={cn("w-3 h-3 rounded-full border-2 transition-colors", settings.speedMode === mode.id ? "border-emerald-500 bg-emerald-500" : "border-slate-300 dark:border-zinc-600")} />
                               </div>
-                              <div className="text-xs font-bold">{mode.label}</div>
-                              <div className="text-[10px] text-gray-400">{mode.desc}</div>
+                              <div className="text-sm font-bold text-slate-800 dark:text-white">{mode.label}</div>
+                              <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono mt-0.5">{mode.desc}</div>
                             </button>
                           ))}
                           <button
                             onClick={() => setSettings(prev => ({ ...prev, speedMode: 'custom' }))}
                             className={cn(
-                              "col-span-2 p-3 rounded-xl border text-left transition-all",
+                              "col-span-2 p-4 rounded-2xl border text-left transition-all active:scale-95",
                               settings.speedMode === 'custom' 
-                                ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-500 ring-1 ring-emerald-500" 
-                                : "bg-white dark:bg-[#1A1D23] border-black/5 dark:border-white/5 hover:border-emerald-500/50"
+                                ? "bg-emerald-50/50 dark:bg-emerald-500/10 border-emerald-500 shadow-sm" 
+                                : "bg-white dark:bg-zinc-900 border-slate-200 dark:border-zinc-800 hover:border-emerald-500/30"
                             )}
                           >
                             <div className="flex items-center justify-between">
-                              <div className="text-xs font-bold">⚙️ Custom (Atur Manual)</div>
-                              {settings.speedMode === 'custom' && <div className="w-2 h-2 bg-emerald-500 rounded-full" />}
+                              <div className="flex items-center gap-2">
+                                <span className="text-lg">⚙️</span>
+                                <span className="text-sm font-bold text-slate-800 dark:text-white">Custom Manual</span>
+                              </div>
+                              <div className={cn("w-3 h-3 rounded-full border-2 transition-colors", settings.speedMode === 'custom' ? "border-emerald-500 bg-emerald-500" : "border-slate-300 dark:border-zinc-600")} />
                             </div>
                           </button>
                         </div>
                       </div>
 
-                      {settings.speedMode === 'custom' && (
-                        <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
-                          <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
-                            <Timer size={14} /> Blast Delay (Milliseconds)
-                          </label>
-                          <input 
-                            type="number" 
-                            value={settings.delay}
-                            onChange={(e) => setSettings(prev => ({ ...prev, delay: parseInt(e.target.value) || 1000 }))}
-                            className="w-full px-4 py-3 bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-sm"
-                            placeholder="5000"
-                            min="1000"
-                            step="500"
-                          />
-                        </div>
-                      )}
+                      <AnimatePresence>
+                        {settings.speedMode === 'custom' && (
+                          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="space-y-2 overflow-hidden">
+                            <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-2 pt-2">
+                              <Timer size={14} /> Custom Delay (ms)
+                            </label>
+                            <input 
+                              type="number" 
+                              value={settings.delay}
+                              onChange={(e) => setSettings(prev => ({ ...prev, delay: parseInt(e.target.value) || 1000 }))}
+                              className="w-full px-4 py-3.5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all text-sm shadow-sm"
+                              placeholder="5000"
+                              min="1000"
+                              step="500"
+                            />
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
 
-                      <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-[#1C2128] rounded-2xl border border-gray-100 dark:border-white/5">
+                      <div className="flex items-center justify-between p-5 bg-white dark:bg-zinc-900 rounded-3xl border border-slate-200 dark:border-zinc-800 shadow-sm">
                         <div className="space-y-1">
-                          <div className="text-xs font-bold">Mode Manual</div>
-                          <div className="text-[10px] text-gray-400">Kirim berikutnya hanya saat Anda klik/tekan Spasi.</div>
+                          <div className="text-sm font-bold text-slate-800 dark:text-white">Mode Manual</div>
+                          <div className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">Pesan dikirim hanya saat Anda menekan tombol Spasi.</div>
                         </div>
                         <button 
                           onClick={() => setSettings(prev => ({ ...prev, manualMode: !prev.manualMode }))}
                           className={cn(
-                            "w-12 h-6 rounded-full transition-all relative",
-                            settings.manualMode ? "bg-emerald-500" : "bg-gray-300 dark:bg-gray-700"
+                            "w-14 h-8 rounded-full transition-all relative shrink-0",
+                            settings.manualMode ? "bg-emerald-500" : "bg-slate-200 dark:bg-zinc-700"
                           )}
                         >
                           <div className={cn(
-                            "absolute top-1 w-4 h-4 bg-white rounded-full transition-all",
+                            "absolute top-1 w-6 h-6 bg-white rounded-full transition-all shadow-sm",
                             settings.manualMode ? "left-7" : "left-1"
                           )} />
                         </button>
                       </div>
 
-                      <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-[#1C2128] rounded-2xl border border-gray-100 dark:border-white/5">
+                      <div className="flex items-center justify-between p-5 bg-white dark:bg-zinc-900 rounded-3xl border border-slate-200 dark:border-zinc-800 shadow-sm">
                         <div className="space-y-1">
-                          <div className="text-xs font-bold">Auto Retry</div>
-                          <div className="text-[10px] text-gray-400">Coba kirim ulang otomatis jika gagal.</div>
+                          <div className="text-sm font-bold text-slate-800 dark:text-white">Auto Retry</div>
+                          <div className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">Otomatis kirim ulang jika nomor gagal (Invalid).</div>
                         </div>
                         <button 
                           onClick={() => setSettings(prev => ({ ...prev, autoRetry: !prev.autoRetry }))}
                           className={cn(
-                            "w-12 h-6 rounded-full transition-all relative",
-                            settings.autoRetry ? "bg-emerald-500" : "bg-gray-300 dark:bg-gray-700"
+                            "w-14 h-8 rounded-full transition-all relative shrink-0",
+                            settings.autoRetry ? "bg-emerald-500" : "bg-slate-200 dark:bg-zinc-700"
                           )}
                         >
                           <div className={cn(
-                            "absolute top-1 w-4 h-4 bg-white rounded-full transition-all",
+                            "absolute top-1 w-6 h-6 bg-white rounded-full transition-all shadow-sm",
                             settings.autoRetry ? "left-7" : "left-1"
                           )} />
                         </button>
                       </div>
 
-                      {settings.autoRetry && (
-                        <div className="space-y-2">
-                          <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
-                            <RotateCcw size={14} /> Max Retries
-                          </label>
-                          <input 
-                            type="number" 
-                            value={settings.maxRetries}
-                            onChange={(e) => setSettings(prev => ({ ...prev, maxRetries: parseInt(e.target.value) || 1 }))}
-                            className="w-full px-4 py-3 bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-sm"
-                            min="1"
-                            max="10"
-                          />
-                        </div>
-                      )}
+                      <AnimatePresence>
+                        {settings.autoRetry && (
+                          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="space-y-2 overflow-hidden">
+                            <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-2 pt-2">
+                              <RotateCcw size={14} /> Max Retries Limit
+                            </label>
+                            <input 
+                              type="number" 
+                              value={settings.maxRetries}
+                              onChange={(e) => setSettings(prev => ({ ...prev, maxRetries: parseInt(e.target.value) || 1 }))}
+                              className="w-full px-4 py-3.5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all text-sm shadow-sm"
+                              min="1"
+                              max="10"
+                            />
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
 
-                      <div className="pt-2">
+                      <div className="pt-4">
                         <button 
                           onClick={() => {
                             if (window.confirm('Kembalikan semua template ke pengaturan default? Template yang Anda ubah akan tertimpa.')) {
@@ -1762,205 +1782,207 @@ export default function App() {
                               toast.success('Template berhasil dipulihkan');
                             }
                           }}
-                          className="w-full py-3 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-xl font-bold text-xs hover:bg-gray-200 dark:hover:bg-gray-700 transition-all flex items-center justify-center gap-2"
+                          className="w-full py-4 bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-slate-300 rounded-2xl font-bold text-xs hover:bg-slate-200 dark:hover:bg-zinc-700 transition-all flex items-center justify-center gap-2 active:scale-95"
                         >
-                          <RotateCcw size={14} /> Restore Default Templates
+                          <History size={16} /> Restore Default Templates
                         </button>
                       </div>
                     </div>
                   </div>
                 ) : (
-                  <div className="space-y-6">
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between p-3 bg-emerald-50/50 dark:bg-emerald-900/5 rounded-xl border border-emerald-100/50 dark:border-emerald-900/10">
-                        <div className="space-y-0.5">
-                          <div className="text-xs font-bold">Randomize Delay</div>
-                          <div className="text-[9px] text-gray-400">Jeda waktu acak agar tidak terdeteksi bot.</div>
-                        </div>
-                        <button 
-                          onClick={() => setSettings(prev => ({ ...prev, randomizeDelay: !prev.randomizeDelay }))}
-                          className={cn(
-                            "w-10 h-5 rounded-full transition-all relative",
-                            settings.randomizeDelay ? "bg-emerald-500" : "bg-gray-300 dark:bg-gray-700"
-                          )}
-                        >
-                          <div className={cn(
-                            "absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all",
-                            settings.randomizeDelay ? "left-5.5" : "left-0.5"
-                          )} />
-                        </button>
+                  <div className="space-y-5">
+                    
+                    {/* Advanced Settings Options */}
+                    <div className="flex items-center justify-between p-4 bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm">
+                      <div className="space-y-1">
+                        <div className="text-sm font-bold text-slate-800 dark:text-white">Randomize Delay</div>
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400 pr-4">Acak waktu jeda agar aktivitas terlihat lebih natural.</div>
                       </div>
+                      <button 
+                        onClick={() => setSettings(prev => ({ ...prev, randomizeDelay: !prev.randomizeDelay }))}
+                        className={cn(
+                          "w-12 h-6 rounded-full transition-all relative shrink-0",
+                          settings.randomizeDelay ? "bg-emerald-500" : "bg-slate-200 dark:bg-zinc-700"
+                        )}
+                      >
+                        <div className={cn(
+                          "absolute top-1 w-4 h-4 bg-white rounded-full transition-all shadow-sm",
+                          settings.randomizeDelay ? "left-7" : "left-1"
+                        )} />
+                      </button>
+                    </div>
 
+                    <AnimatePresence>
                       {settings.randomizeDelay && (
-                        <div className="space-y-2 px-1">
-                          <label className="text-[10px] font-bold text-gray-500 uppercase">Max Delay (ms)</label>
+                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="space-y-2 overflow-hidden px-1">
+                          <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest pt-2 block">Max Random Delay (ms)</label>
                           <input 
                             type="number" 
                             value={settings.maxDelay}
                             onChange={(e) => setSettings(prev => ({ ...prev, maxDelay: parseInt(e.target.value) || 10000 }))}
-                            className="w-full px-3 py-2 bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-lg text-xs"
+                            className="w-full px-4 py-3 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all shadow-sm"
                             step="500"
                           />
-                        </div>
+                        </motion.div>
                       )}
+                    </AnimatePresence>
 
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold text-gray-500 uppercase">Batch Size</label>
-                          <input 
-                            type="number" 
-                            value={settings.batchSize}
-                            onChange={(e) => setSettings(prev => ({ ...prev, batchSize: parseInt(e.target.value) || 0 }))}
-                            className="w-full px-3 py-2 bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-lg text-xs"
-                            placeholder="10"
-                          />
-                          <p className="text-[8px] text-gray-400 italic">Istirahat tiap X pesan.</p>
-                        </div>
-                        <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold text-gray-500 uppercase">Pause (ms)</label>
-                          <input 
-                            type="number" 
-                            value={settings.batchPause}
-                            onChange={(e) => setSettings(prev => ({ ...prev, batchPause: parseInt(e.target.value) || 0 }))}
-                            className="w-full px-3 py-2 bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-lg text-xs"
-                            placeholder="30000"
-                          />
-                          <p className="text-[8px] text-gray-400 italic">Lama istirahat.</p>
-                        </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest block">Batch Size</label>
+                        <input 
+                          type="number" 
+                          value={settings.batchSize}
+                          onChange={(e) => setSettings(prev => ({ ...prev, batchSize: parseInt(e.target.value) || 0 }))}
+                          className="w-full px-4 py-3 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all shadow-sm"
+                          placeholder="10"
+                        />
+                        <p className="text-[9px] text-slate-400 font-medium">Jeda tiap X pesan terkirim.</p>
                       </div>
-
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold text-gray-500 uppercase">Hourly Limit</label>
-                          <input 
-                            type="number" 
-                            value={settings.hourlyLimit}
-                            onChange={(e) => setSettings(prev => ({ ...prev, hourlyLimit: parseInt(e.target.value) || 0 }))}
-                            className="w-full px-3 py-2 bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-lg text-xs"
-                            placeholder="50"
-                          />
-                          <p className="text-[8px] text-gray-400 italic">Maks pesan per jam.</p>
-                        </div>
-                        <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold text-gray-500 uppercase">Stop on Errors</label>
-                          <input 
-                            type="number" 
-                            value={settings.stopOnConsecutiveErrors}
-                            onChange={(e) => setSettings(prev => ({ ...prev, stopOnConsecutiveErrors: parseInt(e.target.value) || 0 }))}
-                            className="w-full px-3 py-2 bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-lg text-xs"
-                            placeholder="3"
-                          />
-                          <p className="text-[8px] text-gray-400 italic">Stop jika X gagal urut.</p>
-                        </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest block">Pause Dur (ms)</label>
+                        <input 
+                          type="number" 
+                          value={settings.batchPause}
+                          onChange={(e) => setSettings(prev => ({ ...prev, batchPause: parseInt(e.target.value) || 0 }))}
+                          className="w-full px-4 py-3 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all shadow-sm"
+                          placeholder="30000"
+                        />
+                        <p className="text-[9px] text-slate-400 font-medium">Lama istirahat antar batch.</p>
                       </div>
-
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold text-gray-500 uppercase">Long Break After</label>
-                          <input 
-                            type="number" 
-                            value={settings.longBreakAfter}
-                            onChange={(e) => setSettings(prev => ({ ...prev, longBreakAfter: parseInt(e.target.value) || 0 }))}
-                            className="w-full px-3 py-2 bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-lg text-xs"
-                            placeholder="25"
-                          />
-                          <p className="text-[8px] text-gray-400 italic">Istirahat tiap X pesan.</p>
-                        </div>
-                        <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold text-gray-500 uppercase">Duration (min)</label>
-                          <input 
-                            type="number" 
-                            value={settings.longBreakDuration}
-                            onChange={(e) => setSettings(prev => ({ ...prev, longBreakDuration: parseInt(e.target.value) || 0 }))}
-                            className="w-full px-3 py-2 bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-lg text-xs"
-                            placeholder="10"
-                          />
-                          <p className="text-[8px] text-gray-400 italic">Lama istirahat (menit).</p>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 gap-3">
-                        {[
-                          { key: 'shuffleQueue', label: 'Shuffle Queue', desc: 'Acak urutan antrean saat memulai blast.' },
-                          { key: 'useRandomGreetings', label: 'Random Greetings', desc: 'Variasi kata sapaan otomatis.' },
-                          { key: 'addRandomSuffix', label: 'Random Suffix (Ref ID)', desc: 'Tambah ID unik di akhir pesan.' },
-                          { key: 'useInvisibleChars', label: 'Invisible Characters', desc: 'Sisipkan karakter tak terlihat.' },
-                          { key: 'simulateTyping', label: 'Simulate Typing', desc: 'Tambah jeda berdasarkan panjang pesan.' },
-                          { key: 'adaptiveDelay', label: 'Adaptive Delay', desc: 'Delay bertambah seiring jumlah pesan.' },
-                          { key: 'randomizeFormatting', label: 'Random Formatting', desc: 'Variasi spasi dan baris baru.' },
-                          { key: 'rotateTemplates', label: 'Template Rotation', desc: 'Gunakan template berbeda bergantian.' },
-                          { key: 'randomizeEmojis', label: 'Randomize Emojis', desc: 'Sisipkan emoji acak di setiap pesan.' },
-                          { key: 'useGlobalSpintax', label: 'Global Spintax', desc: 'Aktifkan parser {pilihan1|pilihan2}.' },
-                          { key: 'autoSend', label: 'Auto Send Mode', desc: 'Kirim otomatis via Chrome Extension.' }
-                        ].map((item) => (
-                          <div key={item.key} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-[#1C2128] rounded-xl border border-gray-100 dark:border-white/5">
-                            <div className="space-y-0.5">
-                              <div className="text-xs font-bold">{item.label}</div>
-                              <div className="text-[9px] text-gray-400">{item.desc}</div>
-                            </div>
-                            <button 
-                              onClick={() => setSettings(prev => ({ ...prev, [item.key]: !prev[item.key as keyof AppSettings] }))}
-                              className={cn(
-                                "w-10 h-5 rounded-full transition-all relative",
-                                settings[item.key as keyof AppSettings] ? "bg-emerald-500" : "bg-gray-300 dark:bg-gray-700"
-                              )}
-                            >
-                              <div className={cn(
-                                "absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all",
-                                settings[item.key as keyof AppSettings] ? "left-5.5" : "left-0.5"
-                              )} />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-
-                      {settings.autoSend && (
-                        <div className="p-4 bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20 rounded-2xl space-y-4">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
-                              <Puzzle size={16} />
-                              <span className="text-xs font-bold uppercase tracking-wider">Chrome Extension Required</span>
-                            </div>
-                            <div className={cn(
-                              "px-2 py-0.5 rounded text-[8px] font-bold uppercase",
-                              isExtensionDetected ? "bg-emerald-500 text-white" : "bg-amber-500 text-white"
-                            )}>
-                              {isExtensionDetected ? "Connected" : "Not Found"}
-                            </div>
-                          </div>
-                          
-                          <p className="text-[10px] leading-relaxed text-amber-800/70 dark:text-amber-400/70">
-                            Fitur ini membutuhkan Chrome Extension khusus untuk menekan tombol kirim secara otomatis di WhatsApp Web.
-                          </p>
-
-                          <button 
-                            onClick={downloadExtensionZip}
-                            className="w-full py-3 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-amber-600/20 transition-all"
-                          >
-                            <Download size={16} /> Download Extension (.zip)
-                          </button>
-
-                          <div className="space-y-2">
-                            <div className="text-[10px] font-bold text-amber-900 dark:text-amber-300">Cara Instalasi (Hanya 1 Menit):</div>
-                            <ol className="text-[10px] space-y-2 text-amber-800/70 dark:text-amber-400/70 list-decimal ml-4">
-                              <li>Klik tombol <b>Download Extension</b> di atas.</li>
-                              <li>Ekstrak file <code className="bg-amber-100 dark:bg-amber-800 px-1 rounded">wasender-pro-helper.zip</code> menjadi folder.</li>
-                              <li>Buka <code className="bg-amber-100 dark:bg-amber-800 px-1 rounded">chrome://extensions</code> di browser Chrome.</li>
-                              <li>Aktifkan <b>Developer Mode</b> di pojok kanan atas.</li>
-                              <li>Klik <b>Load Unpacked</b> dan pilih folder hasil ekstrak tadi.</li>
-                            </ol>
-                          </div>
-                        </div>
-                      )}
                     </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest block">Hourly Limit</label>
+                        <input 
+                          type="number" 
+                          value={settings.hourlyLimit}
+                          onChange={(e) => setSettings(prev => ({ ...prev, hourlyLimit: parseInt(e.target.value) || 0 }))}
+                          className="w-full px-4 py-3 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all shadow-sm"
+                          placeholder="50"
+                        />
+                        <p className="text-[9px] text-slate-400 font-medium">Batas maksimal kirim per jam.</p>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest block">Error Limit</label>
+                        <input 
+                          type="number" 
+                          value={settings.stopOnConsecutiveErrors}
+                          onChange={(e) => setSettings(prev => ({ ...prev, stopOnConsecutiveErrors: parseInt(e.target.value) || 0 }))}
+                          className="w-full px-4 py-3 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all shadow-sm"
+                          placeholder="3"
+                        />
+                        <p className="text-[9px] text-slate-400 font-medium">Berhenti bila gagal berturut.</p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest block">Long Break</label>
+                        <input 
+                          type="number" 
+                          value={settings.longBreakAfter}
+                          onChange={(e) => setSettings(prev => ({ ...prev, longBreakAfter: parseInt(e.target.value) || 0 }))}
+                          className="w-full px-4 py-3 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all shadow-sm"
+                          placeholder="25"
+                        />
+                        <p className="text-[9px] text-slate-400 font-medium">Tidur siang setelah X pesan.</p>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest block">Duration (min)</label>
+                        <input 
+                          type="number" 
+                          value={settings.longBreakDuration}
+                          onChange={(e) => setSettings(prev => ({ ...prev, longBreakDuration: parseInt(e.target.value) || 0 }))}
+                          className="w-full px-4 py-3 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all shadow-sm"
+                          placeholder="10"
+                        />
+                        <p className="text-[9px] text-slate-400 font-medium">Lama tidur dalam menit.</p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      {[
+                        { key: 'shuffleQueue', label: 'Shuffle Queue', desc: 'Acak daftar agar pola pengiriman tidak linier.' },
+                        { key: 'useRandomGreetings', label: 'Randomize Greetings', desc: 'Ganti kata sapaan otomatis tiap pesan.' },
+                        { key: 'addRandomSuffix', label: 'Inject Ref Suffix', desc: 'Tambah string acak di akhir pesan (Anti-hash).' },
+                        { key: 'useInvisibleChars', label: 'Invisible Characters', desc: 'Sisipkan zero-width space pengecoh AI.' },
+                        { key: 'simulateTyping', label: 'Human Typing Sim', desc: 'Delay dihitung sesuai panjang karakter teks.' },
+                        { key: 'adaptiveDelay', label: 'Adaptive Fatigue', desc: 'Jeda bertambah sedikit seiring jumlah antrean.' },
+                        { key: 'randomizeFormatting', label: 'Dynamic Spacing', desc: 'Format baris baru diacak.' },
+                        { key: 'rotateTemplates', label: 'Template Rotation', desc: 'Gunakan 3 variasi pesan bergantian.' },
+                        { key: 'randomizeEmojis', label: 'Emoji Scrambler', desc: 'Taruh emoji random secara dinamis.' },
+                        { key: 'useGlobalSpintax', label: 'Global Spintax Engine', desc: 'Aktifkan format {Halo|Hai} pada template.' },
+                        { key: 'autoSend', label: 'Auto Send (Extension)', desc: 'Eksekusi otomatis pakai Chrome extension.' }
+                      ].map((item) => (
+                        <div key={item.key} className="flex items-center justify-between p-4 bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm">
+                          <div className="space-y-1">
+                            <div className="text-sm font-bold text-slate-800 dark:text-white">{item.label}</div>
+                            <div className="text-[11px] text-slate-500 dark:text-slate-400 pr-4">{item.desc}</div>
+                          </div>
+                          <button 
+                            onClick={() => setSettings(prev => ({ ...prev, [item.key]: !prev[item.key as keyof AppSettings] }))}
+                            className={cn(
+                              "w-12 h-6 rounded-full transition-all relative shrink-0",
+                              settings[item.key as keyof AppSettings] ? "bg-emerald-500" : "bg-slate-200 dark:bg-zinc-700"
+                            )}
+                          >
+                            <div className={cn(
+                              "absolute top-1 w-4 h-4 bg-white rounded-full transition-all shadow-sm",
+                              settings[item.key as keyof AppSettings] ? "left-7" : "left-1"
+                            )} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+
+                    {settings.autoSend && (
+                      <div className="mt-6 p-5 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-500/10 dark:to-orange-500/10 border border-amber-200 dark:border-amber-500/20 rounded-3xl space-y-5">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2.5 text-amber-700 dark:text-amber-400">
+                            <Puzzle size={18} />
+                            <span className="text-xs font-bold uppercase tracking-widest">Extension Status</span>
+                          </div>
+                          <div className={cn(
+                            "px-3 py-1 rounded-full text-[10px] font-extrabold uppercase shadow-sm",
+                            isExtensionDetected ? "bg-emerald-500 text-white" : "bg-amber-500 text-white"
+                          )}>
+                            {isExtensionDetected ? "Connected" : "Not Found"}
+                          </div>
+                        </div>
+                        
+                        <p className="text-[11px] leading-relaxed text-amber-800/80 dark:text-amber-200/70 font-medium">
+                          Browser secara teknis memblokir klik tombol kirim secara langsung via script eksternal. WAsender Extension digunakan untuk menjembatani ini agar proses Full-Auto bisa berjalan.
+                        </p>
+
+                        <button 
+                          onClick={downloadExtensionZip}
+                          className="w-full py-4 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl font-bold text-sm flex items-center justify-center gap-2 shadow-xl shadow-amber-500/20 transition-all active:scale-95"
+                        >
+                          <Download size={18} /> Download Extension (.zip)
+                        </button>
+
+                        <div className="space-y-3 pt-2">
+                          <div className="text-[11px] font-extrabold text-amber-900 dark:text-amber-300 uppercase tracking-widest">Cara Pasang (Hanya 1 Menit):</div>
+                          <ol className="text-[11px] space-y-2 text-amber-800/80 dark:text-amber-200/70 list-decimal ml-4 font-medium">
+                            <li>Klik tombol <b>Download Extension</b> di atas.</li>
+                            <li>Ekstrak file <code className="bg-white/50 dark:bg-black/30 px-1.5 py-0.5 rounded font-mono border border-black/5 dark:border-white/10">wasender-pro-helper.zip</code> menjadi folder biasa.</li>
+                            <li>Buka <code className="bg-white/50 dark:bg-black/30 px-1.5 py-0.5 rounded font-mono border border-black/5 dark:border-white/10">chrome://extensions</code> di URL bar Chrome.</li>
+                            <li>Nyalakan <b>Developer Mode</b> (tombol switch di pojok kanan atas).</li>
+                            <li>Klik tombol <b>Load Unpacked</b> dan pilih folder yang tadi diekstrak.</li>
+                          </ol>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
 
-              <div className="p-6 border-t border-black/5 dark:border-white/5 bg-gray-50/50 dark:bg-gray-900/20 shrink-0">
+              <div className="p-6 border-t border-slate-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 shrink-0">
                 <button 
                   onClick={() => setShowSettingsModal(false)}
-                  className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-bold shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all"
+                  className="w-full py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl font-bold text-sm shadow-xl shadow-slate-900/10 dark:shadow-white/10 hover:-translate-y-0.5 transition-all active:scale-95"
                 >
                   Save Configuration
                 </button>
@@ -1970,9 +1992,9 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      <footer className="max-w-7xl mx-auto px-6 py-12 border-t border-black/5 dark:border-white/5 text-center">
-        <div className="text-[10px] text-gray-400 dark:text-gray-600 uppercase tracking-[0.3em] font-mono font-bold">
-          WAsender PRO Engine • v2.0.0 • Enterprise Edition
+      <footer className="max-w-7xl mx-auto px-6 pt-12 text-center relative z-10">
+        <div className="text-[10px] text-slate-400 dark:text-slate-600 uppercase tracking-[0.3em] font-mono font-bold">
+          WAsender PRO Engine • v2.0.0 • Modernized UI
         </div>
       </footer>
     </div>
