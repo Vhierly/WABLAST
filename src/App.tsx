@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   Plus, Send, Trash2, Play, Square, MessageSquare, User, Package, Hash, Phone,
   FileText, CheckCircle2, Clock, AlertCircle, Settings2, Download, FileSpreadsheet,
@@ -60,6 +60,25 @@ export default function App() {
   const [formData, setFormData] = useState({
     phone: '', recipientName: '', itemName: '', receiptNumber: '', address: '', cod: '', dfod: ''
   });
+
+  // Force Reuse Tab Logic
+  const waWindowRef = useRef<Window | null>(null);
+
+  const openInSameTab = (link: string) => {
+    if (waWindowRef.current && !waWindowRef.current.closed) {
+      try {
+        waWindowRef.current.location.replace(link);
+        waWindowRef.current.focus();
+        return waWindowRef.current;
+      } catch (e) {
+        waWindowRef.current = window.open(link, 'WAsenderTab');
+        return waWindowRef.current;
+      }
+    } else {
+      waWindowRef.current = window.open(link, 'WAsenderTab');
+      return waWindowRef.current;
+    }
+  };
 
   useEffect(() => {
     const savedEntries = localStorage.getItem('wa_blast_entries');
@@ -258,7 +277,7 @@ export default function App() {
   };
 
   const handleSendManual = (entry: BlastEntry) => {
-    const newWindow = window.open(getWALink(entry), 'WAsenderTab');
+    const newWindow = openInSameTab(getWALink(entry));
     if (newWindow) window.focus();
     addLog(`🚀 Mengirim manual ke ${entry.recipientName} (${entry.receiptNumber})`, 'info');
     updateStatus(entry.id, 'sent');
@@ -320,7 +339,7 @@ export default function App() {
     const firstEntry = entriesToProcess[0];
     addLog(`🎬 Memulai proses blast...${settings.shuffleQueue ? ' (Diacak)' : ''}`, 'info');
     
-    const newWindow = window.open(getWALink(firstEntry), 'WAsenderTab');
+    const newWindow = openInSameTab(getWALink(firstEntry));
     if (!newWindow) return toast.error('Popup terblokir! Izinkan popup di browser Anda.', { duration: 8000, icon: '🚫' });
     window.focus();
     
@@ -337,6 +356,11 @@ export default function App() {
   const stopBlast = () => {
     setIsBlasting(false); setCurrentIndex(-1); setNextActionTime(0);
     addLog(`🛑 Proses blast dihentikan oleh pengguna`, 'warning');
+    // Tutup tab WA saat dihentikan paksa
+    if (waWindowRef.current && !waWindowRef.current.closed) {
+      waWindowRef.current.close();
+      waWindowRef.current = null;
+    }
   };
 
   useEffect(() => {
@@ -436,7 +460,7 @@ export default function App() {
         const entry = pendingEntries[0];
         if (now >= nextActionTime) {
           addLog(`🚀 Mengirim ke ${entry.recipientName}...`, 'info');
-          const newWindow = window.open(getWALink(entry, entries.filter(e => e.status === 'sent').length), 'WAsenderTab');
+          const newWindow = openInSameTab(getWALink(entry, entries.filter(e => e.status === 'sent').length));
           if (!newWindow) { addLog(`⚠️ Browser memblokir popup.`, 'warning'); setNextActionTime(Date.now() + 3000); return; }
           window.focus();
 
@@ -446,7 +470,17 @@ export default function App() {
             setNextActionTime(Date.now() + calculateNextDelay(entries.filter(e => e.status === 'sent').length + 1, pendingEntries[1] || entry));
           }
         } else setCountdown(Math.max(0, Math.ceil((nextActionTime - now) / 1000)));
-      } else { setIsBlasting(false); addLog(`🏁 Blast selesai!`, 'success'); }
+      } else { 
+        setIsBlasting(false); 
+        addLog(`🏁 Blast selesai!`, 'success'); 
+        
+        // Auto tutup tab saat blast selesai semua
+        if (waWindowRef.current && !waWindowRef.current.closed) {
+          waWindowRef.current.close();
+          waWindowRef.current = null;
+          addLog(`🧹 Menutup tab WhatsApp otomatis.`, 'info');
+        }
+      }
     };
 
     engineTick(); const interval = setInterval(engineTick, 1000);
@@ -459,7 +493,8 @@ export default function App() {
         e.preventDefault();
         const pending = entries.filter(ent => ent.status === 'pending');
         if (pending.length > 0) {
-          window.open(getWALink(pending[0]), 'WAsenderTab'); updateStatus(pending[0].id, 'sent');
+          openInSameTab(getWALink(pending[0])); 
+          updateStatus(pending[0].id, 'sent');
         }
       }
     };
@@ -564,7 +599,7 @@ export default function App() {
                   <button onClick={() => {
                     const entry = entries.find(e => e.status === 'pending');
                     if(entry) {
-                      window.open(getWALink(entry, entries.filter(e => e.status === 'sent').length), 'WAsenderTab');
+                      openInSameTab(getWALink(entry, entries.filter(e => e.status === 'sent').length));
                       if(settings.autoSend) updateStatus(entry.id, 'sending'); else updateStatus(entry.id, 'sent');
                     }
                   }} className="w-full py-3 bg-amber-600 hover:bg-amber-500 text-white rounded-xl font-bold text-[13px] transition-all active:scale-95 shadow-sm">Trigger Manual (Blocked)</button>
@@ -572,7 +607,7 @@ export default function App() {
                 {settings.manualMode && (
                   <button onClick={() => {
                     const pending = entries.filter(e => e.status === 'pending');
-                    if (pending.length > 0) { window.open(getWALink(pending[0]), 'WAsenderTab'); updateStatus(pending[0].id, 'sent'); }
+                    if (pending.length > 0) { openInSameTab(getWALink(pending[0])); updateStatus(pending[0].id, 'sent'); }
                   }} className="w-full py-3 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white rounded-xl font-bold text-[13px] transition-all active:scale-95 shadow-sm">Kirim Berikutnya</button>
                 )}
                 <button onClick={stopBlast} className="w-full py-3 border border-red-500/20 text-red-400 hover:bg-red-500 hover:text-white rounded-xl font-bold text-[13px] transition-all active:scale-95">Stop Engine</button>
@@ -631,7 +666,7 @@ export default function App() {
           </div>
         </div>
 
-        {/* Quick Settings (Brought back to main dashboard) */}
+        {/* Quick Settings */}
         <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[2rem] p-6 shadow-sm flex flex-col gap-5">
           <div className="space-y-2">
             <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 ml-1">Pengirim / CS</label>
@@ -946,7 +981,7 @@ export default function App() {
                     </div>
                     <button onClick={() => {
                       const entry = entries.find(e => e.status === 'pending');
-                      if (entry) { window.open(getWALink(entry, entries.filter(e => e.status === 'sent').length), 'WAsenderTab'); updateStatus(entry.id, 'sent'); setShowPreviewModal(false); }
+                      if (entry) { openInSameTab(getWALink(entry, entries.filter(e => e.status === 'sent').length)); updateStatus(entry.id, 'sent'); setShowPreviewModal(false); }
                     }} className="w-full py-4 bg-emerald-500 text-white rounded-xl font-bold flex items-center justify-center gap-2 active:scale-[0.98] transition-all text-sm"><Send size={18} /> Send Now</button>
                   </div>
                 ) : <div className="text-center py-10 text-zinc-500 text-sm">No pending entries.</div>}
@@ -1001,6 +1036,7 @@ export default function App() {
                 ) : (
                   <>
                     <div className="space-y-3"><label className="text-[11px] font-bold text-zinc-500 uppercase tracking-widest ml-1">Speed Preset</label><div className="grid grid-cols-2 gap-3">{[{id:'safe', label:'Safe'},{id:'normal', label:'Normal'},{id:'fast', label:'Fast'},{id:'turbo', label:'Turbo'},{id:'custom', label:'Custom'}].map(m => <button key={m.id} onClick={() => setSettings(prev => ({ ...prev, speedMode: m.id as any }))} className={cn("py-3.5 rounded-2xl text-xs font-bold transition-all border", settings.speedMode === m.id ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 border-transparent" : "bg-transparent border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800")}>{m.label}</button>)}</div></div>
+                    {settings.speedMode === 'custom' && <div className="space-y-2"><label className="text-[11px] font-bold text-zinc-500 uppercase tracking-widest ml-1">Custom Delay (ms)</label><input type="number" value={settings.delay} onChange={(e) => setSettings(prev => ({ ...prev, delay: parseInt(e.target.value) || 1000 }))} className="w-full px-5 py-4 bg-zinc-50 dark:bg-zinc-950 border-none rounded-2xl text-sm focus:ring-2 focus:ring-emerald-500/20 outline-none dark:text-white" step="500" /></div>}
                     
                     <div className="pt-4 border-t border-zinc-100 dark:border-zinc-800 space-y-5">
                       {[
