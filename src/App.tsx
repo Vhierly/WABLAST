@@ -109,7 +109,6 @@ export default function App() {
     if (savedEntries) setEntries(JSON.parse(savedEntries));
     if (savedTemplates) {
       const parsedTemplates: MessageTemplate[] = JSON.parse(savedTemplates);
-      // Merge saved templates with defaults to ensure new default templates appear
       const mergedTemplates = [...parsedTemplates];
       DEFAULT_TEMPLATES.forEach(def => {
         if (!mergedTemplates.find(t => t.id === def.id)) {
@@ -197,9 +196,7 @@ export default function App() {
       const delimiter = line.includes('\t') ? '\t' : ',';
       const columns = line.split(delimiter).map(col => col.trim());
       
-      // Expected format: No, Resi/AWB, Nama Penerima, No HP, Alamat Lengkap, Tanda, Nominal COD, Nominal DFOD, Nama Barang
       if (columns.length >= 4) {
-        // Skip header lines
         const firstCol = columns[0].toLowerCase();
         const secondCol = (columns[1] || '').toLowerCase();
         if (firstCol === 'no' || secondCol === 'resi/awb' || secondCol === 'resi') return;
@@ -211,20 +208,13 @@ export default function App() {
 
         let cod = '';
         let dfod = '';
-
-        // Rule: Nominal COD / Nominal DFOD if not a number then it's not there.
-        // Rule: Tanda if not COD or DFOD then it's not there.
         
         if (tanda === 'COD') {
           const cleanCod = rawCod.replace(/[^0-9]/g, '');
-          if (cleanCod && !isNaN(Number(cleanCod))) {
-            cod = cleanCod;
-          }
+          if (cleanCod && !isNaN(Number(cleanCod))) cod = cleanCod;
         } else if (tanda === 'DFOD') {
           const cleanDfod = rawDfod.replace(/[^0-9]/g, '');
-          if (cleanDfod && !isNaN(Number(cleanDfod))) {
-            dfod = cleanDfod;
-          }
+          if (cleanDfod && !isNaN(Number(cleanDfod))) dfod = cleanDfod;
         }
 
         newEntries.push({
@@ -271,42 +261,20 @@ export default function App() {
     else base = 'Malam';
 
     if (settings.useRandomGreetings) {
-      const variations = [
-        `Selamat ${base}`,
-        `${base} Kak`,
-        `Halo, Selamat ${base}`,
-        `Halo Kak, Selamat ${base}`,
-        `Permisi, Selamat ${base}`,
-        `Halo`,
-        `Pagi/Siang/Sore/Malam` // This is just a placeholder for the logic below
-      ];
-      
-      // Filter out the placeholder and use real variations
-      const realVariations = variations.filter(v => v !== 'Pagi/Siang/Sore/Malam');
-      realVariations.push(base); // Just "Pagi", "Siang", etc.
-      
-      return realVariations[Math.floor(Math.random() * realVariations.length)];
+      const variations = [`Selamat ${base}`, `${base} Kak`, `Halo, Selamat ${base}`, `Halo Kak, Selamat ${base}`, `Permisi, Selamat ${base}`, `Halo`, base];
+      return variations[Math.floor(Math.random() * variations.length)];
     }
-
     return `Selamat ${base}`;
   };
 
   const generateMessage = (entry: BlastEntry, templateText?: string) => {
     let text = templateText || activeTemplate.text;
 
-    // Handle conditional blocks
-    // {if_cod}Text {cod}{/if_cod}
-    if (!entry.cod) {
-      text = text.replace(/{if_cod}[\s\S]*?{\/if_cod}/gi, '');
-    } else {
-      text = text.replace(/{if_cod}/gi, '').replace(/{\/if_cod}/gi, '');
-    }
+    if (!entry.cod) text = text.replace(/{if_cod}[\s\S]*?{\/if_cod}/gi, '');
+    else text = text.replace(/{if_cod}/gi, '').replace(/{\/if_cod}/gi, '');
 
-    if (!entry.dfod) {
-      text = text.replace(/{if_dfod}[\s\S]*?{\/if_dfod}/gi, '');
-    } else {
-      text = text.replace(/{if_dfod}/gi, '').replace(/{\/if_dfod}/gi, '');
-    }
+    if (!entry.dfod) text = text.replace(/{if_dfod}[\s\S]*?{\/if_dfod}/gi, '');
+    else text = text.replace(/{if_dfod}/gi, '').replace(/{\/if_dfod}/gi, '');
 
     let finalMessage = text
       .replace(/{salam}/gi, getGreeting())
@@ -318,7 +286,6 @@ export default function App() {
       .replace(/{cod}/gi, entry.cod ? `Rp ${entry.cod}` : '-')
       .replace(/{dfod}/gi, entry.dfod ? `Rp ${entry.dfod}` : '-');
 
-    // Handle Spintax: {Halo|Hai|Pagi}
     if (settings.useGlobalSpintax) {
       finalMessage = finalMessage.replace(/{([^{}]+)}/g, (match, p1) => {
         if (p1.includes('|')) {
@@ -330,35 +297,22 @@ export default function App() {
     }
 
     if (settings.randomizeEmojis) {
-      const emojis = ['😊', '🙏', '📦', '🚚', '✨', '✅', '📍', '🚚', '📦', '🚛', ' cargo ', ' cargo ', ' jnt ', ' jnt '];
+      const emojis = ['😊', '🙏', '📦', '🚚', '✨', '✅', '📍', '🚚', '📦', '🚛', ' cargo ', ' jnt '];
       const words = finalMessage.split(' ');
-      finalMessage = words.map(word => {
-        if (Math.random() > 0.9) {
-          return word + ' ' + emojis[Math.floor(Math.random() * emojis.length)];
-        }
-        return word;
-      }).join(' ');
+      finalMessage = words.map(word => Math.random() > 0.9 ? word + ' ' + emojis[Math.floor(Math.random() * emojis.length)] : word).join(' ');
     }
 
     if (settings.addRandomSuffix) {
-      const suffix = `\n\n_Ref: ${Math.random().toString(36).substring(7).toUpperCase()}_`;
-      finalMessage += suffix;
+      finalMessage += `\n\n_Ref: ${Math.random().toString(36).substring(7).toUpperCase()}_`;
     }
 
     if (settings.useInvisibleChars) {
-      // Inject invisible characters (Zero Width Space) at random positions to make message hash unique
       const zwsp = '\u200B';
       const words = finalMessage.split(' ');
-      finalMessage = words.map(word => {
-        if (Math.random() > 0.7) {
-          return word + zwsp;
-        }
-        return word;
-      }).join(' ');
+      finalMessage = words.map(word => Math.random() > 0.7 ? word + zwsp : word).join(' ');
     }
 
     if (settings.randomizeFormatting) {
-      // Randomly change double line breaks to single or triple to vary message structure
       const paragraphs = finalMessage.split('\n\n');
       finalMessage = paragraphs.map((p, i) => {
         if (i === paragraphs.length - 1) return p;
@@ -378,42 +332,31 @@ export default function App() {
     if (!phone.startsWith('62')) phone = '62' + phone;
     
     let templateText = activeTemplate.text;
+    
+    // FIX: Only rotate variations of the ACTIVE template
     if (settings.rotateTemplates) {
       const count = sentCountOverride !== undefined ? sentCountOverride : entries.filter(e => e.status === 'sent').length;
       if (activeTemplate.variations && activeTemplate.variations.length > 0) {
-        templateText = activeTemplate.variations[count % activeTemplate.variations.length];
-      } else {
-        templateText = templates[count % templates.length].text;
+        templateText = activeTemplate.variations[count % activeTemplate.variations.length] || activeTemplate.text;
       }
     }
     
     const message = encodeURIComponent(generateMessage(entry, templateText));
-    // Force WhatsApp Web instead of wa.me
     let link = `https://web.whatsapp.com/send?phone=${phone}&text=${message}`;
-    if (settings.autoSend) {
-      link += '&autosend=true';
-    }
+    if (settings.autoSend) link += '&autosend=true';
     link += `&entryid=${entry.id}`;
     return link;
   };
 
   const handleSendManual = (entry: BlastEntry) => {
-    // Use a named window to reuse the same tab and avoid popup blockers
     const newWindow = window.open(getWALink(entry), 'WAsenderTab');
-    if (newWindow) {
-      window.focus(); // Attempt to bring focus back to the app
-    }
+    if (newWindow) window.focus();
     addLog(`🚀 Mengirim manual ke ${entry.recipientName} (${entry.receiptNumber})`, 'info');
     updateStatus(entry.id, 'sent');
   };
 
   const addLog = (message: string, type: LogEntry['type'] = 'info') => {
-    const newLog: LogEntry = {
-      id: crypto.randomUUID(),
-      timestamp: Date.now(),
-      message,
-      type
-    };
+    const newLog: LogEntry = { id: crypto.randomUUID(), timestamp: Date.now(), message, type };
     setLogs(prev => [newLog, ...prev].slice(0, 100));
   };
 
@@ -431,58 +374,36 @@ export default function App() {
     let useTyping = settings.simulateTyping;
     let useAdaptive = settings.adaptiveDelay;
 
-    // Apply presets
-    if (settings.speedMode === 'safe') {
-      minDelay = 15000; maxDelay = 30000; useTyping = true; useAdaptive = true;
-    } else if (settings.speedMode === 'normal') {
-      minDelay = 8000; maxDelay = 15000; useTyping = true; useAdaptive = true;
-    } else if (settings.speedMode === 'fast') {
-      minDelay = 3000; maxDelay = 7000; useTyping = false; useAdaptive = false;
-    } else if (settings.speedMode === 'turbo') {
-      minDelay = 1000; maxDelay = 2000; useTyping = false; useAdaptive = false;
-    }
+    if (settings.speedMode === 'safe') { minDelay = 15000; maxDelay = 30000; useTyping = true; useAdaptive = true; }
+    else if (settings.speedMode === 'normal') { minDelay = 8000; maxDelay = 15000; useTyping = true; useAdaptive = true; }
+    else if (settings.speedMode === 'fast') { minDelay = 3000; maxDelay = 7000; useTyping = false; useAdaptive = false; }
+    else if (settings.speedMode === 'turbo') { minDelay = 1000; maxDelay = 2000; useTyping = false; useAdaptive = false; }
 
-    let currentBaseDelay = minDelay;
-    if (settings.randomizeDelay || settings.speedMode !== 'custom') {
-      currentBaseDelay = Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay;
-    }
+    let currentDelay = (settings.randomizeDelay || settings.speedMode !== 'custom') 
+      ? Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay 
+      : minDelay;
 
-    let currentDelay = currentBaseDelay;
+    if (useAdaptive) currentDelay += Math.floor(sentCount / 10) * 500;
 
-    // 1. Adaptive Delay
-    if (useAdaptive) {
-      const increment = Math.floor(sentCount / 10) * 500;
-      currentDelay += increment;
-    }
-
-    // 2. Typing Simulation
     if (useTyping) {
       let templateText = activeTemplate.text;
-      if (settings.rotateTemplates) {
-        if (activeTemplate.variations && activeTemplate.variations.length > 0) {
-          templateText = activeTemplate.variations[sentCount % activeTemplate.variations.length];
-        } else {
-          templateText = templates[sentCount % templates.length].text;
-        }
+      if (settings.rotateTemplates && activeTemplate.variations) {
+        templateText = activeTemplate.variations[sentCount % activeTemplate.variations.length] || activeTemplate.text;
       }
       const message = generateMessage(entry, templateText);
-      const typingDelay = Math.min(message.length * 50, 5000);
-      currentDelay += typingDelay;
+      currentDelay += Math.min(message.length * 50, 5000);
     }
 
-    // 3. Batch Pause
     if (settings.batchSize > 0 && sentCount >= nextBatchPauseAt && nextBatchPauseAt > 0) {
       currentDelay = settings.batchPause;
-      toast(`Anti-Spam: Istirahat sejenak selama ${settings.batchPause / 1000} detik...`, { icon: '🛡️' });
-      const jitter = Math.floor(Math.random() * 5) - 2;
-      setNextBatchPauseAt(sentCount + settings.batchSize + jitter);
+      toast(`Anti-Spam: Istirahat ${settings.batchPause / 1000} detik...`, { icon: '🛡️' });
+      setNextBatchPauseAt(sentCount + settings.batchSize + (Math.floor(Math.random() * 5) - 2));
     }
 
-    // 4. Long Break
     if (settings.longBreakAfter > 0 && sentCount > 0 && sentCount % settings.longBreakAfter === 0) {
       currentDelay = settings.longBreakDuration * 60 * 1000;
       setIsLongBreak(true);
-      addLog(`😴 Mengambil istirahat panjang selama ${settings.longBreakDuration} menit...`, 'warning');
+      addLog(`😴 Istirahat panjang ${settings.longBreakDuration} menit...`, 'warning');
     } else {
       setIsLongBreak(false);
     }
@@ -492,311 +413,136 @@ export default function App() {
 
   const startBlast = () => {
     if (!isExtensionDetected && !settings.manualMode) {
-      toast.error('Extension tidak terdeteksi! Gunakan Mode Manual atau hubungkan extension.', { icon: '🔌' });
+      toast.error('Extension tidak terdeteksi!', { icon: '🔌' });
       return;
     }
-
     const pending = entries.filter(e => e.status === 'pending');
-    if (pending.length === 0) {
-      toast.error('Tidak ada pesan pending');
-      return;
-    }
+    if (pending.length === 0) return;
 
     let entriesToProcess = [...pending];
     if (settings.shuffleQueue) {
       entriesToProcess = entriesToProcess.sort(() => Math.random() - 0.5);
-      setEntries(prev => {
-        const nonPending = prev.filter(e => e.status !== 'pending');
-        return [...nonPending, ...entriesToProcess];
-      });
+      setEntries(prev => [...prev.filter(e => e.status !== 'pending'), ...entriesToProcess]);
     }
 
     const firstEntry = entriesToProcess[0];
-    addLog(`🎬 Memulai proses blast...${settings.shuffleQueue ? ' (Urutan Diacak)' : ''}`, 'info');
-    
-    // Open the first one immediately to "unlock" the popup blocker
     const newWindow = window.open(getWALink(firstEntry), 'WAsenderTab');
-    
     if (!newWindow) {
-      toast.error('Popup terblokir! Harap izinkan popup di browser Anda.', {
-        duration: 8000,
-        icon: '🚫'
-      });
+      toast.error('Popup terblokir!', { icon: '🚫' });
       return;
     }
 
     window.focus();
-    
-    if (settings.autoSend) {
-      updateStatus(firstEntry.id, 'sending');
-    } else {
+    if (settings.autoSend) updateStatus(firstEntry.id, 'sending');
+    else {
       updateStatus(firstEntry.id, 'sent');
-      // If not auto-sending, start countdown for next
-      const delay = calculateNextDelay(entries.filter(e => e.status === 'sent').length + 1, entriesToProcess[1] || firstEntry);
-      setNextActionTime(Date.now() + delay);
+      setNextActionTime(Date.now() + calculateNextDelay(entries.filter(e => e.status === 'sent').length + 1, entriesToProcess[1] || firstEntry));
     }
 
     setIsBlasting(true);
     setCurrentIndex(0);
-    
-    const sentCount = entries.filter(e => e.status === 'sent').length;
-    if (settings.batchSize > 0) {
-      const jitter = Math.floor(Math.random() * 5) - 2;
-      setNextBatchPauseAt(sentCount + settings.batchSize + jitter);
-    }
+    if (settings.batchSize > 0) setNextBatchPauseAt(entries.filter(e => e.status === 'sent').length + settings.batchSize);
   };
 
   const stopBlast = () => {
     setIsBlasting(false);
     setCurrentIndex(-1);
     setNextActionTime(0);
-    addLog(`🛑 Proses blast dihentikan oleh pengguna`, 'warning');
+    addLog(`🛑 Blast dihentikan`, 'warning');
   };
 
-  // Auto-recovery for stuck 'sending' status
+  // Auto-recovery & Extension Handlers
   useEffect(() => {
     if (isBlasting && !settings.manualMode) {
       const sendingEntry = entries.find(e => e.status === 'sending');
       if (sendingEntry) {
-        // Dynamic timeout based on speed mode
-        let timeoutDuration = 25000; // Default 25s
-        if (settings.speedMode === 'turbo') timeoutDuration = 5000;
-        else if (settings.speedMode === 'fast') timeoutDuration = 10000;
-        else if (settings.speedMode === 'normal') timeoutDuration = 15000;
-
+        let timeoutDuration = settings.speedMode === 'turbo' ? 5000 : 25000;
         const timer = setTimeout(() => {
-          addLog(`⏭️ Auto-Next: Melanjutkan otomatis untuk ${sendingEntry.recipientName}...`, 'info');
           updateStatus(sendingEntry.id, 'sent');
-          
-          // Trigger next delay after timeout
-          const sentCount = entries.filter(e => e.status === 'sent').length + 1;
           const pending = entries.filter(e => e.status === 'pending' && e.id !== sendingEntry.id);
-          if (pending.length > 0) {
-            const delay = calculateNextDelay(sentCount, pending[0]);
-            setNextActionTime(Date.now() + delay);
-          }
+          if (pending.length > 0) setNextActionTime(Date.now() + calculateNextDelay(entries.filter(e => e.status === 'sent').length + 1, pending[0]));
         }, timeoutDuration);
         return () => clearTimeout(timer);
       }
     }
-  }, [entries, isBlasting, settings.manualMode, settings.speedMode]);
+  }, [entries, isBlasting, settings.manualMode]);
 
   useEffect(() => {
     const handleExtensionMessage = (event: MessageEvent) => {
-      // Check if message is from our extension
-      if (event.data && event.data.source === 'wasender-extension') {
+      if (event.data?.source === 'wasender-extension') {
         const { type, entryId, status: waStatus } = event.data;
-        
         if (type === 'WA_STATUS_UPDATE') {
-          // Use functional update to ensure we have latest state
           setEntries(currentEntries => {
             const entry = currentEntries.find(e => e.id === entryId);
             if (!entry || entry.status === 'sent') return currentEntries;
-
-            const name = entry.recipientName;
-            const resi = entry.receiptNumber;
-
             if (waStatus === 'sent') {
-              setConsecutiveErrors(0);
-              setSentThisHour(prev => prev + 1);
-              addLog(`✅ Pesan terkirim ke ${name} (${resi})`, 'success');
-              
-              // Trigger next delay after confirmation
-              const sentCount = currentEntries.filter(e => e.status === 'sent').length + 1;
+              setSentThisHour(p => p + 1);
               const pending = currentEntries.filter(e => e.status === 'pending' && e.id !== entryId);
-              if (pending.length > 0) {
-                const delay = calculateNextDelay(sentCount, pending[0]);
-                setNextActionTime(Date.now() + delay);
-              }
-              
+              if (pending.length > 0) setNextActionTime(Date.now() + calculateNextDelay(currentEntries.filter(e => e.status === 'sent').length + 1, pending[0]));
               return currentEntries.map(e => e.id === entryId ? { ...e, status: 'sent' } : e);
-            } else if (waStatus === 'invalid') {
-              const currentRetries = entry.retryCount || 0;
-              
-              if (settings.autoRetry && currentRetries < settings.maxRetries) {
-                const nextRetry = currentRetries + 1;
-                addLog(`🔄 Nomor ${name} gagal, mencoba ulang (${nextRetry}/${settings.maxRetries})...`, 'warning');
-                return currentEntries.map(e => e.id === entryId ? { ...e, status: 'pending', retryCount: nextRetry } : e);
-              } else {
-                setConsecutiveErrors(prev => prev + 1);
-                addLog(`❌ Nomor tidak valid: ${name} (${resi})`, 'error');
-                return currentEntries.map(e => e.id === entryId ? { ...e, status: 'failed' } : e);
-              }
             }
             return currentEntries;
           });
         } else if (type === 'WA_WARNING_DETECTED') {
           stopBlast();
-          addLog(`🚨 PERINGATAN SPAM TERDETEKSI OLEH WHATSAPP! Blast dihentikan demi keamanan.`, 'error');
-          toast.error('PERINGATAN SPAM! Blast dihentikan.', { duration: 10000, icon: '🚨' });
+          toast.error('SPAM DETECTED!', { icon: '🚨' });
         }
       }
     };
-
     window.addEventListener('message', handleExtensionMessage);
-    
-    // Heartbeat check
-    const heartbeatInterval = setInterval(() => {
-      const now = Date.now();
-      if (lastHeartbeat > 0 && now - lastHeartbeat > 20000) {
-        if (isExtensionDetected) {
-          setIsExtensionDetected(false);
-          addLog(`🔌 Extension terputus atau tidak terdeteksi`, 'warning');
-        }
-      }
-    }, 5000);
-
-    return () => {
-      window.removeEventListener('message', handleExtensionMessage);
-      clearInterval(heartbeatInterval);
-    };
-  }, [lastHeartbeat, isExtensionDetected, settings.autoRetry, settings.maxRetries, settings.speedMode]);
+    return () => window.removeEventListener('message', handleExtensionMessage);
+  }, []);
 
   useEffect(() => {
-    const handlePing = (event: MessageEvent) => {
-      if (event.data && event.data.source === 'wasender-extension' && event.data.type === 'EXTENSION_PONG') {
-        if (!isExtensionDetected) {
-          setIsExtensionDetected(true);
-          addLog(`🔌 Extension terdeteksi dan aktif`, 'success');
-        }
-        setLastHeartbeat(Date.now());
-      }
-    };
-    window.addEventListener('message', handlePing);
-    
-    // Check for DOM attribute (more reliable)
     const checkAttr = () => {
       if (document.documentElement.getAttribute('data-wasender-extension') === 'active') {
-        if (!isExtensionDetected) {
-          setIsExtensionDetected(true);
-          addLog(`🔌 Extension terdeteksi via DOM`, 'success');
-        }
+        if (!isExtensionDetected) setIsExtensionDetected(true);
         setLastHeartbeat(Date.now());
       }
-      // Also ping extension
       window.postMessage({ type: 'EXTENSION_PING' }, '*');
     };
-
-    const attrInterval = setInterval(checkAttr, 2000);
-    checkAttr();
-
-    return () => {
-      window.removeEventListener('message', handlePing);
-      clearInterval(attrInterval);
-    };
+    const interval = setInterval(checkAttr, 2000);
+    return () => clearInterval(interval);
   }, [isExtensionDetected]);
 
-  // Main Blast Engine
+  // Engine Tick
   useEffect(() => {
-    if (!isBlasting || settings.manualMode) {
-      setCountdown(0);
-      return;
-    }
-
+    if (!isBlasting || settings.manualMode) { setCountdown(0); return; }
     const engineTick = () => {
       const now = Date.now();
-      
-      // 1. Check Hourly Limit
-      if (now - lastHourReset > 3600000) {
-        setSentThisHour(0);
-        setLastHourReset(now);
-      }
-
-      if (sentThisHour >= settings.hourlyLimit) {
-        setIsBlasting(false);
-        addLog(`⏳ Limit per jam tercapai.`, 'warning');
-        return;
-      }
+      if (now - lastHourReset > 3600000) { setSentThisHour(0); setLastHourReset(now); }
+      if (sentThisHour >= settings.hourlyLimit) { setIsBlasting(false); return; }
 
       const pendingEntries = entries.filter(e => e.status === 'pending');
-      const sendingEntries = entries.filter(e => e.status === 'sending');
-      
-      // 2. If already sending, wait for extension or timeout
-      if (sendingEntries.length > 0) {
-        setCountdown(0);
-        return;
-      }
+      if (entries.some(e => e.status === 'sending')) { setCountdown(0); return; }
 
       if (pendingEntries.length > 0) {
         const entry = pendingEntries[0];
-        
         if (now >= nextActionTime) {
-          // 3. TIME TO SEND
-          addLog(`🚀 Mengirim ke ${entry.recipientName}...`, 'info');
-          
-          const waLink = getWALink(entry, entries.filter(e => e.status === 'sent').length);
-          const newWindow = window.open(waLink, 'WAsenderTab');
-          
-          if (!newWindow) {
-            addLog(`⚠️ Browser memblokir pembukaan tab otomatis.`, 'warning');
-            // Set a small retry delay to avoid tight loop if blocked
-            setNextActionTime(Date.now() + 3000); 
-            return;
-          }
-
-          window.focus();
-
-          if (settings.autoSend) {
-            updateStatus(entry.id, 'sending');
-          } else {
-            updateStatus(entry.id, 'sent');
-            const delay = calculateNextDelay(entries.filter(e => e.status === 'sent').length + 1, pendingEntries[1] || entry);
-            setNextActionTime(Date.now() + delay);
-          }
+          const newWindow = window.open(getWALink(entry, entries.filter(e => e.status === 'sent').length), 'WAsenderTab');
+          if (newWindow) {
+            window.focus();
+            if (settings.autoSend) updateStatus(entry.id, 'sending');
+            else {
+              updateStatus(entry.id, 'sent');
+              setNextActionTime(Date.now() + calculateNextDelay(entries.filter(e => e.status === 'sent').length + 1, pendingEntries[1] || entry));
+            }
+          } else { setNextActionTime(Date.now() + 3000); }
         } else {
-          // 4. WAITING DELAY - Update Countdown
-          const remaining = Math.ceil((nextActionTime - now) / 1000);
-          setCountdown(Math.max(0, remaining));
+          setCountdown(Math.max(0, Math.ceil((nextActionTime - now) / 1000)));
         }
-      } else {
-        setIsBlasting(false);
-        addLog(`🏁 Blast selesai!`, 'success');
-      }
+      } else { setIsBlasting(false); addLog('🏁 Selesai!', 'success'); }
     };
-
-    // Run immediately then every 1s
-    engineTick();
     const interval = setInterval(engineTick, 1000);
-
     return () => clearInterval(interval);
-  }, [isBlasting, entries, nextActionTime, settings.manualMode, settings.hourlyLimit, isExtensionDetected, sentThisHour, lastHourReset]);
+  }, [isBlasting, entries, nextActionTime, settings.manualMode, sentThisHour]);
 
-  // Keyboard shortcut for manual mode
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (isBlasting && settings.manualMode && (e.code === 'Space' || e.code === 'Enter')) {
-        e.preventDefault();
-        const pending = entries.filter(ent => ent.status === 'pending');
-        if (pending.length > 0) {
-          const entry = pending[0];
-          window.open(getWALink(entry), 'WAsenderTab');
-          updateStatus(entry.id, 'sent');
-        }
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isBlasting, settings.manualMode, entries]);
-
-  const filteredEntries = useMemo(() => {
-    return entries.filter(e => 
-      e.recipientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      e.phone.includes(searchQuery) ||
-      e.receiptNumber.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [entries, searchQuery]);
-
-  const statsData = useMemo(() => {
-    const sent = entries.filter(e => e.status === 'sent').length;
-    const pending = entries.filter(e => e.status === 'pending').length;
-    const received = entries.filter(e => e.isReceived).length;
-    return [
-      { name: 'Sent', value: sent, color: '#10b981' },
-      { name: 'Pending', value: pending, color: '#f59e0b' },
-      { name: 'Received', value: received, color: '#3b82f6' }
-    ];
-  }, [entries]);
+  const filteredEntries = useMemo(() => entries.filter(e => e.recipientName.toLowerCase().includes(searchQuery.toLowerCase()) || e.phone.includes(searchQuery) || e.receiptNumber.toLowerCase().includes(searchQuery.toLowerCase())), [entries, searchQuery]);
+  const statsData = useMemo(() => [
+    { name: 'Sent', value: entries.filter(e => e.status === 'sent').length, color: '#10b981' },
+    { name: 'Pending', value: entries.filter(e => e.status === 'pending').length, color: '#f59e0b' },
+    { name: 'Received', value: entries.filter(e => e.isReceived).length, color: '#3b82f6' }
+  ], [entries]);
 
   const safetyScore = useMemo(() => {
     let score = 0;
@@ -804,7 +550,6 @@ export default function App() {
     if (settings.randomizeDelay) score += 15;
     if (settings.batchSize > 0 && settings.batchSize <= 15) score += 10;
     if (settings.useRandomGreetings) score += 5;
-    if (settings.useInvisibleChars) score += 5;
     if (settings.simulateTyping) score += 10;
     if (settings.adaptiveDelay) score += 5;
     if (settings.rotateTemplates) score += 10;
@@ -814,705 +559,155 @@ export default function App() {
   }, [settings]);
 
   const exportToCSV = () => {
-    if (entries.length === 0) return;
-    const headers = ['Phone', 'Name', 'Item', 'Receipt', 'Status', 'Received', 'Created At'];
-    const rows = entries.map(e => [
-      e.phone,
-      e.recipientName,
-      e.itemName,
-      e.receiptNumber,
-      e.status,
-      e.isReceived ? 'YES' : 'NO',
-      new Date(e.createdAt).toLocaleString()
-    ]);
-    const csvContent = [headers, ...rows]
-      .map(r => r.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
-      .join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const headers = ['Phone', 'Name', 'Item', 'Receipt', 'Status', 'Received'];
+    const csvContent = [headers, ...entries.map(e => [e.phone, e.recipientName, e.itemName, e.receiptNumber, e.status, e.isReceived ? 'YES' : 'NO'])].map(r => r.join(',')).join('\n');
     const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `wasender_report_${new Date().toISOString().split('T')[0]}.csv`;
+    link.href = URL.createObjectURL(new Blob([csvContent], { type: 'text/csv' }));
+    link.download = `wasender_report.csv`;
     link.click();
-    toast.success('Laporan berhasil diunduh');
   };
 
   return (
-    <div className={cn(
-      "min-h-screen bg-[#F8F9FA] dark:bg-[#0F1115] text-[#1A1A1A] dark:text-[#E4E6EB] font-sans selection:bg-emerald-100 dark:selection:bg-emerald-900/30 transition-colors duration-300",
-      isDarkMode && "dark"
-    )}>
+    <div className={cn("min-h-screen bg-[#F8F9FA] dark:bg-[#0F1115] text-[#1A1A1A] dark:text-[#E4E6EB] transition-colors duration-300", isDarkMode && "dark")}>
       <Toaster position="top-right" />
 
-      {/* Blast Progress Overlay */}
+      {/* Progress Overlay */}
       {isBlasting && (
         <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-6">
           <div className="bg-white dark:bg-[#16191F] rounded-3xl p-8 max-w-md w-full shadow-2xl border border-white/10 text-center space-y-6">
             <div className="relative w-24 h-24 mx-auto">
               <div className="absolute inset-0 border-4 border-emerald-500/20 rounded-full" />
               <div className="absolute inset-0 border-4 border-emerald-500 rounded-full border-t-transparent animate-spin" />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <Play size={32} className="text-emerald-500 fill-current" />
-              </div>
+              <div className="absolute inset-0 flex items-center justify-center"><Play size={32} className="text-emerald-500 fill-current" /></div>
             </div>
             <div className="space-y-2">
-              <h3 className="text-xl font-bold">
-                {isLongBreak ? '😴 Long Break Active' : 
-                 entries.some(e => e.status === 'sending') ? '⏳ Menunggu WA Web...' : 
-                 'Blasting in Progress...'}
-              </h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                Pesan terkirim: <span className="font-bold text-emerald-600 dark:text-emerald-400">{entries.filter(e => e.status === 'sent').length}</span> / <span className="font-bold">{entries.length}</span>
-              </p>
-              
-              {!settings.manualMode ? (
+              <h3 className="text-xl font-bold">{isLongBreak ? '😴 Break' : entries.some(e => e.status === 'sending') ? '⏳ Memuat WA...' : 'Blasting...'}</h3>
+              <p className="text-sm text-gray-500">Sent: {entries.filter(e => e.status === 'sent').length} / {entries.length}</p>
+              {!settings.manualMode && (
                 <div className="py-4">
-                  <div className={cn(
-                    "text-4xl font-black tabular-nums",
-                    isLongBreak ? "text-amber-500" : 
-                    entries.some(e => e.status === 'sending') ? "text-blue-500 animate-pulse" :
-                    "text-emerald-600 dark:text-emerald-400"
-                  )}>
+                  <div className="text-4xl font-black tabular-nums text-emerald-600 dark:text-emerald-400">
                     {entries.some(e => e.status === 'sending') ? '--:--' : `${Math.floor(countdown / 60)}:${(countdown % 60).toString().padStart(2, '0')}`}
                   </div>
-                  <p className="text-[10px] text-gray-400 uppercase tracking-widest mt-1">
-                    {entries.some(e => e.status === 'sending') ? 'Memproses di WA Web' : isLongBreak ? 'Break ends in' : 'Next message in'}
-                  </p>
-                  
-                  {Date.now() >= nextActionTime && entries.filter(e => e.status === 'pending').length > 0 && !entries.some(e => e.status === 'sending') && (
-                    <div className="mt-4 animate-in fade-in zoom-in duration-300">
-                      <button
-                        onClick={() => {
-                          const pending = entries.filter(e => e.status === 'pending');
-                          if (pending.length > 0) {
-                            const entry = pending[0];
-                            const sentCount = entries.filter(e => e.status === 'sent').length;
-                            const newWindow = window.open(getWALink(entry, sentCount), 'WAsenderTab');
-                            if (newWindow) {
-                              window.focus();
-                              if (settings.autoSend) {
-                                updateStatus(entry.id, 'sending');
-                              } else {
-                                updateStatus(entry.id, 'sent');
-                                const delay = calculateNextDelay(sentCount + 1, entries.filter(e => e.status === 'pending')[1] || entry);
-                                setNextActionTime(Date.now() + delay);
-                              }
-                            }
-                          }
-                        }}
-                        className="w-full py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold text-sm shadow-lg flex items-center justify-center gap-2"
-                      >
-                        <Play size={14} fill="white" /> Klik jika tab tidak terbuka otomatis
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="py-6 space-y-2">
-                  <div className="px-4 py-2 bg-emerald-50 dark:bg-emerald-900/10 text-emerald-700 dark:text-emerald-400 rounded-xl text-xs font-bold border border-emerald-100 dark:border-emerald-900/20">
-                    MODE MANUAL AKTIF
-                  </div>
-                  <p className="text-[10px] text-gray-400">Tekan [SPASI] atau klik tombol di bawah untuk lanjut.</p>
                 </div>
               )}
-
-              <div className="pt-2 flex flex-col gap-2">
-                <p className="text-[10px] text-amber-600 dark:text-amber-400 font-bold uppercase tracking-widest animate-pulse">
-                  PENTING: Tekan [ENTER] pada tab WhatsApp untuk mengirim!
-                </p>
-                <p className="text-[9px] text-gray-400 italic">
-                  Browser tidak mengizinkan klik otomatis di dalam WhatsApp. Tekan Enter setiap kali pesan muncul.
-                </p>
-              </div>
             </div>
             <div className="flex flex-col gap-3">
-              {entries.some(e => e.status === 'sending') && (
-                <button
-                  onClick={() => {
-                    const sending = entries.find(e => e.status === 'sending');
-                    if (sending) {
-                      addLog(`⏭️ Paksa lanjut: Melewati konfirmasi untuk ${sending.recipientName}`, 'warning');
-                      updateStatus(sending.id, 'sent');
-                    }
-                  }}
-                  className="w-full py-3 bg-blue-600 text-white rounded-2xl font-bold shadow-lg shadow-blue-600/20 text-sm hover:bg-blue-700 transition-all"
-                >
-                  Paksa Lanjut ke Nomor Berikutnya
-                </button>
-              )}
-              <button
-                onClick={() => {
-                  const pending = entries.filter(e => e.status === 'pending');
-                  if (pending.length > 0) {
-                    const entry = pending[0];
-                    const newWindow = window.open(getWALink(entry), 'WAsenderTab');
-                    if (newWindow) {
-                      window.focus();
-                    }
-                    updateStatus(entry.id, 'sent');
-                  }
-                }}
-                className="w-full py-3 bg-emerald-100 dark:bg-emerald-900/10 text-emerald-700 dark:text-emerald-400 rounded-2xl font-bold text-sm hover:bg-emerald-200 transition-all border border-emerald-200 dark:border-emerald-900/30"
-              >
-                Kirim Berikutnya (Manual)
-              </button>
-              <button
-                onClick={stopBlast}
-                className="w-full py-3 bg-red-500 hover:bg-red-600 text-white rounded-2xl font-bold transition-all shadow-lg shadow-red-500/20 text-sm"
-              >
-                Berhenti
-              </button>
+              <button onClick={stopBlast} className="w-full py-3 bg-red-500 hover:bg-red-600 text-white rounded-2xl font-bold text-sm">Stop</button>
             </div>
           </div>
         </div>
       )}
       
-      {/* Sidebar-like Header */}
-      <header className="bg-white dark:bg-[#16191F] border-b border-black/5 dark:border-white/5 sticky top-0 z-30 backdrop-blur-md bg-white/80 dark:bg-[#16191F]/80">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+      {/* Header */}
+      <header className="bg-white/80 dark:bg-[#16191F]/80 border-b border-black/5 sticky top-0 z-30 backdrop-blur-md h-20 flex items-center px-6">
+        <div className="max-w-7xl mx-auto w-full flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-emerald-600/20">
-              <Send size={20} />
-            </div>
+            <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center text-white shadow-lg"><Send size={20} /></div>
             <div>
               <h1 className="text-xl font-bold tracking-tight">WAsender <span className="text-emerald-600">PRO</span></h1>
-              <p className="text-[10px] text-gray-400 font-mono uppercase tracking-widest">Advanced WhatsApp Blast Engine</p>
+              <p className="text-[10px] text-gray-400 font-mono uppercase tracking-widest">QC Logistics Edition</p>
             </div>
           </div>
-          
-          <div className="flex items-center gap-2 md:gap-3">
-            {!isExtensionDetected && (
-              <button 
-                onClick={downloadExtensionZip}
-                className="hidden sm:flex items-center gap-2 px-4 py-2 bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20 rounded-xl text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/20 transition-all"
-                title="Download Extension Helper"
-              >
-                <Puzzle size={18} />
-                <span className="text-xs font-bold uppercase tracking-wider">Setup Extension</span>
-              </button>
-            )}
-            <button 
-              onClick={handleResetDefault}
-              className="p-2.5 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/20 rounded-xl text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/20 transition-all flex items-center gap-2"
-              title="Reset ke Pengaturan Awal"
-            >
-              <RotateCcw size={18} />
-              <span className="hidden lg:inline text-xs font-bold uppercase tracking-wider">Reset</span>
-            </button>
-            <button 
-              onClick={() => setIsDarkMode(!isDarkMode)}
-              className="p-2.5 bg-gray-50 dark:bg-[#1C2128] border border-black/5 dark:border-white/5 rounded-xl text-gray-500 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-all"
-              title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-            >
-              {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
-            </button>
-            <button 
-              onClick={() => setShowSettingsModal(true)}
-              className="p-2.5 bg-gray-50 dark:bg-[#1C2128] border border-black/5 dark:border-white/5 rounded-xl text-gray-500 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-all"
-              title="Settings"
-            >
-              <Settings2 size={18} />
-            </button>
-            <div className="hidden md:flex items-center gap-2 px-4 py-2 bg-gray-50 dark:bg-[#1C2128] rounded-full border border-black/5 dark:border-white/5">
-              <div className={cn("w-2 h-2 rounded-full animate-pulse", isBlasting ? "bg-emerald-500" : "bg-gray-300 dark:bg-gray-700")} />
-              <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{isBlasting ? 'System Active' : 'System Idle'}</span>
-            </div>
-            <button 
-              onClick={exportToCSV}
-              className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
-            >
-              <Download size={14} /> Export
-            </button>
+          <div className="flex items-center gap-3">
+            <button onClick={handleResetDefault} className="p-2.5 bg-red-50 dark:bg-red-900/10 border border-red-100 rounded-xl text-red-600"><RotateCcw size={18} /></button>
+            <button onClick={() => setIsDarkMode(!isDarkMode)} className="p-2.5 bg-gray-50 dark:bg-[#1C2128] border border-black/5 rounded-xl text-gray-500">{isDarkMode ? <Sun size={18} /> : <Moon size={18} />}</button>
+            <button onClick={() => setShowSettingsModal(true)} className="p-2.5 bg-gray-50 dark:bg-[#1C2128] border border-black/5 rounded-xl text-gray-500"><Settings2 size={18} /></button>
+            <button onClick={exportToCSV} className="hidden md:flex items-center gap-2 text-xs font-bold uppercase text-gray-600"><Download size={14} /> Export</button>
           </div>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-6 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
-        
-        {/* Left Column: Stats & Config */}
+        {/* Left Column */}
         <div className="lg:col-span-4 space-y-6">
-          
-          {/* Stats Card */}
-          <section className="bg-white dark:bg-[#16191F] rounded-3xl p-6 shadow-sm border border-black/5 dark:border-white/5">
+          <section className="bg-white dark:bg-[#16191F] rounded-3xl p-6 shadow-sm border border-black/5">
             <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-2">
-                <BarChart3 size={18} className="text-emerald-500" />
-                <h2 className="font-bold">Overview</h2>
-              </div>
-              <History size={16} className="text-gray-300 dark:text-gray-600" />
+              <h2 className="font-bold flex items-center gap-2"><BarChart3 size={18} className="text-emerald-500" /> Stats</h2>
             </div>
             <div className="h-48 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={statsData}
-                    innerRadius={60}
-                    outerRadius={80}
-                    paddingAngle={5}
-                    dataKey="value"
-                  >
-                    {statsData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <RechartsTooltip 
-                    contentStyle={{ 
-                      backgroundColor: isDarkMode ? '#16191F' : '#FFFFFF',
-                      borderColor: isDarkMode ? '#2D333B' : '#E5E7EB',
-                      color: isDarkMode ? '#E4E6EB' : '#1A1A1A'
-                    }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
+              <ResponsiveContainer><PieChart><Pie data={statsData} innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">{statsData.map((s, i) => <Cell key={i} fill={s.color} />)}</Pie><RechartsTooltip /></PieChart></ResponsiveContainer>
             </div>
             <div className="grid grid-cols-3 gap-3 mt-4">
-              {statsData.map(s => (
-                <div key={s.name} className="p-3 rounded-2xl bg-gray-50 dark:bg-[#1C2128] border border-black/5 dark:border-white/5">
-                  <div className="text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider truncate">{s.name}</div>
-                  <div className="text-lg font-bold" style={{ color: s.color }}>{s.value}</div>
-                </div>
-              ))}
+              {statsData.map(s => <div key={s.name} className="p-3 rounded-2xl bg-gray-50 dark:bg-[#1C2128] border border-black/5"><div className="text-[9px] font-bold text-gray-400 uppercase">{s.name}</div><div className="text-lg font-bold" style={{ color: s.color }}>{s.value}</div></div>)}
             </div>
           </section>
 
-          {/* Settings Card */}
-          <section className="bg-white dark:bg-[#16191F] rounded-3xl p-6 shadow-sm border border-black/5 dark:border-white/5">
-            <div className="flex items-center gap-2 mb-6">
-              <Timer size={18} className="text-emerald-500" />
-              <h2 className="font-bold">Engine Settings</h2>
-            </div>
-            <div className="space-y-6">
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Nama Pengirim</label>
-                <input
-                  type="text"
-                  value={settings.senderName}
-                  onChange={(e) => setSettings(prev => ({ ...prev, senderName: e.target.value }))}
-                  placeholder="Contoh: Admin JNT"
-                  className="w-full p-3 text-sm bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-xl focus:border-emerald-500 outline-none dark:text-white"
-                />
-              </div>
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Blast Delay</label>
-                  <span className="text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400">{settings.delay / 1000}s</span>
-                </div>
-                <input 
-                  type="range" 
-                  min="1000" 
-                  max="10000" 
-                  step="500"
-                  value={settings.delay}
-                  onChange={(e) => setSettings(prev => ({ ...prev, delay: parseInt(e.target.value) }))}
-                  className="w-full h-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg appearance-none cursor-pointer accent-emerald-500"
-                />
-                <div className="flex justify-between text-[10px] text-gray-400 dark:text-gray-600 font-mono">
-                  <span>FAST</span>
-                  <span>SAFE</span>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* Template Editor */}
-          <section className="bg-white dark:bg-[#16191F] rounded-3xl p-6 shadow-sm border border-black/5 dark:border-white/5">
+          <section className="bg-white dark:bg-[#16191F] rounded-3xl p-6 shadow-sm border border-black/5">
             <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <Settings2 size={18} className="text-emerald-500" />
-                <h2 className="font-bold">Templates</h2>
-              </div>
-              <div className="flex items-center gap-1">
-                <span className="text-[9px] font-bold text-emerald-500 uppercase tracking-tighter mr-2 animate-pulse">Auto-saved</span>
-                <button 
-                  onClick={() => {
-                    const def = DEFAULT_TEMPLATES.find(t => t.id === activeTemplateId);
-                    if (def && confirm('Reset template ini ke pengaturan awal?')) {
-                      setTemplates(prev => prev.map(t => t.id === activeTemplateId ? { ...def } : t));
-                      setActiveVariationIndex(0);
-                      toast.success('Template direset ke default');
-                    }
-                  }}
-                  className="p-2 text-gray-400 dark:text-gray-500 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/10 rounded-xl transition-all"
-                  title="Reset to Default"
-                >
-                  <History size={18} />
-                </button>
-              </div>
+              <h2 className="font-bold flex items-center gap-2"><Settings2 size={18} className="text-emerald-500" /> Templates</h2>
             </div>
-            
             <div className="flex gap-2 mb-4 overflow-x-auto pb-2 custom-scrollbar">
-              {templates.map(t => (
-                <button
-                  key={t.id}
-                  onClick={() => {
-                    setActiveTemplateId(t.id);
-                    setActiveVariationIndex(0);
-                  }}
-                  className={cn(
-                    "whitespace-nowrap px-4 py-2 rounded-xl text-xs font-bold transition-all border",
-                    activeTemplateId === t.id 
-                      ? "bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-600/20" 
-                      : "bg-gray-50 dark:bg-[#1C2128] text-gray-500 dark:text-gray-400 border-gray-200 dark:border-white/5 hover:bg-gray-100 dark:hover:bg-gray-800"
-                  )}
-                >
-                  {t.name}
-                </button>
-              ))}
+              {templates.map(t => <button key={t.id} onClick={() => { setActiveTemplateId(t.id); setActiveVariationIndex(0); }} className={cn("whitespace-nowrap px-4 py-2 rounded-xl text-xs font-bold border", activeTemplateId === t.id ? "bg-emerald-600 text-white border-emerald-600 shadow-md" : "bg-gray-50 dark:bg-[#1C2128] text-gray-500 border-gray-200")}>{t.name}</button>)}
             </div>
-
-            {/* Variation Selector */}
             <div className="flex items-center gap-2 mb-3">
-              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mr-2">Variasi:</span>
-              {[0, 1, 2].map(idx => (
-                <button
-                  key={idx}
-                  onClick={() => setActiveVariationIndex(idx)}
-                  className={cn(
-                    "w-8 h-8 rounded-lg text-xs font-bold transition-all border flex items-center justify-center",
-                    activeVariationIndex === idx
-                      ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800"
-                      : "bg-gray-50 dark:bg-[#1C2128] text-gray-400 border-gray-100 dark:border-white/5"
-                  )}
-                >
-                  {idx + 1}
-                </button>
-              ))}
-              <div className="ml-auto text-[9px] text-gray-400 italic">
-                {settings.rotateTemplates ? "Rotasi Aktif" : "Rotasi Mati"}
-              </div>
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Variasi:</span>
+              {[0, 1, 2].map(idx => <button key={idx} onClick={() => setActiveVariationIndex(idx)} className={cn("w-8 h-8 rounded-lg text-xs font-bold transition-all border flex items-center justify-center", activeVariationIndex === idx ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 border-emerald-200" : "bg-gray-50 dark:bg-[#1C2128] text-gray-400 border-gray-100")}>{idx + 1}</button>)}
             </div>
-
-            <textarea
-              value={currentTemplateText}
-              onChange={(e) => updateActiveTemplateText(e.target.value)}
-              className="w-full h-40 p-4 text-sm bg-gray-50 dark:bg-[#1C2128] border border-gray-200 dark:border-white/5 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all resize-none leading-relaxed dark:text-white custom-scrollbar"
-              placeholder="Tulis template pesan..."
-            />
+            <textarea value={currentTemplateText} onChange={(e) => updateActiveTemplateText(e.target.value)} className="w-full h-40 p-4 text-sm bg-gray-50 dark:bg-[#1C2128] border border-gray-200 rounded-2xl focus:border-emerald-500 outline-none resize-none dark:text-white" placeholder="Tulis template..." />
             <div className="mt-3 flex flex-wrap gap-2">
-              {['{salam}', '{pengirim}', '{nama}', '{barang}', '{resi}', '{alamat}', '{cod}', '{dfod}', '{if_cod}', '{/if_cod}', '{if_dfod}', '{/if_dfod}'].map(tag => (
-                <button
-                  key={tag}
-                  onClick={() => updateActiveTemplateText(currentTemplateText + ' ' + tag)}
-                  className="text-[10px] font-bold tracking-wider px-3 py-1.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg text-gray-600 dark:text-gray-400 transition-colors"
-                >
-                  {tag}
-                </button>
-              ))}
-            </div>
-            <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/20 rounded-xl">
-              <div className="flex items-center gap-2 mb-1">
-                <Sparkles size={12} className="text-blue-600 dark:text-blue-400" />
-                <span className="text-[10px] font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wider">Anti-Ban Tip: Spintax</span>
-              </div>
-              <p className="text-[10px] text-blue-600 dark:text-blue-300 leading-relaxed">
-                Gunakan format <span className="font-mono font-bold bg-blue-100 dark:bg-blue-900/30 px-1 rounded">{"{Halo|Hai|Pagi}"}</span> agar pesan diacak otomatis.
-              </p>
+              {['{salam}', '{nama}', '{barang}', '{resi}', '{alamat}', '{cod}', '{dfod}', '{if_cod}', '{/if_cod}'].map(tag => <button key={tag} onClick={() => updateActiveTemplateText(currentTemplateText + ' ' + tag)} className="text-[10px] font-bold px-3 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg text-gray-600 dark:text-gray-400">{tag}</button>)}
             </div>
           </section>
         </div>
 
-        {/* Right Column: Queue & Input */}
+        {/* Right Column */}
         <div className="lg:col-span-8 space-y-6">
-          
-          {/* Action Bar */}
-          <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between bg-white dark:bg-[#16191F] p-4 rounded-3xl border border-black/5 dark:border-white/5 shadow-sm">
+          <div className="flex flex-col md:flex-row gap-4 items-stretch bg-white dark:bg-[#16191F] p-4 rounded-3xl border border-black/5 shadow-sm">
             <div className="relative flex-1">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" size={18} />
-              <input 
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Cari nama, nomor, atau resi..."
-                className="w-full pl-12 pr-4 py-3 bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-sm dark:text-white"
-              />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+              <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Cari..." className="w-full pl-12 pr-4 py-3 bg-gray-50 dark:bg-[#1C2128] border border-gray-100 rounded-2xl outline-none text-sm dark:text-white" />
             </div>
-            <div className="flex gap-3 items-center">
-              <div className={cn(
-                "flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold border transition-all",
-                isExtensionDetected 
-                  ? "bg-emerald-50 dark:bg-emerald-900/10 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-900/20" 
-                  : "bg-gray-50 dark:bg-gray-900/10 text-gray-400 dark:text-gray-500 border-gray-100 dark:border-gray-900/20"
-              )}>
-                <Puzzle size={12} className={isExtensionDetected ? "animate-pulse" : ""} />
-                {isExtensionDetected ? "Extension Connected" : "Extension Disconnected"}
-              </div>
-              <button 
-                onClick={() => setShowBulkModal(true)}
-                className="px-6 py-3 bg-emerald-50 dark:bg-emerald-900/10 text-emerald-700 dark:text-emerald-400 rounded-2xl font-bold text-sm hover:bg-emerald-100 dark:hover:bg-emerald-900/20 transition-all flex items-center gap-2"
-              >
-                <FileSpreadsheet size={18} /> Bulk Import
-              </button>
-              <button
-                onClick={() => setShowPreviewModal(true)}
-                disabled={entries.filter(e => e.status === 'pending').length === 0}
-                className="px-6 py-3 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-2xl font-bold text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition-all flex items-center gap-2 disabled:opacity-50"
-              >
-                <Search size={18} /> Preview
-              </button>
-              <button
-                onClick={isBlasting ? stopBlast : startBlast}
-                disabled={entries.length === 0}
-                className={cn(
-                  "px-8 py-3 rounded-2xl font-bold text-sm transition-all flex items-center gap-2 shadow-lg",
-                  isBlasting 
-                    ? "bg-red-500 text-white shadow-red-500/20" 
-                    : "bg-black dark:bg-emerald-600 text-white shadow-black/20 dark:shadow-emerald-600/20 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
-                )}
-              >
-                {isBlasting ? <Square size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" />}
-                {isBlasting ? 'Stop Blast' : 'Start Engine'}
+            <div className="flex gap-3">
+              <button onClick={() => setShowBulkModal(true)} className="px-6 py-3 bg-emerald-50 dark:bg-emerald-900/10 text-emerald-700 dark:text-emerald-400 rounded-2xl font-bold text-sm flex items-center gap-2"><FileSpreadsheet size={18} /> Bulk</button>
+              <button onClick={isBlasting ? stopBlast : startBlast} disabled={entries.length === 0} className={cn("px-8 py-3 rounded-2xl font-bold text-sm transition-all flex items-center gap-2 shadow-lg", isBlasting ? "bg-red-500 text-white" : "bg-black dark:bg-emerald-600 text-white")}>
+                {isBlasting ? <Square size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" />} {isBlasting ? 'Stop' : 'Start Engine'}
               </button>
             </div>
           </div>
 
-          {/* Popup Warning */}
-          {!isBlasting && entries.length > 0 && (
-            <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20 rounded-2xl p-4 flex items-start gap-3">
-              <AlertCircle className="text-amber-600 dark:text-amber-400 shrink-0" size={18} />
-              <div className="text-xs text-amber-800 dark:text-amber-300 leading-relaxed">
-                <span className="font-bold">PENTING:</span> Mesin akan membuka <span className="font-bold">WhatsApp Web</span> di tab yang sama secara bergantian. Pastikan Anda telah <span className="font-bold">MENGIZINKAN POPUP</span> di browser Anda (klik ikon gembok/popup di bar alamat browser). Gunakan delay minimal 5 detik agar WA Web sempat memuat pesan.
-              </div>
-            </div>
-          )}
-
-          {/* Quick Add Form */}
-          <section className="bg-white dark:bg-[#16191F] rounded-3xl p-6 shadow-sm border border-black/5 dark:border-white/5">
+          <section className="bg-white dark:bg-[#16191F] rounded-3xl p-6 shadow-sm border border-black/5">
             <form onSubmit={handleAddEntry} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Phone</label>
-                  <input
-                    type="text"
-                    value={formData.phone}
-                    onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                    placeholder="0812..."
-                    className="w-full p-3 text-sm bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-xl focus:border-emerald-500 outline-none dark:text-white"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Name</label>
-                  <input
-                    type="text"
-                    value={formData.recipientName}
-                    onChange={(e) => setFormData(prev => ({ ...prev, recipientName: e.target.value }))}
-                    placeholder="Recipient Name"
-                    className="w-full p-3 text-sm bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-xl focus:border-emerald-500 outline-none dark:text-white"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Item Name</label>
-                  <input
-                    type="text"
-                    value={formData.itemName}
-                    onChange={(e) => setFormData(prev => ({ ...prev, itemName: e.target.value }))}
-                    placeholder="Nama Barang"
-                    className="w-full p-3 text-sm bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-xl focus:border-emerald-500 outline-none dark:text-white"
-                  />
-                </div>
+                <input type="text" value={formData.phone} onChange={(e) => setFormData(p => ({ ...p, phone: e.target.value }))} placeholder="HP: 0812..." className="p-3 text-sm bg-gray-50 dark:bg-[#1C2128] border border-gray-100 rounded-xl dark:text-white" />
+                <input type="text" value={formData.recipientName} onChange={(e) => setFormData(p => ({ ...p, recipientName: e.target.value }))} placeholder="Nama Penerima" className="p-3 text-sm bg-gray-50 dark:bg-[#1C2128] border border-gray-100 rounded-xl dark:text-white" />
+                <input type="text" value={formData.itemName} onChange={(e) => setFormData(p => ({ ...p, itemName: e.target.value }))} placeholder="Nama Barang" className="p-3 text-sm bg-gray-50 dark:bg-[#1C2128] border border-gray-100 rounded-xl dark:text-white" />
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Resi</label>
-                  <input
-                    type="text"
-                    value={formData.receiptNumber}
-                    onChange={(e) => setFormData(prev => ({ ...prev, receiptNumber: e.target.value }))}
-                    placeholder="Resi Number"
-                    className="w-full p-3 text-sm bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-xl focus:border-emerald-500 outline-none dark:text-white"
-                  />
-                </div>
-                <div className="space-y-2 md:col-span-2">
-                  <label className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Address</label>
-                  <input
-                    type="text"
-                    value={formData.address}
-                    onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
-                    placeholder="Alamat Lengkap"
-                    className="w-full p-3 text-sm bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-xl focus:border-emerald-500 outline-none dark:text-white"
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">COD</label>
-                  <input
-                    type="text"
-                    value={formData.cod}
-                    onChange={(e) => setFormData(prev => ({ ...prev, cod: e.target.value.replace(/[^0-9.,]/g, '') }))}
-                    placeholder="274,398"
-                    className="w-full p-3 text-sm bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-xl focus:border-emerald-500 outline-none dark:text-white"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">DFOD</label>
-                  <input
-                    type="text"
-                    value={formData.dfod}
-                    onChange={(e) => setFormData(prev => ({ ...prev, dfod: e.target.value.replace(/[^0-9.,]/g, '') }))}
-                    placeholder="10,000"
-                    className="w-full p-3 text-sm bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-xl focus:border-emerald-500 outline-none dark:text-white"
-                  />
-                </div>
-                <button
-                  type="submit"
-                  className="py-3 bg-emerald-600 text-white rounded-xl font-bold text-sm hover:bg-emerald-700 transition-all flex items-center justify-center gap-2"
-                >
-                  <Plus size={18} /> Add to Queue
-                </button>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <input type="text" value={formData.receiptNumber} onChange={(e) => setFormData(p => ({ ...p, receiptNumber: e.target.value }))} placeholder="No Resi" className="p-3 text-sm bg-gray-50 dark:bg-[#1C2128] border border-gray-100 rounded-xl dark:text-white" />
+                <input type="text" value={formData.cod} onChange={(e) => setFormData(p => ({ ...p, cod: e.target.value }))} placeholder="Nominal COD" className="p-3 text-sm bg-gray-50 dark:bg-[#1C2128] border border-gray-100 rounded-xl dark:text-white" />
+                <button type="submit" className="py-3 bg-emerald-600 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2"><Plus size={18} /> Add Queue</button>
               </div>
             </form>
           </section>
 
-          {/* Console Log */}
-          <section className="bg-gray-50 dark:bg-black rounded-3xl p-4 shadow-sm dark:shadow-xl border border-gray-200 dark:border-white/5 overflow-hidden">
-            <div className="flex items-center justify-between mb-3 px-2">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <h2 className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-[0.2em]">System Console</h2>
-              </div>
-              <button 
-                onClick={() => setLogs([])}
-                className="text-[9px] font-bold text-gray-400 dark:text-gray-500 hover:text-gray-900 dark:hover:text-white uppercase tracking-widest transition-colors"
-              >
-                Clear Logs
-              </button>
+          <div className="bg-white dark:bg-[#16191F] rounded-3xl shadow-sm border border-black/5 overflow-hidden">
+            <div className="p-6 border-b border-black/5 flex items-center justify-between">
+              <h2 className="font-bold flex items-center gap-2"><FileText size={18} className="text-emerald-500" /> Queue Management</h2>
+              <button onClick={() => setIsConfirmingClear(true)} className="p-2 text-gray-300 hover:text-red-500"><Trash2 size={18} /></button>
             </div>
-            <div className="h-32 overflow-y-auto custom-scrollbar font-mono text-[11px] space-y-1 px-2">
-              {logs.length === 0 ? (
-                <div className="text-gray-400 dark:text-gray-600 italic">Waiting for system actions...</div>
-              ) : (
-                logs.map(log => (
-                  <div key={log.id} className="flex gap-3 leading-relaxed group">
-                    <span className="text-gray-400 dark:text-gray-600 shrink-0">[{new Date(log.timestamp).toLocaleTimeString([], { hour12: false })}]</span>
-                    <span className={cn(
-                      "break-all",
-                      log.type === 'success' ? "text-emerald-600 dark:text-emerald-400" :
-                      log.type === 'error' ? "text-red-600 dark:text-red-400" :
-                      log.type === 'warning' ? "text-amber-600 dark:text-amber-400" :
-                      "text-blue-600 dark:text-blue-400"
-                    )}>
-                      {log.message}
-                    </span>
-                  </div>
-                ))
-              )}
-            </div>
-          </section>
-
-          {/* Queue Table */}
-          <div className="bg-white dark:bg-[#16191F] rounded-3xl shadow-sm border border-black/5 dark:border-white/5 overflow-hidden">
-            <div className="p-6 border-b border-black/5 dark:border-white/5 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <FileText size={18} className="text-emerald-500" />
-                <h2 className="font-bold">Queue Management</h2>
-                <span className="ml-2 px-2 py-0.5 bg-gray-100 dark:bg-gray-800 text-[10px] font-bold text-gray-500 dark:text-gray-400 rounded-md">{filteredEntries.length} items</span>
-              </div>
-              
-              {isConfirmingClear ? (
-                <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-2">
-                  <span className="text-[10px] font-bold text-red-600 dark:text-red-400 uppercase">Confirm?</span>
-                  <button onClick={clearAll} className="px-3 py-1.5 text-[10px] font-bold uppercase bg-red-500 text-white rounded-lg">Yes</button>
-                  <button onClick={() => setIsConfirmingClear(false)} className="px-3 py-1.5 text-[10px] font-bold uppercase bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-lg">No</button>
-                </div>
-              ) : (
-                <button onClick={() => setIsConfirmingClear(true)} className="p-2 text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 transition-colors">
-                  <Trash2 size={18} />
-                </button>
-              )}
-            </div>
-
-            <div className="overflow-x-auto custom-scrollbar">
+            <div className="overflow-x-auto">
               <table className="w-full text-left">
-                <thead>
-                  <tr className="bg-gray-50/50 dark:bg-gray-900/20">
-                    <th className="px-6 py-4 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Recipient</th>
-                    <th className="px-6 py-4 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Details</th>
-                    <th className="px-6 py-4 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Status</th>
-                    <th className="px-6 py-4 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Received</th>
-                    <th className="px-6 py-4 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-black/5 dark:divide-white/5">
-                  <AnimatePresence mode="popLayout">
-                    {filteredEntries.length === 0 ? (
-                      <motion.tr initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center">
-                        <td colSpan={4} className="px-6 py-16 text-gray-400 dark:text-gray-600 text-sm italic">
-                          No matching records found.
-                        </td>
-                      </motion.tr>
-                    ) : (
-                      filteredEntries.map((entry, index) => (
-                        <motion.tr
-                          key={entry.id}
-                          layout
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, x: -10 }}
-                          className={cn(
-                            "group transition-all",
-                            isBlasting && index === currentIndex 
-                              ? "bg-emerald-50/80 dark:bg-emerald-900/10" 
-                              : "hover:bg-gray-50/50 dark:hover:bg-gray-900/10"
-                          )}
-                        >
-                          <td className="px-6 py-5">
-                            <div className="font-bold text-sm">{entry.recipientName}</div>
-                            <div className="text-xs text-gray-400 dark:text-gray-500 font-mono">{entry.phone}</div>
-                          </td>
-                          <td className="px-6 py-5">
-                            <div className="text-sm font-medium truncate max-w-[200px]" title={entry.itemName}>{entry.itemName || '-'}</div>
-                            <div className="flex flex-col gap-1">
-                              <div className="text-[10px] text-gray-400 dark:text-gray-500 font-mono uppercase tracking-wider">Resi: {entry.receiptNumber || '-'}</div>
-                              {entry.address && <div className="text-[10px] text-gray-400 dark:text-gray-500 truncate max-w-[200px]" title={entry.address}>{entry.address}</div>}
-                              <div className="flex gap-2">
-                                {entry.cod && <div className="text-[10px] text-amber-600 dark:text-amber-500 font-bold uppercase tracking-wider">COD: Rp {entry.cod}</div>}
-                                {entry.dfod && <div className="text-[10px] text-blue-600 dark:text-blue-500 font-bold uppercase tracking-wider">DFOD: Rp {entry.dfod}</div>}
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-5">
-                            <div className={cn(
-                              "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest",
-                              entry.status === 'sent' 
-                                ? "bg-emerald-100 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400" 
-                                : entry.status === 'sending'
-                                ? "bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 animate-pulse"
-                                : entry.status === 'failed'
-                                ? "bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400"
-                                : "bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400"
-                            )}>
-                              {entry.status === 'sent' ? <CheckCircle2 size={10} /> : entry.status === 'sending' ? <Loader2 size={10} className="animate-spin" /> : entry.status === 'failed' ? <AlertCircle size={10} /> : <Clock size={10} />}
-                              {entry.status}
-                            </div>
-                          </td>
-                          <td className="px-6 py-5">
-                            <button 
-                              onClick={() => toggleReceived(entry.id)}
-                              className={cn(
-                                "flex items-center gap-2 px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all",
-                                entry.isReceived 
-                                  ? "bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-900/30" 
-                                  : "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 border border-transparent"
-                              )}
-                            >
-                              <div className={cn(
-                                "w-3 h-3 rounded-sm border flex items-center justify-center transition-all",
-                                entry.isReceived ? "bg-blue-600 border-blue-600" : "border-gray-300 dark:border-gray-700"
-                              )}>
-                                {entry.isReceived && <CheckCircle2 size={10} className="text-white" />}
-                              </div>
-                              {entry.isReceived ? 'Diterima' : 'Belum'}
-                            </button>
-                          </td>
-                          <td className="px-6 py-5 text-right">
-                            <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <button onClick={() => handleSendManual(entry)} className="p-2 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-xl"><ExternalLink size={16} /></button>
-                              <button onClick={() => setEntries(prev => prev.filter(e => e.id !== entry.id))} className="p-2 text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 rounded-xl"><Trash2 size={16} /></button>
-                            </div>
-                          </td>
-                        </motion.tr>
-                      ))
-                    )}
-                  </AnimatePresence>
+                <thead><tr className="bg-gray-50/50 dark:bg-gray-900/20"><th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase">Recipient</th><th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase">Details</th><th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase">Status</th><th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase text-right">Action</th></tr></thead>
+                <tbody className="divide-y divide-black/5">
+                  {filteredEntries.map((entry, index) => (
+                    <tr key={entry.id} className={cn("hover:bg-gray-50/50 dark:hover:bg-gray-900/10", isBlasting && index === currentIndex && "bg-emerald-50/80 dark:bg-emerald-900/10")}>
+                      <td className="px-6 py-4">
+                        <div className="font-bold text-sm">{entry.recipientName}</div>
+                        <div className="text-xs text-gray-400">{entry.phone}</div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-xs text-gray-500">Resi: {entry.receiptNumber}</div>
+                        {entry.cod && <div className="text-[10px] text-amber-600 font-bold">COD: Rp {entry.cod}</div>}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className={cn("inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase", entry.status === 'sent' ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700")}>{entry.status}</div>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <button onClick={() => handleSendManual(entry)} className="p-2 text-emerald-600"><ExternalLink size={16} /></button>
+                        <button onClick={() => setEntries(prev => prev.filter(e => e.id !== entry.id))} className="p-2 text-gray-300 hover:text-red-500"><Trash2 size={16} /></button>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
@@ -1520,568 +715,55 @@ export default function App() {
         </div>
       </main>
 
-      {/* Bulk Import Modal */}
-      <AnimatePresence>
-        {showBulkModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowBulkModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-md" />
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95, y: 20 }} 
-              animate={{ opacity: 1, scale: 1, y: 0 }} 
-              exit={{ opacity: 0, scale: 0.95, y: 20 }} 
-              className="relative w-full max-w-2xl max-h-[90vh] bg-white dark:bg-[#16191F] rounded-[2rem] shadow-2xl overflow-hidden border border-black/5 dark:border-white/10 flex flex-col"
-            >
-              <div className="p-8 border-b border-black/5 dark:border-white/5 flex items-center justify-between bg-gray-50/50 dark:bg-gray-900/20 shrink-0">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-xl flex items-center justify-center"><FileSpreadsheet size={20} /></div>
-                  <div>
-                    <h2 className="text-xl font-bold">Bulk Import</h2>
-                    <p className="text-xs text-gray-400 dark:text-gray-500">Copy-paste data from Excel or CSV</p>
-                  </div>
-                </div>
-                <button onClick={() => setShowBulkModal(false)} className="p-2 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-full transition-colors"><X size={20} /></button>
-              </div>
-              <div className="p-8 space-y-6 overflow-y-auto custom-scrollbar flex-1">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-4 bg-emerald-50 dark:bg-emerald-900/10 rounded-2xl border border-emerald-100 dark:border-emerald-900/20">
-                    <div className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-1">Step 1</div>
-                    <p className="text-xs text-emerald-800 dark:text-emerald-300">Kolom: No, Resi, Nama, HP, Alamat, Tanda, Nominal COD, Nominal DFOD, Barang</p>
-                  </div>
-                  <div className="p-4 bg-blue-50 dark:bg-blue-900/10 rounded-2xl border border-blue-100 dark:border-blue-900/20">
-                    <div className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-1">Step 2</div>
-                    <p className="text-xs text-blue-800 dark:text-blue-300">Copy range dari Excel & Paste di bawah</p>
-                  </div>
-                </div>
-                <textarea
-                  value={bulkData}
-                  onChange={(e) => setBulkData(e.target.value)}
-                  placeholder="1	JX123456789	Budi Santoso	08123456789	Jl. Merdeka No. 1	COD	150000	0	Sepatu..."
-                  className="w-full h-64 p-6 text-sm font-mono bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-[1.5rem] focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all resize-none dark:text-white custom-scrollbar"
-                />
-                <div className="flex gap-4">
-                  <button onClick={() => setShowBulkModal(false)} className="flex-1 py-4 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-2xl font-bold hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">Cancel</button>
-                  <button onClick={handleBulkImport} className="flex-[2] py-4 bg-emerald-600 text-white rounded-2xl font-bold shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all">Import Data</button>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* Preview Modal */}
-      <AnimatePresence>
-        {showPreviewModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowPreviewModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-md" />
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95, y: 20 }} 
-              animate={{ opacity: 1, scale: 1, y: 0 }} 
-              exit={{ opacity: 0, scale: 0.95, y: 20 }} 
-              className="relative w-full max-w-lg max-h-[90vh] bg-white dark:bg-[#16191F] rounded-[2rem] shadow-2xl overflow-hidden border border-black/5 dark:border-white/10 flex flex-col"
-            >
-              <div className="p-6 border-b border-black/5 dark:border-white/5 flex items-center justify-between bg-gray-50/50 dark:bg-gray-900/20 shrink-0">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-xl flex items-center justify-center"><MessageSquare size={20} /></div>
-                  <div>
-                    <h2 className="text-lg font-bold">Message Preview</h2>
-                    <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wider">First Pending Entry</p>
-                  </div>
-                </div>
-                <button onClick={() => setShowPreviewModal(false)} className="p-2 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-full transition-colors"><X size={20} /></button>
-              </div>
-              <div className="p-6 space-y-4 overflow-y-auto custom-scrollbar flex-1">
-                {entries.find(e => e.status === 'pending') ? (
-                  <>
-                    <div className="p-4 bg-gray-50 dark:bg-[#1C2128] rounded-2xl border border-gray-100 dark:border-white/5">
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className="w-8 h-8 bg-emerald-100 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-lg flex items-center justify-center text-xs font-bold">
-                          {entries.find(e => e.status === 'pending')?.recipientName.charAt(0)}
-                        </div>
-                        <div>
-                          <div className="text-xs font-bold">{entries.find(e => e.status === 'pending')?.recipientName}</div>
-                          <div className="text-[10px] text-gray-400 font-mono">{entries.find(e => e.status === 'pending')?.phone}</div>
-                        </div>
-                      </div>
-                      <div className="bg-white dark:bg-[#16191F] p-4 rounded-xl border border-black/5 dark:border-white/10 text-sm whitespace-pre-wrap leading-relaxed dark:text-gray-300 font-sans">
-                        {(() => {
-                          const entry = entries.find(e => e.status === 'pending');
-                          if (!entry) return '';
-                          const sentCount = entries.filter(e => e.status === 'sent').length;
-                          let templateText = activeTemplate.text;
-                          if (settings.rotateTemplates) {
-                            if (activeTemplate.variations && activeTemplate.variations.length > 0) {
-                              templateText = activeTemplate.variations[sentCount % activeTemplate.variations.length];
-                            } else {
-                              templateText = templates[sentCount % templates.length].text;
-                            }
-                          }
-                          return generateMessage(entry, templateText);
-                        })()}
-                      </div>
-                    </div>
-                    <div className="flex gap-3">
-                      <button onClick={() => setShowPreviewModal(false)} className="flex-1 py-3 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-xl font-bold text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">Close</button>
-                      <button 
-                        onClick={() => {
-                          const entry = entries.find(e => e.status === 'pending');
-                          if (entry) {
-                            const sentCount = entries.filter(e => e.status === 'sent').length;
-                            const newWindow = window.open(getWALink(entry, sentCount), 'WAsenderTab');
-                            if (newWindow) {
-                              window.focus();
-                            }
-                            updateStatus(entry.id, 'sent');
-                            setShowPreviewModal(false);
-                          }
-                        }} 
-                        className="flex-1 py-3 bg-emerald-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all flex items-center justify-center gap-2"
-                      >
-                        <Send size={16} /> Send Now
-                      </button>
-                    </div>
-                  </>
-                ) : (
-                  <div className="text-center py-12">
-                    <Clock size={48} className="mx-auto text-gray-200 dark:text-gray-800 mb-4" />
-                    <p className="text-gray-400 dark:text-gray-600 text-sm italic">No pending entries to preview.</p>
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* Settings Modal */}
+      {/* Settings Modal (Simplified for reference) */}
       <AnimatePresence>
         {showSettingsModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowSettingsModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-md" />
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95, y: 20 }} 
-              animate={{ opacity: 1, scale: 1, y: 0 }} 
-              exit={{ opacity: 0, scale: 0.95, y: 20 }} 
-              className="relative w-full max-w-md max-h-[90vh] bg-white dark:bg-[#16191F] rounded-[2rem] shadow-2xl overflow-hidden border border-black/5 dark:border-white/10 flex flex-col"
-            >
-              <div className="p-6 border-b border-black/5 dark:border-white/5 flex items-center justify-between bg-gray-50/50 dark:bg-gray-900/20 shrink-0">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-xl flex items-center justify-center"><Settings2 size={20} /></div>
-                  <div>
-                    <h2 className="text-lg font-bold">Settings</h2>
-                    <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wider">Engine Configuration</p>
-                  </div>
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="relative w-full max-w-md bg-white dark:bg-[#16191F] rounded-[2rem] shadow-2xl overflow-hidden flex flex-col p-8">
+              <h2 className="text-xl font-bold mb-6 flex items-center gap-2"><Settings2 className="text-emerald-500" /> Settings</h2>
+              <div className="space-y-4 flex-1 overflow-y-auto custom-scrollbar pr-2">
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-gray-500 uppercase">Nama Pengirim</label>
+                  <input type="text" value={settings.senderName} onChange={(e) => setSettings(p => ({ ...p, senderName: e.target.value }))} className="w-full p-3 bg-gray-50 dark:bg-[#1C2128] border border-gray-100 rounded-xl dark:text-white" />
                 </div>
-                <button onClick={() => setShowSettingsModal(false)} className="p-2 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-full transition-colors"><X size={20} /></button>
+                <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-[#1C2128] rounded-2xl">
+                  <span className="text-sm font-bold">Rotate Template Variations</span>
+                  <button onClick={() => setSettings(p => ({ ...p, rotateTemplates: !p.rotateTemplates }))} className={cn("w-12 h-6 rounded-full relative transition-all", settings.rotateTemplates ? "bg-emerald-500" : "bg-gray-300")}>
+                    <div className={cn("absolute top-1 w-4 h-4 bg-white rounded-full transition-all", settings.rotateTemplates ? "left-7" : "left-1")} />
+                  </button>
+                </div>
+                <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-[#1C2128] rounded-2xl">
+                  <span className="text-sm font-bold">Auto Send (Extension)</span>
+                  <button onClick={() => setSettings(p => ({ ...p, autoSend: !p.autoSend }))} className={cn("w-12 h-6 rounded-full relative transition-all", settings.autoSend ? "bg-emerald-500" : "bg-gray-300")}>
+                    <div className={cn("absolute top-1 w-4 h-4 bg-white rounded-full transition-all", settings.autoSend ? "left-7" : "left-1")} />
+                  </button>
+                </div>
               </div>
+              <button onClick={() => setShowSettingsModal(false)} className="mt-6 w-full py-4 bg-emerald-600 text-white rounded-2xl font-bold">Save</button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
-              {/* Tabs */}
-              <div className="flex px-6 pt-4 gap-4 border-b border-black/5 dark:border-white/5 shrink-0">
-                <button 
-                  onClick={() => setActiveSettingsTab('general')}
-                  className={cn(
-                    "pb-3 text-xs font-bold uppercase tracking-widest transition-all relative",
-                    activeSettingsTab === 'general' ? "text-emerald-600 dark:text-emerald-400" : "text-gray-400"
-                  )}
-                >
-                  General
-                  {activeSettingsTab === 'general' && <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-500 rounded-full" />}
-                </button>
-                <button 
-                  onClick={() => setActiveSettingsTab('antispam')}
-                  className={cn(
-                    "pb-3 text-xs font-bold uppercase tracking-widest transition-all relative",
-                    activeSettingsTab === 'antispam' ? "text-emerald-600 dark:text-emerald-400" : "text-gray-400"
-                  )}
-                >
-                  Anti-Spam
-                  {activeSettingsTab === 'antispam' && <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-500 rounded-full" />}
-                </button>
-              </div>
-
-              <div className="p-6 overflow-y-auto custom-scrollbar flex-1">
-                {activeSettingsTab === 'antispam' && (
-                  <div className="mb-6 p-4 bg-emerald-50 dark:bg-emerald-900/10 rounded-2xl border border-emerald-100 dark:border-emerald-900/20">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-widest">Safety Score</span>
-                      <span className={cn(
-                        "text-xs font-black",
-                        safetyScore > 80 ? "text-emerald-600" : safetyScore > 50 ? "text-amber-600" : "text-red-600"
-                      )}>{safetyScore}%</span>
-                    </div>
-                    <div className="h-1.5 w-full bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
-                      <motion.div 
-                        initial={{ width: 0 }}
-                        animate={{ width: `${safetyScore}%` }}
-                        className={cn(
-                          "h-full transition-all duration-500",
-                          safetyScore > 80 ? "bg-emerald-500" : safetyScore > 50 ? "bg-amber-500" : "bg-red-500"
-                        )}
-                      />
-                    </div>
-                    <p className="text-[9px] text-gray-500 dark:text-gray-400 mt-2 italic">
-                      {safetyScore > 80 ? "Sangat Aman: Pola pengiriman sangat mirip manusia." : 
-                       safetyScore > 50 ? "Cukup Aman: Disarankan menambah jeda atau variasi pesan." : 
-                       "Beresiko Tinggi: Akun Anda rentan terkena banned!"}
-                    </p>
-                  </div>
-                )}
-                {activeSettingsTab === 'general' ? (
-                  <div className="space-y-6">
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
-                          <User size={14} /> Nama Pengirim
-                        </label>
-                        <input 
-                          type="text" 
-                          value={settings.senderName}
-                          onChange={(e) => setSettings(prev => ({ ...prev, senderName: e.target.value }))}
-                          className="w-full px-4 py-3 bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-sm"
-                          placeholder="Admin JNT"
-                        />
-                      </div>
-
-                      {/* Speed Presets */}
-                      <div className="space-y-3 pt-2">
-                        <label className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
-                          <Zap size={14} className="text-amber-500" /> Pilih Kecepatan Blast
-                        </label>
-                        <div className="grid grid-cols-2 gap-2">
-                          {[
-                            { id: 'safe', label: 'Main Aman', desc: '15-30s', icon: '🛡️' },
-                            { id: 'normal', label: 'Normal', desc: '8-15s', icon: '⚖️' },
-                            { id: 'fast', label: 'Percepat', desc: '3-7s', icon: '⚡' },
-                            { id: 'turbo', label: 'Turbo', desc: '1-2s', icon: '🚀' },
-                          ].map((mode) => (
-                            <button
-                              key={mode.id}
-                              onClick={() => setSettings(prev => ({ ...prev, speedMode: mode.id as any }))}
-                              className={cn(
-                                "p-3 rounded-xl border text-left transition-all",
-                                settings.speedMode === mode.id 
-                                  ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-500 ring-1 ring-emerald-500" 
-                                  : "bg-white dark:bg-[#1A1D23] border-black/5 dark:border-white/5 hover:border-emerald-500/50"
-                              )}
-                            >
-                              <div className="flex items-center justify-between mb-1">
-                                <span className="text-lg">{mode.icon}</span>
-                                {settings.speedMode === mode.id && <div className="w-2 h-2 bg-emerald-500 rounded-full" />}
-                              </div>
-                              <div className="text-xs font-bold">{mode.label}</div>
-                              <div className="text-[10px] text-gray-400">{mode.desc}</div>
-                            </button>
-                          ))}
-                          <button
-                            onClick={() => setSettings(prev => ({ ...prev, speedMode: 'custom' }))}
-                            className={cn(
-                              "col-span-2 p-3 rounded-xl border text-left transition-all",
-                              settings.speedMode === 'custom' 
-                                ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-500 ring-1 ring-emerald-500" 
-                                : "bg-white dark:bg-[#1A1D23] border-black/5 dark:border-white/5 hover:border-emerald-500/50"
-                            )}
-                          >
-                            <div className="flex items-center justify-between">
-                              <div className="text-xs font-bold">⚙️ Custom (Atur Manual)</div>
-                              {settings.speedMode === 'custom' && <div className="w-2 h-2 bg-emerald-500 rounded-full" />}
-                            </div>
-                          </button>
-                        </div>
-                      </div>
-
-                      {settings.speedMode === 'custom' && (
-                        <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
-                          <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
-                            <Timer size={14} /> Blast Delay (Milliseconds)
-                          </label>
-                          <input 
-                            type="number" 
-                            value={settings.delay}
-                            onChange={(e) => setSettings(prev => ({ ...prev, delay: parseInt(e.target.value) || 1000 }))}
-                            className="w-full px-4 py-3 bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-sm"
-                            placeholder="5000"
-                            min="1000"
-                            step="500"
-                          />
-                        </div>
-                      )}
-
-                      <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-[#1C2128] rounded-2xl border border-gray-100 dark:border-white/5">
-                        <div className="space-y-1">
-                          <div className="text-xs font-bold">Mode Manual</div>
-                          <div className="text-[10px] text-gray-400">Kirim berikutnya hanya saat Anda klik/tekan Spasi.</div>
-                        </div>
-                        <button 
-                          onClick={() => setSettings(prev => ({ ...prev, manualMode: !prev.manualMode }))}
-                          className={cn(
-                            "w-12 h-6 rounded-full transition-all relative",
-                            settings.manualMode ? "bg-emerald-500" : "bg-gray-300 dark:bg-gray-700"
-                          )}
-                        >
-                          <div className={cn(
-                            "absolute top-1 w-4 h-4 bg-white rounded-full transition-all",
-                            settings.manualMode ? "left-7" : "left-1"
-                          )} />
-                        </button>
-                      </div>
-
-                      <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-[#1C2128] rounded-2xl border border-gray-100 dark:border-white/5">
-                        <div className="space-y-1">
-                          <div className="text-xs font-bold">Auto Retry</div>
-                          <div className="text-[10px] text-gray-400">Coba kirim ulang otomatis jika gagal.</div>
-                        </div>
-                        <button 
-                          onClick={() => setSettings(prev => ({ ...prev, autoRetry: !prev.autoRetry }))}
-                          className={cn(
-                            "w-12 h-6 rounded-full transition-all relative",
-                            settings.autoRetry ? "bg-emerald-500" : "bg-gray-300 dark:bg-gray-700"
-                          )}
-                        >
-                          <div className={cn(
-                            "absolute top-1 w-4 h-4 bg-white rounded-full transition-all",
-                            settings.autoRetry ? "left-7" : "left-1"
-                          )} />
-                        </button>
-                      </div>
-
-                      {settings.autoRetry && (
-                        <div className="space-y-2">
-                          <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
-                            <RotateCcw size={14} /> Max Retries
-                          </label>
-                          <input 
-                            type="number" 
-                            value={settings.maxRetries}
-                            onChange={(e) => setSettings(prev => ({ ...prev, maxRetries: parseInt(e.target.value) || 1 }))}
-                            className="w-full px-4 py-3 bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-sm"
-                            min="1"
-                            max="10"
-                          />
-                        </div>
-                      )}
-
-                      <div className="pt-2">
-                        <button 
-                          onClick={() => {
-                            if (window.confirm('Kembalikan semua template ke pengaturan default? Template yang Anda ubah akan tertimpa.')) {
-                              setTemplates(DEFAULT_TEMPLATES);
-                              setActiveTemplateId(DEFAULT_TEMPLATES[0].id);
-                              setActiveVariationIndex(0);
-                              toast.success('Template berhasil dipulihkan');
-                            }
-                          }}
-                          className="w-full py-3 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-xl font-bold text-xs hover:bg-gray-200 dark:hover:bg-gray-700 transition-all flex items-center justify-center gap-2"
-                        >
-                          <RotateCcw size={14} /> Restore Default Templates
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-6">
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between p-3 bg-emerald-50/50 dark:bg-emerald-900/5 rounded-xl border border-emerald-100/50 dark:border-emerald-900/10">
-                        <div className="space-y-0.5">
-                          <div className="text-xs font-bold">Randomize Delay</div>
-                          <div className="text-[9px] text-gray-400">Jeda waktu acak agar tidak terdeteksi bot.</div>
-                        </div>
-                        <button 
-                          onClick={() => setSettings(prev => ({ ...prev, randomizeDelay: !prev.randomizeDelay }))}
-                          className={cn(
-                            "w-10 h-5 rounded-full transition-all relative",
-                            settings.randomizeDelay ? "bg-emerald-500" : "bg-gray-300 dark:bg-gray-700"
-                          )}
-                        >
-                          <div className={cn(
-                            "absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all",
-                            settings.randomizeDelay ? "left-5.5" : "left-0.5"
-                          )} />
-                        </button>
-                      </div>
-
-                      {settings.randomizeDelay && (
-                        <div className="space-y-2 px-1">
-                          <label className="text-[10px] font-bold text-gray-500 uppercase">Max Delay (ms)</label>
-                          <input 
-                            type="number" 
-                            value={settings.maxDelay}
-                            onChange={(e) => setSettings(prev => ({ ...prev, maxDelay: parseInt(e.target.value) || 10000 }))}
-                            className="w-full px-3 py-2 bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-lg text-xs"
-                            step="500"
-                          />
-                        </div>
-                      )}
-
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold text-gray-500 uppercase">Batch Size</label>
-                          <input 
-                            type="number" 
-                            value={settings.batchSize}
-                            onChange={(e) => setSettings(prev => ({ ...prev, batchSize: parseInt(e.target.value) || 0 }))}
-                            className="w-full px-3 py-2 bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-lg text-xs"
-                            placeholder="10"
-                          />
-                          <p className="text-[8px] text-gray-400 italic">Istirahat tiap X pesan.</p>
-                        </div>
-                        <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold text-gray-500 uppercase">Pause (ms)</label>
-                          <input 
-                            type="number" 
-                            value={settings.batchPause}
-                            onChange={(e) => setSettings(prev => ({ ...prev, batchPause: parseInt(e.target.value) || 0 }))}
-                            className="w-full px-3 py-2 bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-lg text-xs"
-                            placeholder="30000"
-                          />
-                          <p className="text-[8px] text-gray-400 italic">Lama istirahat.</p>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold text-gray-500 uppercase">Hourly Limit</label>
-                          <input 
-                            type="number" 
-                            value={settings.hourlyLimit}
-                            onChange={(e) => setSettings(prev => ({ ...prev, hourlyLimit: parseInt(e.target.value) || 0 }))}
-                            className="w-full px-3 py-2 bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-lg text-xs"
-                            placeholder="50"
-                          />
-                          <p className="text-[8px] text-gray-400 italic">Maks pesan per jam.</p>
-                        </div>
-                        <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold text-gray-500 uppercase">Stop on Errors</label>
-                          <input 
-                            type="number" 
-                            value={settings.stopOnConsecutiveErrors}
-                            onChange={(e) => setSettings(prev => ({ ...prev, stopOnConsecutiveErrors: parseInt(e.target.value) || 0 }))}
-                            className="w-full px-3 py-2 bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-lg text-xs"
-                            placeholder="3"
-                          />
-                          <p className="text-[8px] text-gray-400 italic">Stop jika X gagal urut.</p>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold text-gray-500 uppercase">Long Break After</label>
-                          <input 
-                            type="number" 
-                            value={settings.longBreakAfter}
-                            onChange={(e) => setSettings(prev => ({ ...prev, longBreakAfter: parseInt(e.target.value) || 0 }))}
-                            className="w-full px-3 py-2 bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-lg text-xs"
-                            placeholder="25"
-                          />
-                          <p className="text-[8px] text-gray-400 italic">Istirahat tiap X pesan.</p>
-                        </div>
-                        <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold text-gray-500 uppercase">Duration (min)</label>
-                          <input 
-                            type="number" 
-                            value={settings.longBreakDuration}
-                            onChange={(e) => setSettings(prev => ({ ...prev, longBreakDuration: parseInt(e.target.value) || 0 }))}
-                            className="w-full px-3 py-2 bg-gray-50 dark:bg-[#1C2128] border border-gray-100 dark:border-white/5 rounded-lg text-xs"
-                            placeholder="10"
-                          />
-                          <p className="text-[8px] text-gray-400 italic">Lama istirahat (menit).</p>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 gap-3">
-                        {[
-                          { key: 'shuffleQueue', label: 'Shuffle Queue', desc: 'Acak urutan antrean saat memulai blast.' },
-                          { key: 'useRandomGreetings', label: 'Random Greetings', desc: 'Variasi kata sapaan otomatis.' },
-                          { key: 'addRandomSuffix', label: 'Random Suffix (Ref ID)', desc: 'Tambah ID unik di akhir pesan.' },
-                          { key: 'useInvisibleChars', label: 'Invisible Characters', desc: 'Sisipkan karakter tak terlihat.' },
-                          { key: 'simulateTyping', label: 'Simulate Typing', desc: 'Tambah jeda berdasarkan panjang pesan.' },
-                          { key: 'adaptiveDelay', label: 'Adaptive Delay', desc: 'Delay bertambah seiring jumlah pesan.' },
-                          { key: 'randomizeFormatting', label: 'Random Formatting', desc: 'Variasi spasi dan baris baru.' },
-                          { key: 'rotateTemplates', label: 'Template Rotation', desc: 'Gunakan template berbeda bergantian.' },
-                          { key: 'randomizeEmojis', label: 'Randomize Emojis', desc: 'Sisipkan emoji acak di setiap pesan.' },
-                          { key: 'useGlobalSpintax', label: 'Global Spintax', desc: 'Aktifkan parser {pilihan1|pilihan2}.' },
-                          { key: 'autoSend', label: 'Auto Send Mode', desc: 'Kirim otomatis via Chrome Extension.' }
-                        ].map((item) => (
-                          <div key={item.key} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-[#1C2128] rounded-xl border border-gray-100 dark:border-white/5">
-                            <div className="space-y-0.5">
-                              <div className="text-xs font-bold">{item.label}</div>
-                              <div className="text-[9px] text-gray-400">{item.desc}</div>
-                            </div>
-                            <button 
-                              onClick={() => setSettings(prev => ({ ...prev, [item.key]: !prev[item.key as keyof AppSettings] }))}
-                              className={cn(
-                                "w-10 h-5 rounded-full transition-all relative",
-                                settings[item.key as keyof AppSettings] ? "bg-emerald-500" : "bg-gray-300 dark:bg-gray-700"
-                              )}
-                            >
-                              <div className={cn(
-                                "absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all",
-                                settings[item.key as keyof AppSettings] ? "left-5.5" : "left-0.5"
-                              )} />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-
-                      {settings.autoSend && (
-                        <div className="p-4 bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20 rounded-2xl space-y-4">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
-                              <Puzzle size={16} />
-                              <span className="text-xs font-bold uppercase tracking-wider">Chrome Extension Required</span>
-                            </div>
-                            <div className={cn(
-                              "px-2 py-0.5 rounded text-[8px] font-bold uppercase",
-                              isExtensionDetected ? "bg-emerald-500 text-white" : "bg-amber-500 text-white"
-                            )}>
-                              {isExtensionDetected ? "Connected" : "Not Found"}
-                            </div>
-                          </div>
-                          
-                          <p className="text-[10px] leading-relaxed text-amber-800/70 dark:text-amber-400/70">
-                            Fitur ini membutuhkan Chrome Extension khusus untuk menekan tombol kirim secara otomatis di WhatsApp Web.
-                          </p>
-
-                          <button 
-                            onClick={downloadExtensionZip}
-                            className="w-full py-3 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-amber-600/20 transition-all"
-                          >
-                            <Download size={16} /> Download Extension (.zip)
-                          </button>
-
-                          <div className="space-y-2">
-                            <div className="text-[10px] font-bold text-amber-900 dark:text-amber-300">Cara Instalasi (Hanya 1 Menit):</div>
-                            <ol className="text-[10px] space-y-2 text-amber-800/70 dark:text-amber-400/70 list-decimal ml-4">
-                              <li>Klik tombol <b>Download Extension</b> di atas.</li>
-                              <li>Ekstrak file <code className="bg-amber-100 dark:bg-amber-800 px-1 rounded">wasender-pro-helper.zip</code> menjadi folder.</li>
-                              <li>Buka <code className="bg-amber-100 dark:bg-amber-800 px-1 rounded">chrome://extensions</code> di browser Chrome.</li>
-                              <li>Aktifkan <b>Developer Mode</b> di pojok kanan atas.</li>
-                              <li>Klik <b>Load Unpacked</b> dan pilih folder hasil ekstrak tadi.</li>
-                            </ol>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="p-6 border-t border-black/5 dark:border-white/5 bg-gray-50/50 dark:bg-gray-900/20 shrink-0">
-                <button 
-                  onClick={() => setShowSettingsModal(false)}
-                  className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-bold shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all"
-                >
-                  Save Configuration
-                </button>
+      {/* Bulk Import Modal */}
+      <AnimatePresence>
+        {showBulkModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} onClick={() => setShowBulkModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-md" />
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="relative w-full max-w-2xl bg-white dark:bg-[#16191F] rounded-[2rem] shadow-2xl p-8 flex flex-col">
+              <h2 className="text-xl font-bold mb-4">Bulk Import Excel</h2>
+              <textarea value={bulkData} onChange={(e) => setBulkData(e.target.value)} placeholder="Paste Excel data here..." className="w-full h-64 p-4 font-mono text-xs bg-gray-50 dark:bg-[#1C2128] border border-gray-100 rounded-2xl dark:text-white" />
+              <div className="flex gap-4 mt-6">
+                <button onClick={() => setShowBulkModal(false)} className="flex-1 py-3 bg-gray-100 rounded-xl font-bold">Cancel</button>
+                <button onClick={handleBulkImport} className="flex-2 py-3 bg-emerald-600 text-white rounded-xl font-bold">Import</button>
               </div>
             </motion.div>
           </div>
         )}
       </AnimatePresence>
 
-      <footer className="max-w-7xl mx-auto px-6 py-12 border-t border-black/5 dark:border-white/5 text-center">
-        <div className="text-[10px] text-gray-400 dark:text-gray-600 uppercase tracking-[0.3em] font-mono font-bold">
-          WAsender PRO Engine • v2.0.0 • Enterprise Edition
-        </div>
-      </footer>
+      <footer className="py-12 text-center text-[10px] text-gray-400 uppercase tracking-widest">WAsender PRO • QC J&T Cargo Edition</footer>
     </div>
   );
 }
