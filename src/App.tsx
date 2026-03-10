@@ -558,8 +558,14 @@ export default function App() {
     if (isBlasting && !settings.manualMode) {
       const sendingEntry = entries.find(e => e.status === 'sending');
       if (sendingEntry) {
+        // Dynamic timeout based on speed mode
+        let timeoutDuration = 25000; // Default 25s
+        if (settings.speedMode === 'turbo') timeoutDuration = 5000;
+        else if (settings.speedMode === 'fast') timeoutDuration = 10000;
+        else if (settings.speedMode === 'normal') timeoutDuration = 15000;
+
         const timer = setTimeout(() => {
-          addLog(`⚠️ Timeout: Extension tidak merespon untuk ${sendingEntry.recipientName}. Melanjutkan otomatis...`, 'warning');
+          addLog(`⏭️ Auto-Next: Melanjutkan otomatis untuk ${sendingEntry.recipientName}...`, 'info');
           updateStatus(sendingEntry.id, 'sent');
           
           // Trigger next delay after timeout
@@ -569,11 +575,11 @@ export default function App() {
             const delay = calculateNextDelay(sentCount, pending[0]);
             setNextActionTime(Date.now() + delay);
           }
-        }, 25000); // 25 seconds timeout
+        }, timeoutDuration);
         return () => clearTimeout(timer);
       }
     }
-  }, [entries, isBlasting, settings.manualMode]);
+  }, [entries, isBlasting, settings.manualMode, settings.speedMode]);
 
   useEffect(() => {
     const handleExtensionMessage = (event: MessageEvent) => {
@@ -582,41 +588,43 @@ export default function App() {
         const { type, entryId, status: waStatus } = event.data;
         
         if (type === 'WA_STATUS_UPDATE') {
-          const entry = entries.find(e => e.id === entryId);
-          if (!entry) return;
+          // Use functional update to ensure we have latest state
+          setEntries(currentEntries => {
+            const entry = currentEntries.find(e => e.id === entryId);
+            if (!entry || entry.status === 'sent') return currentEntries;
 
-          const name = entry.recipientName;
-          const resi = entry.receiptNumber;
+            const name = entry.recipientName;
+            const resi = entry.receiptNumber;
 
-          if (waStatus === 'sent') {
-            updateStatus(entryId, 'sent');
-            setConsecutiveErrors(0);
-            setSentThisHour(prev => prev + 1);
-            addLog(`✅ Pesan terkirim ke ${name} (${resi})`, 'success');
-            toast.success(`Pesan terkirim ke ${name}`, { id: `sent-${entryId}` });
-            
-            // Trigger next delay after confirmation
-            const sentCount = entries.filter(e => e.status === 'sent').length + 1;
-            const pending = entries.filter(e => e.status === 'pending' && e.id !== entryId);
-            if (pending.length > 0) {
-              const delay = calculateNextDelay(sentCount, pending[0]);
-              setNextActionTime(Date.now() + delay);
+            if (waStatus === 'sent') {
+              setConsecutiveErrors(0);
+              setSentThisHour(prev => prev + 1);
+              addLog(`✅ Pesan terkirim ke ${name} (${resi})`, 'success');
+              
+              // Trigger next delay after confirmation
+              const sentCount = currentEntries.filter(e => e.status === 'sent').length + 1;
+              const pending = currentEntries.filter(e => e.status === 'pending' && e.id !== entryId);
+              if (pending.length > 0) {
+                const delay = calculateNextDelay(sentCount, pending[0]);
+                setNextActionTime(Date.now() + delay);
+              }
+              
+              return currentEntries.map(e => e.id === entryId ? { ...e, status: 'sent' } : e);
+            } else if (waStatus === 'invalid') {
+              const currentRetries = entry.retryCount || 0;
+              
+              if (settings.autoRetry && currentRetries < settings.maxRetries) {
+                const nextRetry = currentRetries + 1;
+                addLog(`🔄 Nomor ${name} gagal, mencoba ulang (${nextRetry}/${settings.maxRetries})...`, 'warning');
+                return currentEntries.map(e => e.id === entryId ? { ...e, status: 'pending', retryCount: nextRetry } : e);
+              } else {
+                setConsecutiveErrors(prev => prev + 1);
+                addLog(`❌ Nomor tidak valid: ${name} (${resi})`, 'error');
+                return currentEntries.map(e => e.id === entryId ? { ...e, status: 'failed' } : e);
+              }
             }
-          } else if (waStatus === 'invalid') {
-            const currentRetries = entry.retryCount || 0;
-            
-            if (settings.autoRetry && currentRetries < settings.maxRetries) {
-              const nextRetry = currentRetries + 1;
-              setEntries(prev => prev.map(e => e.id === entryId ? { ...e, status: 'pending', retryCount: nextRetry } : e));
-              addLog(`🔄 Nomor ${name} gagal, mencoba ulang (${nextRetry}/${settings.maxRetries})...`, 'warning');
-              toast(`Mencoba ulang untuk ${name} (${nextRetry}/${settings.maxRetries})`, { icon: '🔄' });
-            } else {
-              updateStatus(entryId, 'failed');
-              setConsecutiveErrors(prev => prev + 1);
-              addLog(`❌ Nomor tidak valid: ${name} (${resi})`, 'error');
-              toast.error(`Nomor tidak valid: ${name}`, { id: `err-${entryId}` });
-            }
-          }
+            return currentEntries;
+          });
         } else if (type === 'WA_WARNING_DETECTED') {
           stopBlast();
           addLog(`🚨 PERINGATAN SPAM TERDETEKSI OLEH WHATSAPP! Blast dihentikan demi keamanan.`, 'error');
@@ -642,7 +650,7 @@ export default function App() {
       window.removeEventListener('message', handleExtensionMessage);
       clearInterval(heartbeatInterval);
     };
-  }, [entries, lastHeartbeat, isExtensionDetected, settings.autoRetry, settings.maxRetries]);
+  }, [lastHeartbeat, isExtensionDetected, settings.autoRetry, settings.maxRetries, settings.speedMode]);
 
   useEffect(() => {
     const handlePing = (event: MessageEvent) => {
