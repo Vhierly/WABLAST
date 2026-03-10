@@ -498,53 +498,67 @@ export default function App() {
       "h-screen w-full flex overflow-hidden font-sans selection:bg-emerald-500/30 transition-colors duration-300",
       isDarkMode ? "dark bg-[#09090b] text-zinc-200" : "bg-[#f4f4f5] text-zinc-900"
     )}>
-      <Toaster position="bottom-right" toastOptions={{ className: 'dark:bg-zinc-800 dark:text-white border dark:border-zinc-700' }} />
+      {/* Diubah ke top-center agar tidak bentrok dengan floating widget */}
+      <Toaster position="top-center" toastOptions={{ className: 'dark:bg-zinc-800 dark:text-white border dark:border-zinc-700 mt-4' }} />
 
-      {/* OVERLAY BLASTING (HUD Style) */}
+      {/* FLOATING HUD WIDGET (Menggantikan Fullscreen Overlay) */}
       <AnimatePresence>
         {isBlasting && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] bg-zinc-950/90 backdrop-blur-md flex items-center justify-center p-8">
-            <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} className="bg-zinc-900 border border-zinc-800 p-10 rounded-[2rem] max-w-sm w-full shadow-2xl flex flex-col items-center text-center relative overflow-hidden">
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-500 animate-pulse" />
+          <motion.div 
+            initial={{ opacity: 0, y: 50, scale: 0.9 }} 
+            animate={{ opacity: 1, y: 0, scale: 1 }} 
+            exit={{ opacity: 0, y: 20, scale: 0.9 }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            className="fixed bottom-8 right-8 z-[100] w-[340px] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.5)]"
+          >
+            <div className="bg-zinc-900/95 backdrop-blur-xl border border-zinc-700/50 p-6 rounded-[2rem] flex flex-col relative overflow-hidden">
               
-              <div className="relative w-24 h-24 mb-6">
-                <div className="absolute inset-0 border-4 border-zinc-800 rounded-full" />
-                <div className="absolute inset-0 border-4 border-emerald-500 rounded-full border-t-transparent animate-spin" />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <Play size={32} className="text-emerald-500 fill-current translate-x-0.5" />
-                </div>
+              {/* Thin Progress Bar di atas widget */}
+              <div className="absolute top-0 left-0 w-full h-1 bg-zinc-800">
+                <motion.div 
+                  className="h-full bg-gradient-to-r from-emerald-500 to-teal-400" 
+                  initial={{ width: "0%" }}
+                  animate={{ width: `${entries.length > 0 ? (entries.filter(e => e.status === 'sent').length / entries.length) * 100 : 0}%` }}
+                />
               </div>
-
-              <h3 className="text-xl font-bold text-white mb-2">
-                {isLongBreak ? '😴 System Sleeping' : entries.some(e => e.status === 'sending') ? '⏳ Waiting Web WA' : '🚀 Engine Running'}
-              </h3>
               
-              <div className="flex items-center gap-2 px-5 py-2 bg-zinc-800 rounded-full text-xs font-medium mb-6">
-                <span className="text-zinc-400">Sent</span>
-                <span className="text-emerald-400 font-bold text-sm">{entries.filter(e => e.status === 'sent').length}</span>
-                <span className="text-zinc-600">/</span>
-                <span className="text-white font-bold text-sm">{entries.length}</span>
+              <div className="flex items-center gap-4 mb-5 mt-2">
+                <div className="relative w-12 h-12 shrink-0">
+                  <div className="absolute inset-0 border-4 border-zinc-800 rounded-full" />
+                  <div className="absolute inset-0 border-4 border-emerald-500 rounded-full border-t-transparent animate-spin" />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Play size={14} className="text-emerald-500 fill-current translate-x-[1px]" />
+                  </div>
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white leading-tight">
+                    {isLongBreak ? 'System Sleeping 😴' : entries.some(e => e.status === 'sending') ? 'Waiting WA Web ⏳' : 'Engine Running 🚀'}
+                  </h3>
+                  <div className="text-[11px] text-zinc-400 mt-1 font-medium">
+                    Sent: <span className="text-emerald-400 font-bold">{entries.filter(e => e.status === 'sent').length}</span> / {entries.length} items
+                  </div>
+                </div>
               </div>
 
               {!settings.manualMode ? (
-                <div className="mb-8 w-full">
-                  <div className={cn("text-5xl font-black tabular-nums tracking-tighter mb-2", isLongBreak ? "text-amber-500" : entries.some(e => e.status === 'sending') ? "text-blue-500 animate-pulse" : "text-white")}>
+                <div className="mb-5 bg-zinc-950 rounded-[1rem] p-4 border border-zinc-800/80 flex items-center justify-between shadow-inner">
+                  <span className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold">
+                    {entries.some(e => e.status === 'sending') ? 'Processing' : isLongBreak ? 'Break Left' : 'Next In'}
+                  </span>
+                  <div className={cn("text-2xl font-black tabular-nums tracking-tighter", isLongBreak ? "text-amber-500" : entries.some(e => e.status === 'sending') ? "text-blue-500 animate-pulse" : "text-white")}>
                     {entries.some(e => e.status === 'sending') ? '--:--' : `${Math.floor(countdown / 60)}:${(countdown % 60).toString().padStart(2, '0')}`}
-                  </div>
-                  <div className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold">
-                    {entries.some(e => e.status === 'sending') ? 'Processing Message' : isLongBreak ? 'Break Remaining' : 'Next Action In'}
                   </div>
                 </div>
               ) : (
-                <div className="mb-8 w-full py-5 border border-zinc-800 bg-zinc-800/50 rounded-2xl">
-                  <div className="text-emerald-400 font-bold text-sm mb-1">MANUAL MODE</div>
-                  <div className="text-xs text-zinc-400">Tekan [ENTER] di WA atau klik lanjut.</div>
+                <div className="mb-5 bg-zinc-950 rounded-[1rem] p-4 border border-zinc-800/80 text-center shadow-inner">
+                  <div className="text-emerald-400 font-bold text-[10px] uppercase tracking-widest mb-1">Manual Mode</div>
+                  <div className="text-[11px] text-zinc-400">Tekan [ENTER] di WA atau klik lanjut.</div>
                 </div>
               )}
 
-              <div className="w-full flex flex-col gap-3">
+              <div className="w-full flex flex-col gap-2.5">
                 {entries.some(e => e.status === 'sending') && (
-                  <button onClick={() => { const s = entries.find(e => e.status === 'sending'); if(s) updateStatus(s.id, 'sent'); }} className="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-sm transition-all active:scale-95">Paksa Lanjut (Force Skip)</button>
+                  <button onClick={() => { const s = entries.find(e => e.status === 'sending'); if(s) updateStatus(s.id, 'sent'); }} className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-[13px] transition-all active:scale-95 shadow-sm">Force Skip (Lewati)</button>
                 )}
                 {Date.now() >= nextActionTime && entries.filter(e => e.status === 'pending').length > 0 && !entries.some(e => e.status === 'sending') && !settings.manualMode && (
                   <button onClick={() => {
@@ -553,22 +567,22 @@ export default function App() {
                       window.open(getWALink(entry, entries.filter(e => e.status === 'sent').length), 'WAsenderTab');
                       if(settings.autoSend) updateStatus(entry.id, 'sending'); else updateStatus(entry.id, 'sent');
                     }
-                  }} className="w-full py-4 bg-amber-600 hover:bg-amber-500 text-white rounded-xl font-bold text-sm transition-all active:scale-95">Trigger Manual (Tab Blocked)</button>
+                  }} className="w-full py-3 bg-amber-600 hover:bg-amber-500 text-white rounded-xl font-bold text-[13px] transition-all active:scale-95 shadow-sm">Trigger Manual (Blocked)</button>
                 )}
                 {settings.manualMode && (
                   <button onClick={() => {
                     const pending = entries.filter(e => e.status === 'pending');
                     if (pending.length > 0) { window.open(getWALink(pending[0]), 'WAsenderTab'); updateStatus(pending[0].id, 'sent'); }
-                  }} className="w-full py-4 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl font-bold text-sm transition-all active:scale-95">Kirim Selanjutnya</button>
+                  }} className="w-full py-3 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white rounded-xl font-bold text-[13px] transition-all active:scale-95 shadow-sm">Kirim Berikutnya</button>
                 )}
-                <button onClick={stopBlast} className="w-full py-4 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white rounded-xl font-bold text-sm transition-all active:scale-95">ABORT ENGINE</button>
+                <button onClick={stopBlast} className="w-full py-3 border border-red-500/20 text-red-400 hover:bg-red-500 hover:text-white rounded-xl font-bold text-[13px] transition-all active:scale-95">Stop Engine</button>
               </div>
-            </motion.div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* LEFT SIDEBAR (Command Center) - Adjusted padding & spacing */}
+      {/* LEFT SIDEBAR (Command Center) */}
       <aside className="w-[360px] h-full p-6 flex flex-col gap-6 border-r border-zinc-200 dark:border-zinc-800/80 bg-white/50 dark:bg-zinc-950/50 backdrop-blur-xl shrink-0 z-10 hidden lg:flex">
         
         {/* Brand */}
@@ -617,14 +631,47 @@ export default function App() {
           </div>
         </div>
 
+        {/* Quick Settings (Brought back to main dashboard) */}
+        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[2rem] p-6 shadow-sm flex flex-col gap-5">
+          <div className="space-y-2">
+            <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 ml-1">Pengirim / CS</label>
+            <input 
+              type="text" 
+              value={settings.senderName}
+              onChange={(e) => setSettings(prev => ({ ...prev, senderName: e.target.value }))}
+              className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-950 border-none rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all dark:text-white"
+              placeholder="Admin JNT"
+            />
+          </div>
+          <div className="space-y-3 pt-1">
+            <div className="flex justify-between items-center">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 ml-1">Delay Waktu</label>
+              <span className="text-[10px] font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 px-2 py-0.5 rounded-md">{settings.delay / 1000}s</span>
+            </div>
+            <input 
+              type="range" 
+              min="1000" 
+              max="10000" 
+              step="500"
+              value={settings.delay}
+              onChange={(e) => setSettings(prev => ({ ...prev, delay: parseInt(e.target.value) }))}
+              className="w-full h-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+            />
+            <div className="flex justify-between text-[9px] font-bold tracking-widest text-zinc-400 uppercase">
+              <span>Fast</span>
+              <span>Safe</span>
+            </div>
+          </div>
+        </div>
+
         {/* Stats */}
         <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[2rem] p-6 shadow-sm">
           <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-5">Analytics</div>
           <div className="flex items-center gap-6">
-            <div className="w-24 h-24 shrink-0">
+            <div className="w-20 h-20 shrink-0">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={statsData} innerRadius={35} outerRadius={48} paddingAngle={5} dataKey="value" stroke="none">
+                  <Pie data={statsData} innerRadius={28} outerRadius={40} paddingAngle={5} dataKey="value" stroke="none">
                     {statsData.map((e, i) => <Cell key={i} fill={e.color} />)}
                   </Pie>
                   <RechartsTooltip cursor={false} contentStyle={{ backgroundColor: isDarkMode ? '#18181b' : '#fff', borderColor: isDarkMode ? '#27272a' : '#e2e8f0', borderRadius: '16px', padding: '12px', fontSize: '12px', fontWeight: 'bold' }} />
@@ -643,7 +690,7 @@ export default function App() {
         </div>
 
         {/* Terminal Logging */}
-        <div className="flex-1 bg-zinc-950 dark:bg-[#0a0a0a] rounded-[2rem] border border-zinc-800 p-6 flex flex-col overflow-hidden shadow-inner relative group">
+        <div className="flex-1 bg-zinc-950 dark:bg-[#0a0a0a] rounded-[2rem] border border-zinc-800 p-6 flex flex-col overflow-hidden shadow-inner relative group min-h-[160px]">
           <div className="flex justify-between items-center mb-4 shrink-0">
             <div className="flex gap-2.5">
               <div className="w-3 h-3 rounded-full bg-zinc-700" />
@@ -694,7 +741,7 @@ export default function App() {
           </div>
         </header>
 
-        {/* Scrollable Content (Bento Grid) - Adjusted padding & spacing */}
+        {/* Scrollable Content (Bento Grid) */}
         <div className="flex-1 overflow-y-auto custom-scrollbar p-8">
           <div className="max-w-6xl mx-auto flex flex-col gap-8">
 
@@ -953,16 +1000,13 @@ export default function App() {
                   </>
                 ) : (
                   <>
-                    <div className="space-y-2"><label className="text-[11px] font-bold text-zinc-500 uppercase tracking-widest ml-1">Nama Pengirim Default</label><input type="text" value={settings.senderName} onChange={(e) => setSettings(prev => ({ ...prev, senderName: e.target.value }))} className="w-full px-5 py-4 bg-zinc-50 dark:bg-zinc-950 border-none rounded-2xl text-sm focus:ring-2 focus:ring-emerald-500/20 outline-none dark:text-white" /></div>
                     <div className="space-y-3"><label className="text-[11px] font-bold text-zinc-500 uppercase tracking-widest ml-1">Speed Preset</label><div className="grid grid-cols-2 gap-3">{[{id:'safe', label:'Safe'},{id:'normal', label:'Normal'},{id:'fast', label:'Fast'},{id:'turbo', label:'Turbo'},{id:'custom', label:'Custom'}].map(m => <button key={m.id} onClick={() => setSettings(prev => ({ ...prev, speedMode: m.id as any }))} className={cn("py-3.5 rounded-2xl text-xs font-bold transition-all border", settings.speedMode === m.id ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 border-transparent" : "bg-transparent border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800")}>{m.label}</button>)}</div></div>
-                    {settings.speedMode === 'custom' && <div className="space-y-2"><label className="text-[11px] font-bold text-zinc-500 uppercase tracking-widest ml-1">Custom Delay (ms)</label><input type="number" value={settings.delay} onChange={(e) => setSettings(prev => ({ ...prev, delay: parseInt(e.target.value) || 1000 }))} className="w-full px-5 py-4 bg-zinc-50 dark:bg-zinc-950 border-none rounded-2xl text-sm focus:ring-2 focus:ring-emerald-500/20 outline-none dark:text-white" step="500" /></div>}
                     
                     <div className="pt-4 border-t border-zinc-100 dark:border-zinc-800 space-y-5">
                       {[
                         { key: 'manualMode', label: 'Manual Mode', desc: 'Kirim saat tekan Spasi.' },
                         { key: 'autoRetry', label: 'Auto Retry', desc: 'Ulangi jika gagal.' },
-                        { key: 'autoSend', label: 'Auto Send (Ext)', desc: 'Eksekusi dgn Extension.' },
-                        { key: 'randomizeDelay', label: 'Randomize Delay', desc: 'Acak waktu jeda.' }
+                        { key: 'autoSend', label: 'Auto Send (Ext)', desc: 'Eksekusi dgn Extension.' }
                       ].map(item => (
                         <div key={item.key} className="flex items-center justify-between">
                           <div><div className="text-sm font-bold dark:text-white mb-0.5">{item.label}</div><div className="text-[11px] text-zinc-500">{item.desc}</div></div>
