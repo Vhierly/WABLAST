@@ -688,12 +688,15 @@ export default function App() {
 
   // Main Blast Engine
   useEffect(() => {
-    let timer: NodeJS.Timeout;
+    if (!isBlasting || settings.manualMode) {
+      setCountdown(0);
+      return;
+    }
 
-    if (isBlasting && !settings.manualMode) {
+    const engineTick = () => {
       const now = Date.now();
       
-      // 1. Check Limits
+      // 1. Check Hourly Limit
       if (now - lastHourReset > 3600000) {
         setSentThisHour(0);
         setLastHourReset(now);
@@ -705,23 +708,20 @@ export default function App() {
         return;
       }
 
-      // 2. Check Extension (Only if not in manual mode)
-      if (!isExtensionDetected) {
-        // We don't stop immediately, maybe it's just a hiccup
-        // but we log it
-      }
-
       const pendingEntries = entries.filter(e => e.status === 'pending');
       const sendingEntries = entries.filter(e => e.status === 'sending');
       
-      // 3. If already sending, wait for extension
-      if (sendingEntries.length > 0) return;
+      // 2. If already sending, wait for extension or timeout
+      if (sendingEntries.length > 0) {
+        setCountdown(0);
+        return;
+      }
 
       if (pendingEntries.length > 0) {
         const entry = pendingEntries[0];
         
         if (now >= nextActionTime) {
-          // TIME TO SEND
+          // 3. TIME TO SEND
           addLog(`🚀 Mengirim ke ${entry.recipientName}...`, 'info');
           
           const waLink = getWALink(entry, entries.filter(e => e.status === 'sent').length);
@@ -729,9 +729,8 @@ export default function App() {
           
           if (!newWindow) {
             addLog(`⚠️ Browser memblokir pembukaan tab otomatis.`, 'warning');
-            // We don't return here, we try to proceed or show the button
-            // but we'll set a small delay to avoid tight loop
-            setNextActionTime(Date.now() + 2000); 
+            // Set a small retry delay to avoid tight loop if blocked
+            setNextActionTime(Date.now() + 3000); 
             return;
           }
 
@@ -745,25 +744,22 @@ export default function App() {
             setNextActionTime(Date.now() + delay);
           }
         } else {
-          // WAITING DELAY
+          // 4. WAITING DELAY - Update Countdown
           const remaining = Math.ceil((nextActionTime - now) / 1000);
           setCountdown(Math.max(0, remaining));
-          
-          // Re-check every 500ms
-          timer = setTimeout(() => {
-            setCountdown(prev => prev); // trigger re-render
-          }, 500);
         }
       } else {
         setIsBlasting(false);
         addLog(`🏁 Blast selesai!`, 'success');
       }
-    }
-
-    return () => {
-      if (timer) clearTimeout(timer);
     };
-  }, [isBlasting, entries, nextActionTime, settings.manualMode, settings.hourlyLimit, isExtensionDetected, sentThisHour]);
+
+    // Run immediately then every 1s
+    engineTick();
+    const interval = setInterval(engineTick, 1000);
+
+    return () => clearInterval(interval);
+  }, [isBlasting, entries, nextActionTime, settings.manualMode, settings.hourlyLimit, isExtensionDetected, sentThisHour, lastHourReset]);
 
   // Keyboard shortcut for manual mode
   useEffect(() => {
