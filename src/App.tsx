@@ -529,7 +529,7 @@ export default function App() {
       "min-h-screen lg:h-screen w-full flex flex-col lg:flex-row lg:overflow-hidden font-sans selection:bg-emerald-500/30 transition-colors duration-300",
       isDarkMode ? "dark bg-[#09090b] text-zinc-200" : "bg-[#f4f4f5] text-zinc-900"
     )}>
-      <Toaster position="top-center" toastOptions={{ className: 'dark:bg-zinc-800 dark:text-white border dark:border-zinc-700 mt-4' }} />
+      <Toaster position="top-center" toastOptions={{ className: 'dark:bg-zinc-800 dark:text-white border dark:border-zinc-700 mt-4 shadow-xl' }} />
 
       {/* FLOATING HUD WIDGET */}
       <AnimatePresence>
@@ -610,7 +610,7 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* SIDEBAR (Command Center) - Stacks on Mobile, Left Sidebar on Desktop */}
+      {/* SIDEBAR (Command Center) */}
       <aside className="w-full lg:w-[320px] xl:w-[360px] lg:h-full p-4 md:p-6 flex flex-col gap-4 md:gap-6 border-b lg:border-b-0 lg:border-r border-zinc-200 dark:border-zinc-800/80 bg-white/50 dark:bg-zinc-950/50 backdrop-blur-xl shrink-0 z-20 lg:overflow-y-auto custom-scrollbar">
         
         {/* Brand */}
@@ -659,7 +659,6 @@ export default function App() {
           </div>
         </div>
 
-        {/* Desktop Layout Helper for Side-by-Side bottom sections on Tablet */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4 md:gap-6 lg:flex-1 lg:flex lg:flex-col">
           {/* Quick Settings */}
           <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl md:rounded-[2rem] p-5 md:p-6 shadow-sm flex flex-col gap-4 md:gap-5">
@@ -745,7 +744,7 @@ export default function App() {
       {/* MAIN CONTENT AREA */}
       <main className="flex-1 flex flex-col lg:h-full lg:overflow-hidden relative">
         
-        {/* Top Navbar (Reordered for Mobile) */}
+        {/* Top Navbar */}
         <header className="p-4 md:p-6 lg:h-24 lg:px-8 flex flex-col-reverse sm:flex-row items-center justify-between shrink-0 border-b border-zinc-200 dark:border-zinc-800/80 bg-white/50 dark:bg-zinc-950/50 backdrop-blur-xl z-10 gap-4">
           <div className="relative w-full sm:max-w-xs md:max-w-sm lg:max-w-md">
             <Search className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 text-zinc-400 w-4 h-4 md:w-5 md:h-5" />
@@ -761,10 +760,10 @@ export default function App() {
                 <Puzzle size={14} className="md:w-4 md:h-4" /> Install Ext
               </button>
             )}
-            <button onClick={() => setShowBulkModal(true)} className="px-4 py-2 md:px-5 md:py-2.5 bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-full text-[10px] md:text-xs font-bold hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors flex items-center gap-2">
-              <FileSpreadsheet size={14} className="md:w-4 md:h-4" /> Bulk
+            <button onClick={() => setShowBulkModal(true)} className="flex-1 sm:flex-none justify-center px-4 py-2 md:px-5 md:py-2.5 bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-full text-[10px] md:text-xs font-bold hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors flex items-center gap-2">
+              <FileSpreadsheet size={14} className="md:w-4 md:h-4" /> Bulk Import
             </button>
-            <div className="hidden md:block h-5 md:h-6 w-px bg-zinc-200 dark:bg-zinc-800 mx-0.5 md:mx-1" />
+            <div className="hidden sm:block h-5 md:h-6 w-px bg-zinc-200 dark:bg-zinc-800 mx-0.5 md:mx-1" />
             <button onClick={exportToCSV} className="p-2 md:p-3 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors" title="Export CSV"><Download size={14} className="md:w-4 md:h-4" /></button>
             <button onClick={handleResetDefault} className="p-2 md:p-3 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 rounded-full hover:text-red-500 transition-colors" title="Reset All"><RotateCcw size={14} className="md:w-4 md:h-4" /></button>
             <button onClick={() => setIsDarkMode(!isDarkMode)} className="p-2 md:p-3 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 rounded-full hover:text-emerald-500 transition-colors">{isDarkMode ? <Sun size={14} className="md:w-4 md:h-4" /> : <Moon size={14} className="md:w-4 md:h-4" />}</button>
@@ -857,82 +856,91 @@ export default function App() {
 
             </div>
 
-            {/* Bottom Row: Table */}
-            <div className="flex-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl lg:rounded-[2rem] shadow-sm flex flex-col overflow-hidden min-h-[350px] lg:min-h-[450px]">
-              <div className="px-5 py-4 lg:px-8 lg:py-5 border-b border-zinc-100 dark:border-zinc-800/80 flex flex-col sm:flex-row sm:items-center justify-between bg-zinc-50/50 dark:bg-zinc-900/50 gap-3 sm:gap-0">
+            {/* Bottom Row: Responsive Queue Data List/Table */}
+            <div className="flex-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl lg:rounded-[2rem] shadow-sm flex flex-col overflow-hidden lg:min-h-[450px]">
+              
+              {/* Header Container */}
+              <div className="px-5 py-4 lg:px-8 lg:py-5 border-b border-zinc-100 dark:border-zinc-800/80 flex flex-col sm:flex-row sm:items-center justify-between bg-zinc-50/50 dark:bg-zinc-900/50 gap-4 sm:gap-0 shrink-0">
                 <div className="flex items-center justify-between sm:justify-start gap-4 w-full sm:w-auto">
                   <h2 className="font-bold text-xs lg:text-sm dark:text-white uppercase tracking-widest">Queue Data</h2>
                   <span className="px-2 py-0.5 lg:px-3 lg:py-1 bg-zinc-200 dark:bg-zinc-800 text-[10px] lg:text-[11px] font-bold text-zinc-600 dark:text-zinc-400 rounded-md lg:rounded-lg">{filteredEntries.length} items</span>
                 </div>
                 <div className="flex gap-2 lg:gap-3 justify-end w-full sm:w-auto">
-                  <button onClick={() => setShowPreviewModal(true)} disabled={entries.filter(e => e.status === 'pending').length === 0} className="px-3 py-1.5 lg:px-5 lg:py-2 text-[9px] lg:text-[11px] font-bold uppercase tracking-wider bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 rounded-lg lg:rounded-xl hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all disabled:opacity-50">Preview</button>
+                  <button onClick={() => setShowPreviewModal(true)} disabled={entries.filter(e => e.status === 'pending').length === 0} className="flex-1 sm:flex-none px-3 py-2 lg:px-5 lg:py-2.5 text-[9px] lg:text-[11px] font-bold uppercase tracking-wider bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 rounded-lg lg:rounded-xl hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all disabled:opacity-50">Preview</button>
                   {isConfirmingClear ? (
-                    <div className="flex items-center gap-1 lg:gap-2">
-                      <button onClick={clearAll} className="px-3 py-1.5 lg:px-4 lg:py-2 text-[9px] lg:text-[11px] font-bold uppercase bg-red-500 text-white rounded-lg lg:rounded-xl">Yes</button>
-                      <button onClick={() => setIsConfirmingClear(false)} className="px-3 py-1.5 lg:px-4 lg:py-2 text-[9px] lg:text-[11px] font-bold uppercase bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300 rounded-lg lg:rounded-xl">Cancel</button>
+                    <div className="flex flex-1 sm:flex-none items-center gap-1 lg:gap-2">
+                      <button onClick={clearAll} className="flex-1 sm:flex-none px-3 py-2 lg:px-4 lg:py-2.5 text-[9px] lg:text-[11px] font-bold uppercase bg-red-500 text-white rounded-lg lg:rounded-xl">Yes</button>
+                      <button onClick={() => setIsConfirmingClear(false)} className="flex-1 sm:flex-none px-3 py-2 lg:px-4 lg:py-2.5 text-[9px] lg:text-[11px] font-bold uppercase bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300 rounded-lg lg:rounded-xl">Cancel</button>
                     </div>
                   ) : (
-                    <button onClick={() => setIsConfirmingClear(true)} className="px-3 py-1.5 lg:px-4 lg:py-2 text-[9px] lg:text-[11px] font-bold uppercase bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 rounded-lg lg:rounded-xl hover:bg-red-100 transition-all">Clear All</button>
+                    <button onClick={() => setIsConfirmingClear(true)} className="flex-1 sm:flex-none px-3 py-2 lg:px-4 lg:py-2.5 text-[9px] lg:text-[11px] font-bold uppercase bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 rounded-lg lg:rounded-xl hover:bg-red-100 transition-all">Clear All</button>
                   )}
                 </div>
               </div>
-              
-              <div className="flex-1 overflow-auto custom-scrollbar">
-                <table className="w-full text-left border-collapse min-w-[600px]">
-                  <thead className="sticky top-0 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-sm z-10 border-b border-zinc-100 dark:border-zinc-800">
-                    <tr>
-                      <th className="px-5 py-3 lg:px-8 lg:py-4 text-[10px] lg:text-[11px] font-black text-zinc-400 uppercase tracking-widest whitespace-nowrap">Penerima</th>
-                      <th className="px-5 py-3 lg:px-8 lg:py-4 text-[10px] lg:text-[11px] font-black text-zinc-400 uppercase tracking-widest whitespace-nowrap">Detail Paket</th>
-                      <th className="px-5 py-3 lg:px-8 lg:py-4 text-[10px] lg:text-[11px] font-black text-zinc-400 uppercase tracking-widest whitespace-nowrap">Status</th>
-                      <th className="px-5 py-3 lg:px-8 lg:py-4 text-[10px] lg:text-[11px] font-black text-zinc-400 uppercase tracking-widest whitespace-nowrap text-right">Aksi</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-zinc-50 dark:divide-zinc-800/50">
-                    <AnimatePresence mode="popLayout">
-                      {filteredEntries.length === 0 ? (
-                        <motion.tr initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center">
-                          <td colSpan={4} className="px-5 py-16 lg:px-8 lg:py-24 text-zinc-400 dark:text-zinc-600 text-xs lg:text-sm font-medium">Antrean kosong.</td>
-                        </motion.tr>
-                      ) : (
-                        filteredEntries.map((entry, index) => (
-                          <motion.tr key={entry.id} layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }} className={cn("group hover:bg-zinc-50 dark:hover:bg-zinc-800/30 transition-colors", isBlasting && index === currentIndex && "bg-emerald-50/50 dark:bg-emerald-500/5")}>
-                            <td className="px-5 py-4 lg:px-8 lg:py-5">
-                              <div className="font-bold text-xs lg:text-sm text-zinc-900 dark:text-zinc-100">{entry.recipientName}</div>
-                              <div className="text-[10px] lg:text-[11px] text-zinc-500 font-mono mt-1">{entry.phone}</div>
-                            </td>
-                            <td className="px-5 py-4 lg:px-8 lg:py-5">
-                              <div className="text-xs lg:text-sm font-semibold text-zinc-700 dark:text-zinc-300 truncate max-w-[200px] lg:max-w-[280px]">{entry.itemName || '-'}</div>
-                              <div className="flex flex-col gap-1 lg:gap-1.5 mt-1 lg:mt-1.5">
-                                <div className="text-[9px] lg:text-[11px] text-zinc-400 font-mono">Resi: {entry.receiptNumber || '-'}</div>
-                                <div className="flex gap-1.5 lg:gap-2">
-                                  {entry.cod && <div className="text-[9px] lg:text-[10px] bg-amber-100/50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 px-2 py-0.5 lg:px-2.5 rounded-md font-bold uppercase tracking-wider">COD: Rp {formatCurrency(entry.cod)}</div>}
-                                  {entry.dfod && <div className="text-[9px] lg:text-[10px] bg-blue-100/50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 px-2 py-0.5 lg:px-2.5 rounded-md font-bold uppercase tracking-wider">DFOD: Rp {formatCurrency(entry.dfod)}</div>}
-                                </div>
+
+              {/* Grid Headers (Desktop Only) */}
+              <div className="hidden lg:grid grid-cols-12 gap-6 px-8 py-4 border-b border-zinc-100 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 z-10 shrink-0">
+                <div className="col-span-3 text-[11px] font-black text-zinc-400 uppercase tracking-widest">Penerima</div>
+                <div className="col-span-4 text-[11px] font-black text-zinc-400 uppercase tracking-widest">Detail Paket</div>
+                <div className="col-span-3 text-[11px] font-black text-zinc-400 uppercase tracking-widest">Status</div>
+                <div className="col-span-2 text-[11px] font-black text-zinc-400 uppercase tracking-widest text-right">Aksi</div>
+              </div>
+
+              {/* Data List / Cards */}
+              <div className="flex-1 overflow-y-auto custom-scrollbar p-4 lg:p-0 bg-zinc-50/30 dark:bg-zinc-950/30 lg:bg-transparent">
+                <div className="flex flex-col gap-4 lg:gap-0 lg:divide-y lg:divide-zinc-50 lg:dark:divide-zinc-800/50">
+                  <AnimatePresence mode="popLayout">
+                    {filteredEntries.length === 0 ? (
+                      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center px-5 py-16 lg:py-24">
+                        <div className="text-zinc-400 dark:text-zinc-600 text-xs lg:text-sm font-medium">Antrean kosong.</div>
+                      </motion.div>
+                    ) : (
+                      filteredEntries.map((entry, index) => (
+                        <motion.div key={entry.id} layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }} 
+                          className={cn(
+                            "flex flex-col lg:grid lg:grid-cols-12 gap-3 lg:gap-6 p-5 lg:px-8 lg:py-5 bg-white dark:bg-zinc-900 lg:bg-transparent rounded-2xl lg:rounded-none border border-zinc-200 dark:border-zinc-800 lg:border-transparent shadow-sm lg:shadow-none hover:bg-zinc-50 dark:hover:bg-zinc-800/30 transition-colors relative group",
+                            isBlasting && index === currentIndex && "ring-2 ring-emerald-500 lg:ring-0 lg:bg-emerald-50/50 lg:dark:bg-emerald-500/5"
+                          )}
+                        >
+                          {/* Kolom 1: Penerima */}
+                          <div className="col-span-3 pr-16 lg:pr-0">
+                            <div className="font-bold text-sm lg:text-sm text-zinc-900 dark:text-zinc-100">{entry.recipientName}</div>
+                            <div className="text-[11px] text-zinc-500 font-mono mt-1">{entry.phone}</div>
+                          </div>
+
+                          {/* Kolom 2: Detail Paket */}
+                          <div className="col-span-4">
+                            <div className="text-xs lg:text-sm font-semibold text-zinc-700 dark:text-zinc-300 line-clamp-2 lg:line-clamp-1 lg:max-w-[280px]">{entry.itemName || '-'}</div>
+                            <div className="flex flex-col gap-1.5 mt-1.5">
+                              <div className="text-[10px] lg:text-[11px] text-zinc-400 font-mono">Resi: {entry.receiptNumber || '-'}</div>
+                              <div className="flex flex-wrap gap-2">
+                                {entry.cod && <div className="text-[9px] lg:text-[10px] bg-amber-100/50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 px-2 py-0.5 lg:px-2.5 rounded-md font-bold uppercase tracking-wider">COD: Rp {formatCurrency(entry.cod)}</div>}
+                                {entry.dfod && <div className="text-[9px] lg:text-[10px] bg-blue-100/50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 px-2 py-0.5 lg:px-2.5 rounded-md font-bold uppercase tracking-wider">DFOD: Rp {formatCurrency(entry.dfod)}</div>}
                               </div>
-                            </td>
-                            <td className="px-5 py-4 lg:px-8 lg:py-5">
-                              <div className="flex flex-col gap-2 lg:gap-2.5 items-start">
-                                <div className={cn("inline-flex items-center gap-1.5 lg:gap-2 px-2 py-1 lg:px-3 lg:py-1.5 rounded-md lg:rounded-lg text-[9px] lg:text-[10px] font-black uppercase tracking-widest", entry.status === 'sent' ? "bg-emerald-100/50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : entry.status === 'sending' ? "bg-blue-100/50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 animate-pulse" : entry.status === 'failed' ? "bg-red-100/50 dark:bg-red-500/10 text-red-600 dark:text-red-400" : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400")}>
-                                  {entry.status === 'sent' ? <CheckCircle2 size={10} className="lg:w-3 lg:h-3" /> : entry.status === 'sending' ? <Loader2 size={10} className="lg:w-3 lg:h-3 animate-spin" /> : entry.status === 'failed' ? <AlertCircle size={10} className="lg:w-3 lg:h-3" /> : <Clock size={10} className="lg:w-3 lg:h-3" />} {entry.status}
-                                </div>
-                                <button onClick={() => toggleReceived(entry.id)} className={cn("text-[9px] lg:text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 lg:gap-2 transition-colors", entry.isReceived ? "text-emerald-500" : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300")}>
-                                  <div className={cn("w-3 h-3 lg:w-3.5 lg:h-3.5 rounded-full border-2 flex items-center justify-center", entry.isReceived ? "border-emerald-500 bg-emerald-500" : "border-zinc-300 dark:border-zinc-600")}>{entry.isReceived && <CheckCircle2 size={8} className="text-white lg:w-[10px] lg:h-[10px]" strokeWidth={4} />}</div>
-                                  Diterima
-                                </button>
-                              </div>
-                            </td>
-                            <td className="px-5 py-4 lg:px-8 lg:py-5 text-right">
-                              <div className="flex items-center justify-end gap-1.5 lg:gap-2 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button onClick={() => handleSendManual(entry)} className="p-2 lg:p-2.5 bg-zinc-100 dark:bg-zinc-800 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/20 rounded-lg lg:rounded-xl transition-all"><ExternalLink size={14} className="lg:w-4 lg:h-4" /></button>
-                                <button onClick={() => setEntries(prev => prev.filter(e => e.id !== entry.id))} className="p-2 lg:p-2.5 bg-zinc-100 dark:bg-zinc-800 text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg lg:rounded-xl transition-all"><Trash2 size={14} className="lg:w-4 lg:h-4" /></button>
-                              </div>
-                            </td>
-                          </motion.tr>
-                        ))
-                      )}
-                    </AnimatePresence>
-                  </tbody>
-                </table>
+                            </div>
+                          </div>
+
+                          {/* Kolom 3: Status */}
+                          <div className="col-span-3 flex flex-row lg:flex-col items-center lg:items-start justify-between lg:justify-center gap-3 pt-3 mt-1 border-t border-zinc-100 dark:border-zinc-800 lg:border-none lg:pt-0 lg:mt-0">
+                            <div className={cn("inline-flex items-center gap-1.5 lg:gap-2 px-2.5 py-1 lg:px-3 lg:py-1.5 rounded-lg text-[9px] lg:text-[10px] font-black uppercase tracking-widest", entry.status === 'sent' ? "bg-emerald-100/50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : entry.status === 'sending' ? "bg-blue-100/50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 animate-pulse" : entry.status === 'failed' ? "bg-red-100/50 dark:bg-red-500/10 text-red-600 dark:text-red-400" : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400")}>
+                              {entry.status === 'sent' ? <CheckCircle2 size={12} className="lg:w-3.5 lg:h-3.5" /> : entry.status === 'sending' ? <Loader2 size={12} className="lg:w-3.5 lg:h-3.5 animate-spin" /> : entry.status === 'failed' ? <AlertCircle size={12} className="lg:w-3.5 lg:h-3.5" /> : <Clock size={12} className="lg:w-3.5 lg:h-3.5" />} {entry.status}
+                            </div>
+                            <button onClick={() => toggleReceived(entry.id)} className={cn("text-[10px] font-bold uppercase tracking-wider flex items-center gap-2 transition-colors", entry.isReceived ? "text-emerald-500" : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300")}>
+                              <div className={cn("w-4 h-4 lg:w-3.5 lg:h-3.5 rounded-full border-2 flex items-center justify-center", entry.isReceived ? "border-emerald-500 bg-emerald-500" : "border-zinc-300 dark:border-zinc-600")}>{entry.isReceived && <CheckCircle2 size={10} className="text-white lg:w-[10px] lg:h-[10px]" strokeWidth={3} />}</div>
+                              Diterima
+                            </button>
+                          </div>
+
+                          {/* Kolom 4: Aksi */}
+                          <div className="col-span-2 flex items-center justify-end gap-1.5 lg:gap-2 absolute top-4 right-4 lg:relative lg:top-auto lg:right-auto opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onClick={() => handleSendManual(entry)} className="p-2 lg:p-2.5 bg-zinc-100 dark:bg-zinc-800 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/20 rounded-xl lg:rounded-xl transition-all active:scale-95"><ExternalLink size={16} className="lg:w-4 lg:h-4" /></button>
+                            <button onClick={() => setEntries(prev => prev.filter(e => e.id !== entry.id))} className="p-2 lg:p-2.5 bg-zinc-100 dark:bg-zinc-800 text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl lg:rounded-xl transition-all active:scale-95"><Trash2 size={16} className="lg:w-4 lg:h-4" /></button>
+                          </div>
+                        </motion.div>
+                      ))
+                    )}
+                  </AnimatePresence>
+                </div>
               </div>
             </div>
 
