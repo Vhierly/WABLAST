@@ -503,8 +503,8 @@ export default function App() {
       {/* OVERLAY BLASTING (HUD Style) */}
       <AnimatePresence>
         {isBlasting && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] bg-zinc-950/90 backdrop-blur-md flex items-center justify-center p-6">
-            <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} className="bg-zinc-900 border border-zinc-800 p-8 rounded-[2rem] max-w-sm w-full shadow-2xl flex flex-col items-center text-center relative overflow-hidden">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] bg-zinc-950/90 backdrop-blur-md flex items-center justify-center p-8">
+            <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} className="bg-zinc-900 border border-zinc-800 p-10 rounded-[2rem] max-w-sm w-full shadow-2xl flex flex-col items-center text-center relative overflow-hidden">
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-500 animate-pulse" />
               
               <div className="relative w-24 h-24 mb-6">
@@ -519,11 +519,11 @@ export default function App() {
                 {isLongBreak ? '😴 System Sleeping' : entries.some(e => e.status === 'sending') ? '⏳ Waiting Web WA' : '🚀 Engine Running'}
               </h3>
               
-              <div className="flex items-center gap-2 px-4 py-1.5 bg-zinc-800 rounded-full text-xs font-medium mb-6">
+              <div className="flex items-center gap-2 px-5 py-2 bg-zinc-800 rounded-full text-xs font-medium mb-6">
                 <span className="text-zinc-400">Sent</span>
-                <span className="text-emerald-400 font-bold">{entries.filter(e => e.status === 'sent').length}</span>
+                <span className="text-emerald-400 font-bold text-sm">{entries.filter(e => e.status === 'sent').length}</span>
                 <span className="text-zinc-600">/</span>
-                <span className="text-white font-bold">{entries.length}</span>
+                <span className="text-white font-bold text-sm">{entries.length}</span>
               </div>
 
               {!settings.manualMode ? (
@@ -536,7 +536,7 @@ export default function App() {
                   </div>
                 </div>
               ) : (
-                <div className="mb-8 w-full py-4 border border-zinc-800 bg-zinc-800/50 rounded-2xl">
+                <div className="mb-8 w-full py-5 border border-zinc-800 bg-zinc-800/50 rounded-2xl">
                   <div className="text-emerald-400 font-bold text-sm mb-1">MANUAL MODE</div>
                   <div className="text-xs text-zinc-400">Tekan [ENTER] di WA atau klik lanjut.</div>
                 </div>
@@ -544,7 +544,7 @@ export default function App() {
 
               <div className="w-full flex flex-col gap-3">
                 {entries.some(e => e.status === 'sending') && (
-                  <button onClick={() => { const s = entries.find(e => e.status === 'sending'); if(s) updateStatus(s.id, 'sent'); }} className="w-full py-3.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-sm transition-all active:scale-95">Paksa Lanjut (Force Skip)</button>
+                  <button onClick={() => { const s = entries.find(e => e.status === 'sending'); if(s) updateStatus(s.id, 'sent'); }} className="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-sm transition-all active:scale-95">Paksa Lanjut (Force Skip)</button>
                 )}
                 {Date.now() >= nextActionTime && entries.filter(e => e.status === 'pending').length > 0 && !entries.some(e => e.status === 'sending') && !settings.manualMode && (
                   <button onClick={() => {
@@ -553,40 +553,40 @@ export default function App() {
                       window.open(getWALink(entry, entries.filter(e => e.status === 'sent').length), 'WAsenderTab');
                       if(settings.autoSend) updateStatus(entry.id, 'sending'); else updateStatus(entry.id, 'sent');
                     }
-                  }} className="w-full py-3.5 bg-amber-600 hover:bg-amber-500 text-white rounded-xl font-bold text-sm transition-all active:scale-95">Trigger Manual (Tab Blocked)</button>
+                  }} className="w-full py-4 bg-amber-600 hover:bg-amber-500 text-white rounded-xl font-bold text-sm transition-all active:scale-95">Trigger Manual (Tab Blocked)</button>
                 )}
                 {settings.manualMode && (
                   <button onClick={() => {
                     const pending = entries.filter(e => e.status === 'pending');
                     if (pending.length > 0) { window.open(getWALink(pending[0]), 'WAsenderTab'); updateStatus(pending[0].id, 'sent'); }
-                  }} className="w-full py-3.5 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl font-bold text-sm transition-all active:scale-95">Kirim Selanjutnya</button>
+                  }} className="w-full py-4 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl font-bold text-sm transition-all active:scale-95">Kirim Selanjutnya</button>
                 )}
-                <button onClick={stopBlast} className="w-full py-3.5 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white rounded-xl font-bold text-sm transition-all active:scale-95">ABORT ENGINE</button>
+                <button onClick={stopBlast} className="w-full py-4 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white rounded-xl font-bold text-sm transition-all active:scale-95">ABORT ENGINE</button>
               </div>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* LEFT SIDEBAR (Command Center) */}
-      <aside className="w-[340px] h-full p-4 flex flex-col gap-4 border-r border-zinc-200 dark:border-zinc-800/80 bg-white/50 dark:bg-zinc-950/50 backdrop-blur-xl shrink-0 z-10 hidden lg:flex">
+      {/* LEFT SIDEBAR (Command Center) - Adjusted padding & spacing */}
+      <aside className="w-[360px] h-full p-6 flex flex-col gap-6 border-r border-zinc-200 dark:border-zinc-800/80 bg-white/50 dark:bg-zinc-950/50 backdrop-blur-xl shrink-0 z-10 hidden lg:flex">
         
         {/* Brand */}
-        <div className="flex items-center gap-3 px-2 pt-2 pb-4">
-          <div className="w-10 h-10 bg-zinc-900 dark:bg-white rounded-xl flex items-center justify-center shadow-lg">
-            <Send size={20} className="text-white dark:text-zinc-900 translate-x-[1px]" />
+        <div className="flex items-center gap-4 px-2 pt-2">
+          <div className="w-12 h-12 bg-zinc-900 dark:bg-white rounded-2xl flex items-center justify-center shadow-lg">
+            <Send size={24} className="text-white dark:text-zinc-900 translate-x-[1px]" />
           </div>
           <div>
-            <h1 className="text-xl font-black tracking-tight dark:text-white leading-none">WAsender</h1>
-            <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest mt-1">PRO Engine v2</p>
+            <h1 className="text-2xl font-black tracking-tight dark:text-white leading-none">WAsender</h1>
+            <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest mt-1.5">PRO Engine v2</p>
           </div>
         </div>
 
         {/* Master Control */}
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[1.5rem] p-5 flex flex-col gap-4 shadow-sm">
+        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[2rem] p-6 flex flex-col gap-5 shadow-sm">
           <div className="flex justify-between items-center">
             <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">System Status</span>
-            <div className="flex items-center gap-1.5 px-2 py-1 bg-zinc-100 dark:bg-zinc-800 rounded-md">
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-lg">
               <div className={cn("w-2 h-2 rounded-full", isBlasting ? "bg-emerald-500 animate-pulse" : "bg-zinc-400")} />
               <span className="text-[10px] font-bold dark:text-zinc-300 uppercase">{isBlasting ? 'Running' : 'Standby'}</span>
             </div>
@@ -596,7 +596,7 @@ export default function App() {
             onClick={isBlasting ? stopBlast : startBlast}
             disabled={entries.length === 0}
             className={cn(
-              "w-full h-16 rounded-xl font-black text-lg transition-all flex items-center justify-center gap-3 shadow-xl active:scale-95 disabled:opacity-50 disabled:active:scale-100",
+              "w-full h-16 rounded-2xl font-black text-lg transition-all flex items-center justify-center gap-3 shadow-xl active:scale-95 disabled:opacity-50 disabled:active:scale-100",
               isBlasting 
                 ? "bg-red-500 hover:bg-red-600 text-white shadow-red-500/20" 
                 : "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 shadow-zinc-900/10 hover:scale-[1.02]"
@@ -607,35 +607,35 @@ export default function App() {
           </button>
 
           <div className={cn(
-            "flex items-center justify-between px-3 py-2.5 rounded-xl border text-[11px] font-bold transition-all",
+            "flex items-center justify-between px-4 py-3.5 rounded-2xl border text-[11px] font-bold transition-all",
             isExtensionDetected 
               ? "bg-emerald-50/50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/20 text-emerald-600 dark:text-emerald-400" 
               : "bg-zinc-50 dark:bg-zinc-800/50 border-zinc-200 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400"
           )}>
-            <div className="flex items-center gap-2"><Puzzle size={14} className={isExtensionDetected ? "animate-pulse" : ""} /> Extension</div>
+            <div className="flex items-center gap-2.5"><Puzzle size={16} className={isExtensionDetected ? "animate-pulse" : ""} /> Extension</div>
             <span className="uppercase">{isExtensionDetected ? 'Connected' : 'Offline'}</span>
           </div>
         </div>
 
         {/* Stats */}
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[1.5rem] p-5 shadow-sm">
-          <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-4">Analytics</div>
-          <div className="flex items-center gap-4">
+        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[2rem] p-6 shadow-sm">
+          <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-5">Analytics</div>
+          <div className="flex items-center gap-6">
             <div className="w-24 h-24 shrink-0">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie data={statsData} innerRadius={35} outerRadius={48} paddingAngle={5} dataKey="value" stroke="none">
                     {statsData.map((e, i) => <Cell key={i} fill={e.color} />)}
                   </Pie>
-                  <RechartsTooltip cursor={false} contentStyle={{ backgroundColor: isDarkMode ? '#18181b' : '#fff', borderColor: isDarkMode ? '#27272a' : '#e2e8f0', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold' }} />
+                  <RechartsTooltip cursor={false} contentStyle={{ backgroundColor: isDarkMode ? '#18181b' : '#fff', borderColor: isDarkMode ? '#27272a' : '#e2e8f0', borderRadius: '16px', padding: '12px', fontSize: '12px', fontWeight: 'bold' }} />
                 </PieChart>
               </ResponsiveContainer>
             </div>
-            <div className="flex-1 flex flex-col gap-2">
+            <div className="flex-1 flex flex-col gap-3">
               {statsData.map(s => (
                 <div key={s.name} className="flex justify-between items-center text-xs font-bold">
-                  <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full" style={{ backgroundColor: s.color }} /> <span className="text-zinc-500 dark:text-zinc-400">{s.name}</span></div>
-                  <span className="dark:text-white">{s.value}</span>
+                  <div className="flex items-center gap-2"><div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: s.color }} /> <span className="text-zinc-500 dark:text-zinc-400">{s.name}</span></div>
+                  <span className="text-sm dark:text-white">{s.value}</span>
                 </div>
               ))}
             </div>
@@ -643,16 +643,16 @@ export default function App() {
         </div>
 
         {/* Terminal Logging */}
-        <div className="flex-1 bg-zinc-950 dark:bg-[#0a0a0a] rounded-[1.5rem] border border-zinc-800 p-4 flex flex-col overflow-hidden shadow-inner relative group">
-          <div className="flex justify-between items-center mb-3 shrink-0">
-            <div className="flex gap-2">
-              <div className="w-2.5 h-2.5 rounded-full bg-zinc-700" />
-              <div className="w-2.5 h-2.5 rounded-full bg-zinc-700" />
+        <div className="flex-1 bg-zinc-950 dark:bg-[#0a0a0a] rounded-[2rem] border border-zinc-800 p-6 flex flex-col overflow-hidden shadow-inner relative group">
+          <div className="flex justify-between items-center mb-4 shrink-0">
+            <div className="flex gap-2.5">
+              <div className="w-3 h-3 rounded-full bg-zinc-700" />
+              <div className="w-3 h-3 rounded-full bg-zinc-700" />
             </div>
-            <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-widest">sys.log</span>
-            <button onClick={() => setLogs([])} className="text-[9px] font-mono text-zinc-600 hover:text-white uppercase transition-colors opacity-0 group-hover:opacity-100">Clear</button>
+            <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">sys.log</span>
+            <button onClick={() => setLogs([])} className="text-[10px] font-mono text-zinc-600 hover:text-white uppercase transition-colors opacity-0 group-hover:opacity-100">Clear</button>
           </div>
-          <div className="flex-1 overflow-y-auto custom-scrollbar font-mono text-[10px] space-y-1.5 pr-2">
+          <div className="flex-1 overflow-y-auto custom-scrollbar font-mono text-[11px] space-y-2 pr-2">
             {logs.length === 0 ? <div className="text-zinc-600 italic">Waiting for events...</div> : logs.map(log => (
               <div key={log.id} className="flex gap-3 leading-relaxed">
                 <span className="text-zinc-600 shrink-0">[{new Date(log.timestamp).toLocaleTimeString([], { hour12: false })}]</span>
@@ -668,110 +668,111 @@ export default function App() {
       <main className="flex-1 h-full flex flex-col overflow-hidden relative">
         
         {/* Top Navbar */}
-        <header className="h-20 px-6 flex items-center justify-between shrink-0 border-b border-zinc-200 dark:border-zinc-800/80 bg-white/50 dark:bg-zinc-950/50 backdrop-blur-xl z-10">
+        <header className="h-24 px-8 flex items-center justify-between shrink-0 border-b border-zinc-200 dark:border-zinc-800/80 bg-white/50 dark:bg-zinc-950/50 backdrop-blur-xl z-10">
           <div className="relative w-full max-w-md hidden md:block">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={16} />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" size={18} />
             <input 
               type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Cari data antrean..."
-              className="w-full pl-10 pr-4 py-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-full text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all dark:text-white"
+              className="w-full pl-12 pr-5 py-3.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-full text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all dark:text-white"
             />
           </div>
-          <div className="flex items-center gap-2 ml-auto">
+          <div className="flex items-center gap-3 ml-auto">
             {!isExtensionDetected && (
-              <button onClick={downloadExtensionZip} className="px-4 py-2 bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-full text-xs font-bold flex items-center gap-2 border border-amber-200 dark:border-amber-500/20 hover:bg-amber-100 transition-colors">
-                <Puzzle size={14} /> Install Ext
+              <button onClick={downloadExtensionZip} className="px-5 py-2.5 bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-full text-xs font-bold flex items-center gap-2.5 border border-amber-200 dark:border-amber-500/20 hover:bg-amber-100 transition-colors">
+                <Puzzle size={16} /> Install Ext
               </button>
             )}
-            <button onClick={() => setShowBulkModal(true)} className="px-4 py-2 bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-full text-xs font-bold hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors flex items-center gap-2">
-              <FileSpreadsheet size={14} /> Bulk
+            <button onClick={() => setShowBulkModal(true)} className="px-5 py-2.5 bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-full text-xs font-bold hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors flex items-center gap-2.5">
+              <FileSpreadsheet size={16} /> Bulk
             </button>
-            <button onClick={exportToCSV} className="p-2 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors" title="Export CSV"><Download size={16} /></button>
-            <button onClick={handleResetDefault} className="p-2 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 rounded-full hover:text-red-500 transition-colors" title="Reset All"><RotateCcw size={16} /></button>
-            <button onClick={() => setIsDarkMode(!isDarkMode)} className="p-2 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 rounded-full hover:text-emerald-500 transition-colors">{isDarkMode ? <Sun size={16} /> : <Moon size={16} />}</button>
-            <button onClick={() => setShowSettingsModal(true)} className="p-2 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 rounded-full hover:text-emerald-500 transition-colors"><Settings2 size={16} /></button>
+            <div className="h-6 w-px bg-zinc-200 dark:bg-zinc-800 mx-1" />
+            <button onClick={exportToCSV} className="p-3 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors" title="Export CSV"><Download size={18} /></button>
+            <button onClick={handleResetDefault} className="p-3 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 rounded-full hover:text-red-500 transition-colors" title="Reset All"><RotateCcw size={18} /></button>
+            <button onClick={() => setIsDarkMode(!isDarkMode)} className="p-3 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 rounded-full hover:text-emerald-500 transition-colors">{isDarkMode ? <Sun size={18} /> : <Moon size={18} />}</button>
+            <button onClick={() => setShowSettingsModal(true)} className="p-3 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 rounded-full hover:text-emerald-500 transition-colors"><Settings2 size={18} /></button>
           </div>
         </header>
 
-        {/* Scrollable Content (Bento Grid) */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
-          <div className="max-w-6xl mx-auto flex flex-col gap-6">
+        {/* Scrollable Content (Bento Grid) - Adjusted padding & spacing */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-8">
+          <div className="max-w-6xl mx-auto flex flex-col gap-8">
 
             {/* Top Row: Form & Templates */}
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 shrink-0">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 shrink-0">
               
               {/* Form Card */}
-              <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[2rem] p-6 shadow-sm">
-                <div className="flex items-center gap-2 mb-6">
-                  <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500 flex items-center justify-center"><User size={16} /></div>
+              <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[2rem] p-8 shadow-sm">
+                <div className="flex items-center gap-3 mb-8">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500 flex items-center justify-center"><User size={20} /></div>
                   <h2 className="font-bold text-sm dark:text-white uppercase tracking-widest">Input Data Baru</h2>
                 </div>
-                <form onSubmit={handleAddEntry} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-bold text-zinc-400 uppercase ml-1">No. HP / WA</label>
-                      <input type="text" value={formData.phone} onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))} className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-950 border-none rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all dark:text-white" placeholder="0812..." />
+                <form onSubmit={handleAddEntry} className="space-y-5">
+                  <div className="grid grid-cols-2 gap-5">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider ml-1">No. HP / WA</label>
+                      <input type="text" value={formData.phone} onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))} className="w-full px-5 py-3.5 bg-zinc-50 dark:bg-zinc-950 border-none rounded-2xl text-sm focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all dark:text-white" placeholder="0812..." />
                     </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-bold text-zinc-400 uppercase ml-1">Nama Penerima</label>
-                      <input type="text" value={formData.recipientName} onChange={(e) => setFormData(prev => ({ ...prev, recipientName: e.target.value }))} className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-950 border-none rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all dark:text-white" placeholder="Budi" />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-bold text-zinc-400 uppercase ml-1">Resi / AWB</label>
-                      <input type="text" value={formData.receiptNumber} onChange={(e) => setFormData(prev => ({ ...prev, receiptNumber: e.target.value }))} className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-950 border-none rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all dark:text-white" placeholder="JX123..." />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-bold text-zinc-400 uppercase ml-1">Barang</label>
-                      <input type="text" value={formData.itemName} onChange={(e) => setFormData(prev => ({ ...prev, itemName: e.target.value }))} className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-950 border-none rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all dark:text-white" placeholder="Sepatu" />
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider ml-1">Nama Penerima</label>
+                      <input type="text" value={formData.recipientName} onChange={(e) => setFormData(prev => ({ ...prev, recipientName: e.target.value }))} className="w-full px-5 py-3.5 bg-zinc-50 dark:bg-zinc-950 border-none rounded-2xl text-sm focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all dark:text-white" placeholder="Budi Santoso" />
                     </div>
                   </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-zinc-400 uppercase ml-1">Alamat Tujuan</label>
-                    <input type="text" value={formData.address} onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))} className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-950 border-none rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all dark:text-white" placeholder="Jl. Sudirman No 1" />
+                  <div className="grid grid-cols-2 gap-5">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider ml-1">Resi / AWB</label>
+                      <input type="text" value={formData.receiptNumber} onChange={(e) => setFormData(prev => ({ ...prev, receiptNumber: e.target.value }))} className="w-full px-5 py-3.5 bg-zinc-50 dark:bg-zinc-950 border-none rounded-2xl text-sm focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all dark:text-white" placeholder="JX123..." />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider ml-1">Barang</label>
+                      <input type="text" value={formData.itemName} onChange={(e) => setFormData(prev => ({ ...prev, itemName: e.target.value }))} className="w-full px-5 py-3.5 bg-zinc-50 dark:bg-zinc-950 border-none rounded-2xl text-sm focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all dark:text-white" placeholder="Sepatu" />
+                    </div>
                   </div>
-                  <div className="grid grid-cols-3 gap-4 items-end pt-2">
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-bold text-amber-500 uppercase ml-1">Val COD</label>
-                      <input type="text" value={formData.cod} onChange={(e) => setFormData(prev => ({ ...prev, cod: e.target.value.replace(/[^0-9.,]/g, '') }))} className="w-full px-4 py-3 bg-amber-50/50 dark:bg-amber-500/10 border-none rounded-xl text-sm focus:ring-2 focus:ring-amber-500/20 outline-none transition-all dark:text-white" placeholder="0" />
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider ml-1">Alamat Tujuan</label>
+                    <input type="text" value={formData.address} onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))} className="w-full px-5 py-3.5 bg-zinc-50 dark:bg-zinc-950 border-none rounded-2xl text-sm focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all dark:text-white" placeholder="Jl. Sudirman No 1" />
+                  </div>
+                  <div className="grid grid-cols-3 gap-5 items-end pt-2">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-amber-500 uppercase tracking-wider ml-1">Val COD</label>
+                      <input type="text" value={formData.cod} onChange={(e) => setFormData(prev => ({ ...prev, cod: e.target.value.replace(/[^0-9.,]/g, '') }))} className="w-full px-5 py-3.5 bg-amber-50/50 dark:bg-amber-500/10 border-none rounded-2xl text-sm focus:ring-2 focus:ring-amber-500/20 outline-none transition-all dark:text-white" placeholder="0" />
                     </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-bold text-blue-500 uppercase ml-1">Val DFOD</label>
-                      <input type="text" value={formData.dfod} onChange={(e) => setFormData(prev => ({ ...prev, dfod: e.target.value.replace(/[^0-9.,]/g, '') }))} className="w-full px-4 py-3 bg-blue-50/50 dark:bg-blue-500/10 border-none rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all dark:text-white" placeholder="0" />
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-blue-500 uppercase tracking-wider ml-1">Val DFOD</label>
+                      <input type="text" value={formData.dfod} onChange={(e) => setFormData(prev => ({ ...prev, dfod: e.target.value.replace(/[^0-9.,]/g, '') }))} className="w-full px-5 py-3.5 bg-blue-50/50 dark:bg-blue-500/10 border-none rounded-2xl text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all dark:text-white" placeholder="0" />
                     </div>
-                    <button type="submit" className="w-full h-[44px] bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-xl font-bold text-sm hover:scale-[0.98] transition-transform flex items-center justify-center gap-2 shadow-md">
-                      <Plus size={16} /> Tambah
+                    <button type="submit" className="w-full py-3.5 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-2xl font-bold text-sm hover:scale-[0.98] transition-transform flex items-center justify-center gap-2.5 shadow-md">
+                      <Plus size={18} /> Tambah
                     </button>
                   </div>
                 </form>
               </div>
 
               {/* Templates Card */}
-              <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[2rem] p-6 shadow-sm flex flex-col">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 text-indigo-500 flex items-center justify-center"><MessageSquare size={16} /></div>
+              <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[2rem] p-8 shadow-sm flex flex-col">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-500 flex items-center justify-center"><MessageSquare size={20} /></div>
                     <h2 className="font-bold text-sm dark:text-white uppercase tracking-widest">Pesan Template</h2>
                   </div>
-                  <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-lg">
+                  <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1.5 rounded-xl">
                     {[0,1,2].map(idx => (
-                      <button key={idx} onClick={() => setActiveVariationIndex(idx)} className={cn("px-3 py-1 text-[10px] font-bold rounded-md transition-all", activeVariationIndex === idx ? "bg-white dark:bg-zinc-600 text-zinc-900 dark:text-white shadow-sm" : "text-zinc-500")}>V{idx+1}</button>
+                      <button key={idx} onClick={() => setActiveVariationIndex(idx)} className={cn("px-4 py-1.5 text-[11px] font-bold rounded-lg transition-all", activeVariationIndex === idx ? "bg-white dark:bg-zinc-600 text-zinc-900 dark:text-white shadow-sm" : "text-zinc-500")}>V{idx+1}</button>
                     ))}
                   </div>
                 </div>
                 
-                <div className="flex gap-2 mb-3 overflow-x-auto custom-scrollbar pb-1">
+                <div className="flex gap-2.5 mb-4 overflow-x-auto custom-scrollbar pb-1.5">
                   {templates.map(t => (
-                    <button key={t.id} onClick={() => { setActiveTemplateId(t.id); setActiveVariationIndex(0); }} className={cn("px-4 py-1.5 rounded-full text-[10px] font-bold transition-all whitespace-nowrap", activeTemplateId === t.id ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900" : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-700")}>{t.name}</button>
+                    <button key={t.id} onClick={() => { setActiveTemplateId(t.id); setActiveVariationIndex(0); }} className={cn("px-5 py-2 rounded-full text-[11px] font-bold transition-all whitespace-nowrap", activeTemplateId === t.id ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900" : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-700")}>{t.name}</button>
                   ))}
                 </div>
 
-                <textarea value={currentTemplateText} onChange={(e) => updateActiveTemplateText(e.target.value)} className="w-full flex-1 min-h-[140px] p-4 text-sm bg-zinc-50 dark:bg-zinc-950 border-none rounded-xl focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all resize-none dark:text-zinc-200 custom-scrollbar" placeholder="Tulis template..." />
+                <textarea value={currentTemplateText} onChange={(e) => updateActiveTemplateText(e.target.value)} className="w-full flex-1 min-h-[160px] p-5 text-sm bg-zinc-50 dark:bg-zinc-950 border-none rounded-2xl focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all resize-none dark:text-zinc-200 custom-scrollbar leading-relaxed" placeholder="Tulis template..." />
                 
-                <div className="mt-3 flex flex-wrap gap-1.5">
+                <div className="mt-4 flex flex-wrap gap-2">
                   {['{salam}', '{pengirim}', '{nama}', '{barang}', '{resi}', '{cod}', '{dfod}', '{if_cod}...{/if_cod}'].map(tag => (
-                    <button key={tag} onClick={() => updateActiveTemplateText(currentTemplateText + ' ' + (tag.includes('...') ? '{if_cod}{/if_cod}' : tag))} className="text-[9px] font-mono font-bold px-2 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 active:scale-95 transition-all">{tag}</button>
+                    <button key={tag} onClick={() => updateActiveTemplateText(currentTemplateText + ' ' + (tag.includes('...') ? '{if_cod}{/if_cod}' : tag))} className="text-[10px] font-mono font-bold px-3 py-1.5 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 active:scale-95 transition-all">{tag}</button>
                   ))}
                 </div>
               </div>
@@ -779,73 +780,73 @@ export default function App() {
             </div>
 
             {/* Bottom Row: Table */}
-            <div className="flex-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[2rem] shadow-sm flex flex-col overflow-hidden min-h-[400px]">
-              <div className="px-6 py-4 border-b border-zinc-100 dark:border-zinc-800/80 flex items-center justify-between bg-zinc-50/50 dark:bg-zinc-900/50">
-                <div className="flex items-center gap-3">
+            <div className="flex-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[2rem] shadow-sm flex flex-col overflow-hidden min-h-[450px]">
+              <div className="px-8 py-5 border-b border-zinc-100 dark:border-zinc-800/80 flex items-center justify-between bg-zinc-50/50 dark:bg-zinc-900/50">
+                <div className="flex items-center gap-4">
                   <h2 className="font-bold text-sm dark:text-white uppercase tracking-widest">Queue Data</h2>
-                  <span className="px-2 py-0.5 bg-zinc-200 dark:bg-zinc-800 text-[10px] font-bold text-zinc-600 dark:text-zinc-400 rounded-md">{filteredEntries.length} items</span>
+                  <span className="px-3 py-1 bg-zinc-200 dark:bg-zinc-800 text-[11px] font-bold text-zinc-600 dark:text-zinc-400 rounded-lg">{filteredEntries.length} items</span>
                 </div>
-                <div className="flex gap-2">
-                  <button onClick={() => setShowPreviewModal(true)} disabled={entries.filter(e => e.status === 'pending').length === 0} className="px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all disabled:opacity-50">Preview Next</button>
+                <div className="flex gap-3">
+                  <button onClick={() => setShowPreviewModal(true)} disabled={entries.filter(e => e.status === 'pending').length === 0} className="px-5 py-2 text-[11px] font-bold uppercase tracking-wider bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 rounded-xl hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all disabled:opacity-50">Preview Next</button>
                   {isConfirmingClear ? (
-                    <div className="flex items-center gap-1">
-                      <button onClick={clearAll} className="px-3 py-1.5 text-[10px] font-bold uppercase bg-red-500 text-white rounded-lg">Yes, Clear</button>
-                      <button onClick={() => setIsConfirmingClear(false)} className="px-3 py-1.5 text-[10px] font-bold uppercase bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300 rounded-lg">Cancel</button>
+                    <div className="flex items-center gap-2">
+                      <button onClick={clearAll} className="px-4 py-2 text-[11px] font-bold uppercase bg-red-500 text-white rounded-xl">Yes, Clear</button>
+                      <button onClick={() => setIsConfirmingClear(false)} className="px-4 py-2 text-[11px] font-bold uppercase bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300 rounded-xl">Cancel</button>
                     </div>
                   ) : (
-                    <button onClick={() => setIsConfirmingClear(true)} className="px-3 py-1.5 text-[10px] font-bold uppercase bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 transition-all">Clear All</button>
+                    <button onClick={() => setIsConfirmingClear(true)} className="px-4 py-2 text-[11px] font-bold uppercase bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 rounded-xl hover:bg-red-100 transition-all">Clear All</button>
                   )}
                 </div>
               </div>
               
               <div className="flex-1 overflow-y-auto custom-scrollbar">
                 <table className="w-full text-left border-collapse">
-                  <thead className="sticky top-0 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-sm z-10 border-b border-zinc-100 dark:border-zinc-800">
+                  <thead className="sticky top-0 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-sm z-10 border-b border-zinc-100 dark:border-zinc-800">
                     <tr>
-                      <th className="px-6 py-3 text-[10px] font-black text-zinc-400 uppercase tracking-widest whitespace-nowrap">Penerima</th>
-                      <th className="px-6 py-3 text-[10px] font-black text-zinc-400 uppercase tracking-widest whitespace-nowrap">Detail Paket</th>
-                      <th className="px-6 py-3 text-[10px] font-black text-zinc-400 uppercase tracking-widest whitespace-nowrap">Status</th>
-                      <th className="px-6 py-3 text-[10px] font-black text-zinc-400 uppercase tracking-widest whitespace-nowrap text-right">Aksi</th>
+                      <th className="px-8 py-4 text-[11px] font-black text-zinc-400 uppercase tracking-widest whitespace-nowrap">Penerima</th>
+                      <th className="px-8 py-4 text-[11px] font-black text-zinc-400 uppercase tracking-widest whitespace-nowrap">Detail Paket</th>
+                      <th className="px-8 py-4 text-[11px] font-black text-zinc-400 uppercase tracking-widest whitespace-nowrap">Status</th>
+                      <th className="px-8 py-4 text-[11px] font-black text-zinc-400 uppercase tracking-widest whitespace-nowrap text-right">Aksi</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-50 dark:divide-zinc-800/50">
                     <AnimatePresence mode="popLayout">
                       {filteredEntries.length === 0 ? (
                         <motion.tr initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center">
-                          <td colSpan={4} className="px-6 py-20 text-zinc-400 dark:text-zinc-600 text-sm font-medium">Antrean kosong.</td>
+                          <td colSpan={4} className="px-8 py-24 text-zinc-400 dark:text-zinc-600 text-sm font-medium">Antrean kosong.</td>
                         </motion.tr>
                       ) : (
                         filteredEntries.map((entry, index) => (
                           <motion.tr key={entry.id} layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }} className={cn("group hover:bg-zinc-50 dark:hover:bg-zinc-800/30 transition-colors", isBlasting && index === currentIndex && "bg-emerald-50/50 dark:bg-emerald-500/5")}>
-                            <td className="px-6 py-4">
+                            <td className="px-8 py-5">
                               <div className="font-bold text-sm text-zinc-900 dark:text-zinc-100">{entry.recipientName}</div>
-                              <div className="text-[11px] text-zinc-500 font-mono mt-0.5">{entry.phone}</div>
+                              <div className="text-[11px] text-zinc-500 font-mono mt-1">{entry.phone}</div>
                             </td>
-                            <td className="px-6 py-4">
-                              <div className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 truncate max-w-[250px]">{entry.itemName || '-'}</div>
-                              <div className="flex flex-col gap-1 mt-1">
-                                <div className="text-[10px] text-zinc-400 font-mono">Resi: {entry.receiptNumber || '-'}</div>
+                            <td className="px-8 py-5">
+                              <div className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 truncate max-w-[280px]">{entry.itemName || '-'}</div>
+                              <div className="flex flex-col gap-1.5 mt-1.5">
+                                <div className="text-[11px] text-zinc-400 font-mono">Resi: {entry.receiptNumber || '-'}</div>
                                 <div className="flex gap-2">
-                                  {entry.cod && <div className="text-[9px] bg-amber-100/50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded font-bold uppercase tracking-wider">COD: Rp {formatCurrency(entry.cod)}</div>}
-                                  {entry.dfod && <div className="text-[9px] bg-blue-100/50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded font-bold uppercase tracking-wider">DFOD: Rp {formatCurrency(entry.dfod)}</div>}
+                                  {entry.cod && <div className="text-[10px] bg-amber-100/50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 px-2.5 py-0.5 rounded-md font-bold uppercase tracking-wider">COD: Rp {formatCurrency(entry.cod)}</div>}
+                                  {entry.dfod && <div className="text-[10px] bg-blue-100/50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 px-2.5 py-0.5 rounded-md font-bold uppercase tracking-wider">DFOD: Rp {formatCurrency(entry.dfod)}</div>}
                                 </div>
                               </div>
                             </td>
-                            <td className="px-6 py-4">
-                              <div className="flex flex-col gap-2 items-start">
-                                <div className={cn("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-widest", entry.status === 'sent' ? "bg-emerald-100/50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : entry.status === 'sending' ? "bg-blue-100/50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 animate-pulse" : entry.status === 'failed' ? "bg-red-100/50 dark:bg-red-500/10 text-red-600 dark:text-red-400" : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400")}>
-                                  {entry.status === 'sent' ? <CheckCircle2 size={10} /> : entry.status === 'sending' ? <Loader2 size={10} className="animate-spin" /> : entry.status === 'failed' ? <AlertCircle size={10} /> : <Clock size={10} />} {entry.status}
+                            <td className="px-8 py-5">
+                              <div className="flex flex-col gap-2.5 items-start">
+                                <div className={cn("inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest", entry.status === 'sent' ? "bg-emerald-100/50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : entry.status === 'sending' ? "bg-blue-100/50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 animate-pulse" : entry.status === 'failed' ? "bg-red-100/50 dark:bg-red-500/10 text-red-600 dark:text-red-400" : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400")}>
+                                  {entry.status === 'sent' ? <CheckCircle2 size={12} /> : entry.status === 'sending' ? <Loader2 size={12} className="animate-spin" /> : entry.status === 'failed' ? <AlertCircle size={12} /> : <Clock size={12} />} {entry.status}
                                 </div>
-                                <button onClick={() => toggleReceived(entry.id)} className={cn("text-[9px] font-bold uppercase tracking-wider flex items-center gap-1.5 transition-colors", entry.isReceived ? "text-emerald-500" : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300")}>
-                                  <div className={cn("w-3 h-3 rounded-full border flex items-center justify-center", entry.isReceived ? "border-emerald-500 bg-emerald-500" : "border-zinc-300 dark:border-zinc-600")}>{entry.isReceived && <CheckCircle2 size={8} className="text-white" strokeWidth={4} />}</div>
+                                <button onClick={() => toggleReceived(entry.id)} className={cn("text-[10px] font-bold uppercase tracking-wider flex items-center gap-2 transition-colors", entry.isReceived ? "text-emerald-500" : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300")}>
+                                  <div className={cn("w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center", entry.isReceived ? "border-emerald-500 bg-emerald-500" : "border-zinc-300 dark:border-zinc-600")}>{entry.isReceived && <CheckCircle2 size={8} className="text-white" strokeWidth={4} />}</div>
                                   Diterima
                                 </button>
                               </div>
                             </td>
-                            <td className="px-6 py-4 text-right">
-                              <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button onClick={() => handleSendManual(entry)} className="p-2 bg-zinc-50 dark:bg-zinc-800 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/20 rounded-lg transition-all"><ExternalLink size={14} /></button>
-                                <button onClick={() => setEntries(prev => prev.filter(e => e.id !== entry.id))} className="p-2 bg-zinc-50 dark:bg-zinc-800 text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-all"><Trash2 size={14} /></button>
+                            <td className="px-8 py-5 text-right">
+                              <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button onClick={() => handleSendManual(entry)} className="p-2.5 bg-zinc-100 dark:bg-zinc-800 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/20 rounded-xl transition-all"><ExternalLink size={16} /></button>
+                                <button onClick={() => setEntries(prev => prev.filter(e => e.id !== entry.id))} className="p-2.5 bg-zinc-100 dark:bg-zinc-800 text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-all"><Trash2 size={16} /></button>
                               </div>
                             </td>
                           </motion.tr>
@@ -864,17 +865,17 @@ export default function App() {
       {/* MODALS (Bulk & Preview & Settings) */}
       <AnimatePresence>
         {showBulkModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-8">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowBulkModal(false)} className="absolute inset-0 bg-zinc-950/60 backdrop-blur-sm" />
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="relative w-full max-w-2xl bg-white dark:bg-zinc-900 rounded-[2rem] shadow-2xl overflow-hidden border border-zinc-200 dark:border-zinc-800 flex flex-col">
-              <div className="p-6 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
-                <div><h2 className="text-lg font-black dark:text-white">Bulk Import</h2><p className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Copy-paste dari Excel</p></div>
-                <button onClick={() => setShowBulkModal(false)} className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full"><X size={20} className="text-zinc-500" /></button>
+              <div className="p-8 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
+                <div><h2 className="text-xl font-black dark:text-white">Bulk Import</h2><p className="text-[11px] text-zinc-500 uppercase tracking-widest font-bold mt-1">Copy-paste dari Excel</p></div>
+                <button onClick={() => setShowBulkModal(false)} className="p-3 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full"><X size={20} className="text-zinc-500" /></button>
               </div>
-              <div className="p-6 space-y-4">
-                <div className="text-xs font-mono bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 p-3 rounded-xl border border-emerald-100 dark:border-emerald-500/20">Format: No | Resi | Nama | HP | Alamat | Tanda | Val COD | Val DFOD | Barang</div>
-                <textarea value={bulkData} onChange={(e) => setBulkData(e.target.value)} placeholder="Paste data Excel di sini..." className="w-full h-64 p-4 text-sm font-mono bg-zinc-50 dark:bg-zinc-950 border-none rounded-2xl focus:ring-2 focus:ring-emerald-500/20 outline-none resize-none dark:text-zinc-300 custom-scrollbar" />
-                <button onClick={handleBulkImport} className="w-full py-4 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-xl font-bold active:scale-[0.98] transition-all">Import Data</button>
+              <div className="p-8 space-y-5">
+                <div className="text-xs font-mono bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 p-4 rounded-xl border border-emerald-100 dark:border-emerald-500/20 leading-relaxed">Format Kolom: No | Resi | Nama | HP | Alamat | Tanda | Val COD | Val DFOD | Barang</div>
+                <textarea value={bulkData} onChange={(e) => setBulkData(e.target.value)} placeholder="Paste data Excel di sini..." className="w-full h-64 p-5 text-sm font-mono bg-zinc-50 dark:bg-zinc-950 border-none rounded-2xl focus:ring-2 focus:ring-emerald-500/20 outline-none resize-none dark:text-zinc-300 custom-scrollbar leading-relaxed" />
+                <button onClick={handleBulkImport} className="w-full py-4 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-xl font-bold active:scale-[0.98] transition-all text-sm">Import Data</button>
               </div>
             </motion.div>
           </div>
@@ -883,25 +884,25 @@ export default function App() {
 
       <AnimatePresence>
         {showPreviewModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-8">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowPreviewModal(false)} className="absolute inset-0 bg-zinc-950/60 backdrop-blur-sm" />
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="relative w-full max-w-sm bg-white dark:bg-zinc-900 rounded-[2rem] shadow-2xl overflow-hidden border border-zinc-200 dark:border-zinc-800">
-              <div className="p-6 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
-                <div><h2 className="text-lg font-black dark:text-white">Preview</h2><p className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">First Item</p></div>
-                <button onClick={() => setShowPreviewModal(false)} className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full"><X size={20} className="text-zinc-500" /></button>
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="relative w-full max-w-md bg-white dark:bg-zinc-900 rounded-[2rem] shadow-2xl overflow-hidden border border-zinc-200 dark:border-zinc-800">
+              <div className="p-8 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
+                <div><h2 className="text-xl font-black dark:text-white">Preview</h2><p className="text-[11px] text-zinc-500 uppercase tracking-widest font-bold mt-1">First Item</p></div>
+                <button onClick={() => setShowPreviewModal(false)} className="p-3 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full"><X size={20} className="text-zinc-500" /></button>
               </div>
-              <div className="p-6">
+              <div className="p-8">
                 {entries.find(e => e.status === 'pending') ? (
-                  <div className="space-y-4">
-                    <div className="p-4 bg-zinc-50 dark:bg-zinc-950 rounded-2xl text-sm whitespace-pre-wrap dark:text-zinc-300 border border-zinc-100 dark:border-zinc-800 max-h-[40vh] overflow-y-auto custom-scrollbar">
+                  <div className="space-y-5">
+                    <div className="p-5 bg-zinc-50 dark:bg-zinc-950 rounded-2xl text-sm whitespace-pre-wrap dark:text-zinc-300 border border-zinc-100 dark:border-zinc-800 max-h-[40vh] overflow-y-auto custom-scrollbar leading-relaxed">
                       {generateMessage(entries.find(e => e.status === 'pending')!, settings.rotateTemplates ? (activeTemplate.variations?.[entries.filter(e => e.status === 'sent').length % (activeTemplate.variations?.length || 1)] || activeTemplate.text) : activeTemplate.text)}
                     </div>
                     <button onClick={() => {
                       const entry = entries.find(e => e.status === 'pending');
                       if (entry) { window.open(getWALink(entry, entries.filter(e => e.status === 'sent').length), 'WAsenderTab'); updateStatus(entry.id, 'sent'); setShowPreviewModal(false); }
-                    }} className="w-full py-4 bg-emerald-500 text-white rounded-xl font-bold flex items-center justify-center gap-2 active:scale-[0.98] transition-all"><Send size={16} /> Send Now</button>
+                    }} className="w-full py-4 bg-emerald-500 text-white rounded-xl font-bold flex items-center justify-center gap-2 active:scale-[0.98] transition-all text-sm"><Send size={18} /> Send Now</button>
                   </div>
-                ) : <div className="text-center py-8 text-zinc-500 text-sm">No pending entries.</div>}
+                ) : <div className="text-center py-10 text-zinc-500 text-sm">No pending entries.</div>}
               </div>
             </motion.div>
           </div>
@@ -910,27 +911,27 @@ export default function App() {
 
       <AnimatePresence>
         {showSettingsModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-8">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowSettingsModal(false)} className="absolute inset-0 bg-zinc-950/60 backdrop-blur-sm" />
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="relative w-full max-w-md bg-white dark:bg-zinc-900 rounded-[2rem] shadow-2xl overflow-hidden border border-zinc-200 dark:border-zinc-800 flex flex-col max-h-[90vh]">
-              <div className="p-6 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between shrink-0">
-                <div><h2 className="text-lg font-black dark:text-white">Settings</h2><p className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Engine Config</p></div>
-                <button onClick={() => setShowSettingsModal(false)} className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full"><X size={20} className="text-zinc-500" /></button>
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="relative w-full max-w-lg bg-white dark:bg-zinc-900 rounded-[2.5rem] shadow-2xl overflow-hidden border border-zinc-200 dark:border-zinc-800 flex flex-col max-h-[90vh]">
+              <div className="p-8 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between shrink-0">
+                <div><h2 className="text-xl font-black dark:text-white">Settings</h2><p className="text-[11px] text-zinc-500 uppercase tracking-widest font-bold mt-1">Engine Config</p></div>
+                <button onClick={() => setShowSettingsModal(false)} className="p-3 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full"><X size={20} className="text-zinc-500" /></button>
               </div>
-              <div className="flex px-6 pt-4 gap-6 border-b border-zinc-100 dark:border-zinc-800 shrink-0">
-                <button onClick={() => setActiveSettingsTab('general')} className={cn("pb-3 text-[11px] font-black uppercase tracking-widest transition-all relative", activeSettingsTab === 'general' ? "text-emerald-500" : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300")}>
+              <div className="flex px-8 pt-5 gap-8 border-b border-zinc-100 dark:border-zinc-800 shrink-0">
+                <button onClick={() => setActiveSettingsTab('general')} className={cn("pb-4 text-[12px] font-black uppercase tracking-widest transition-all relative", activeSettingsTab === 'general' ? "text-emerald-500" : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300")}>
                   General {activeSettingsTab === 'general' && <motion.div layoutId="tab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-500 rounded-t-full" />}
                 </button>
-                <button onClick={() => setActiveSettingsTab('antispam')} className={cn("pb-3 text-[11px] font-black uppercase tracking-widest transition-all relative", activeSettingsTab === 'antispam' ? "text-emerald-500" : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300")}>
+                <button onClick={() => setActiveSettingsTab('antispam')} className={cn("pb-4 text-[12px] font-black uppercase tracking-widest transition-all relative", activeSettingsTab === 'antispam' ? "text-emerald-500" : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300")}>
                   Anti-Spam {activeSettingsTab === 'antispam' && <motion.div layoutId="tab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-500 rounded-t-full" />}
                 </button>
               </div>
-              <div className="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-5">
+              <div className="p-8 overflow-y-auto custom-scrollbar flex-1 space-y-6">
                 {activeSettingsTab === 'antispam' ? (
                   <>
-                    <div className="p-5 bg-zinc-50 dark:bg-zinc-950 rounded-2xl border border-zinc-100 dark:border-zinc-800">
-                      <div className="flex items-center justify-between mb-2"><span className="text-[11px] font-bold text-zinc-500 uppercase">Safety Score</span><span className={cn("font-black", safetyScore > 80 ? "text-emerald-500" : safetyScore > 50 ? "text-amber-500" : "text-red-500")}>{safetyScore}%</span></div>
-                      <div className="h-1.5 w-full bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden"><motion.div initial={{ width: 0 }} animate={{ width: `${safetyScore}%` }} className={cn("h-full", safetyScore > 80 ? "bg-emerald-500" : safetyScore > 50 ? "bg-amber-500" : "bg-red-500")} /></div>
+                    <div className="p-6 bg-zinc-50 dark:bg-zinc-950 rounded-[1.5rem] border border-zinc-100 dark:border-zinc-800">
+                      <div className="flex items-center justify-between mb-3"><span className="text-xs font-bold text-zinc-500 uppercase">Safety Score</span><span className={cn("font-black text-lg", safetyScore > 80 ? "text-emerald-500" : safetyScore > 50 ? "text-amber-500" : "text-red-500")}>{safetyScore}%</span></div>
+                      <div className="h-2 w-full bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden mb-2"><motion.div initial={{ width: 0 }} animate={{ width: `${safetyScore}%` }} className={cn("h-full", safetyScore > 80 ? "bg-emerald-500" : safetyScore > 50 ? "bg-amber-500" : "bg-red-500")} /></div>
                     </div>
                     {[
                       { key: 'shuffleQueue', label: 'Shuffle Queue', desc: 'Acak daftar agar tidak linier.' },
@@ -945,18 +946,18 @@ export default function App() {
                       { key: 'useGlobalSpintax', label: 'Spintax Engine', desc: 'Aktifkan format {A|B}.' }
                     ].map(item => (
                       <div key={item.key} className="flex items-center justify-between">
-                        <div><div className="text-sm font-bold dark:text-white">{item.label}</div><div className="text-[10px] text-zinc-500">{item.desc}</div></div>
-                        <button onClick={() => setSettings(prev => ({ ...prev, [item.key]: !prev[item.key as keyof AppSettings] }))} className={cn("w-10 h-6 rounded-full transition-all relative", settings[item.key as keyof AppSettings] ? "bg-emerald-500" : "bg-zinc-200 dark:bg-zinc-700")}><div className={cn("absolute top-1 w-4 h-4 bg-white rounded-full transition-all", settings[item.key as keyof AppSettings] ? "left-5" : "left-1")} /></button>
+                        <div><div className="text-sm font-bold dark:text-white mb-0.5">{item.label}</div><div className="text-[11px] text-zinc-500">{item.desc}</div></div>
+                        <button onClick={() => setSettings(prev => ({ ...prev, [item.key]: !prev[item.key as keyof AppSettings] }))} className={cn("w-12 h-7 rounded-full transition-all relative", settings[item.key as keyof AppSettings] ? "bg-emerald-500" : "bg-zinc-200 dark:bg-zinc-700")}><div className={cn("absolute top-1 w-5 h-5 bg-white rounded-full transition-all", settings[item.key as keyof AppSettings] ? "left-6" : "left-1")} /></button>
                       </div>
                     ))}
                   </>
                 ) : (
                   <>
-                    <div className="space-y-1.5"><label className="text-[10px] font-bold text-zinc-500 uppercase">Nama Pengirim Default</label><input type="text" value={settings.senderName} onChange={(e) => setSettings(prev => ({ ...prev, senderName: e.target.value }))} className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-950 border-none rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/20 outline-none dark:text-white" /></div>
-                    <div className="space-y-2"><label className="text-[10px] font-bold text-zinc-500 uppercase">Speed Preset</label><div className="grid grid-cols-2 gap-2">{[{id:'safe', label:'Safe'},{id:'normal', label:'Normal'},{id:'fast', label:'Fast'},{id:'turbo', label:'Turbo'},{id:'custom', label:'Custom'}].map(m => <button key={m.id} onClick={() => setSettings(prev => ({ ...prev, speedMode: m.id as any }))} className={cn("py-2.5 rounded-xl text-xs font-bold transition-all border", settings.speedMode === m.id ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 border-transparent" : "bg-transparent border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800")}>{m.label}</button>)}</div></div>
-                    {settings.speedMode === 'custom' && <div className="space-y-1.5"><label className="text-[10px] font-bold text-zinc-500 uppercase">Custom Delay (ms)</label><input type="number" value={settings.delay} onChange={(e) => setSettings(prev => ({ ...prev, delay: parseInt(e.target.value) || 1000 }))} className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-950 border-none rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/20 outline-none dark:text-white" step="500" /></div>}
+                    <div className="space-y-2"><label className="text-[11px] font-bold text-zinc-500 uppercase tracking-widest ml-1">Nama Pengirim Default</label><input type="text" value={settings.senderName} onChange={(e) => setSettings(prev => ({ ...prev, senderName: e.target.value }))} className="w-full px-5 py-4 bg-zinc-50 dark:bg-zinc-950 border-none rounded-2xl text-sm focus:ring-2 focus:ring-emerald-500/20 outline-none dark:text-white" /></div>
+                    <div className="space-y-3"><label className="text-[11px] font-bold text-zinc-500 uppercase tracking-widest ml-1">Speed Preset</label><div className="grid grid-cols-2 gap-3">{[{id:'safe', label:'Safe'},{id:'normal', label:'Normal'},{id:'fast', label:'Fast'},{id:'turbo', label:'Turbo'},{id:'custom', label:'Custom'}].map(m => <button key={m.id} onClick={() => setSettings(prev => ({ ...prev, speedMode: m.id as any }))} className={cn("py-3.5 rounded-2xl text-xs font-bold transition-all border", settings.speedMode === m.id ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 border-transparent" : "bg-transparent border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800")}>{m.label}</button>)}</div></div>
+                    {settings.speedMode === 'custom' && <div className="space-y-2"><label className="text-[11px] font-bold text-zinc-500 uppercase tracking-widest ml-1">Custom Delay (ms)</label><input type="number" value={settings.delay} onChange={(e) => setSettings(prev => ({ ...prev, delay: parseInt(e.target.value) || 1000 }))} className="w-full px-5 py-4 bg-zinc-50 dark:bg-zinc-950 border-none rounded-2xl text-sm focus:ring-2 focus:ring-emerald-500/20 outline-none dark:text-white" step="500" /></div>}
                     
-                    <div className="pt-2 border-t border-zinc-100 dark:border-zinc-800 space-y-4">
+                    <div className="pt-4 border-t border-zinc-100 dark:border-zinc-800 space-y-5">
                       {[
                         { key: 'manualMode', label: 'Manual Mode', desc: 'Kirim saat tekan Spasi.' },
                         { key: 'autoRetry', label: 'Auto Retry', desc: 'Ulangi jika gagal.' },
@@ -964,22 +965,22 @@ export default function App() {
                         { key: 'randomizeDelay', label: 'Randomize Delay', desc: 'Acak waktu jeda.' }
                       ].map(item => (
                         <div key={item.key} className="flex items-center justify-between">
-                          <div><div className="text-sm font-bold dark:text-white">{item.label}</div><div className="text-[10px] text-zinc-500">{item.desc}</div></div>
-                          <button onClick={() => setSettings(prev => ({ ...prev, [item.key]: !prev[item.key as keyof AppSettings] }))} className={cn("w-10 h-6 rounded-full transition-all relative", settings[item.key as keyof AppSettings] ? "bg-emerald-500" : "bg-zinc-200 dark:bg-zinc-700")}><div className={cn("absolute top-1 w-4 h-4 bg-white rounded-full transition-all", settings[item.key as keyof AppSettings] ? "left-5" : "left-1")} /></button>
+                          <div><div className="text-sm font-bold dark:text-white mb-0.5">{item.label}</div><div className="text-[11px] text-zinc-500">{item.desc}</div></div>
+                          <button onClick={() => setSettings(prev => ({ ...prev, [item.key]: !prev[item.key as keyof AppSettings] }))} className={cn("w-12 h-7 rounded-full transition-all relative", settings[item.key as keyof AppSettings] ? "bg-emerald-500" : "bg-zinc-200 dark:bg-zinc-700")}><div className={cn("absolute top-1 w-5 h-5 bg-white rounded-full transition-all", settings[item.key as keyof AppSettings] ? "left-6" : "left-1")} /></button>
                         </div>
                       ))}
                     </div>
                     
-                    <div className="grid grid-cols-2 gap-3 pt-2">
-                      <div className="space-y-1.5"><label className="text-[10px] font-bold text-zinc-500 uppercase">Batch Size</label><input type="number" value={settings.batchSize} onChange={(e) => setSettings(prev => ({ ...prev, batchSize: parseInt(e.target.value) || 0 }))} className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-950 border-none rounded-lg text-xs outline-none dark:text-white" /></div>
-                      <div className="space-y-1.5"><label className="text-[10px] font-bold text-zinc-500 uppercase">Batch Pause (ms)</label><input type="number" value={settings.batchPause} onChange={(e) => setSettings(prev => ({ ...prev, batchPause: parseInt(e.target.value) || 0 }))} className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-950 border-none rounded-lg text-xs outline-none dark:text-white" /></div>
-                      <div className="space-y-1.5"><label className="text-[10px] font-bold text-zinc-500 uppercase">Hourly Lmt</label><input type="number" value={settings.hourlyLimit} onChange={(e) => setSettings(prev => ({ ...prev, hourlyLimit: parseInt(e.target.value) || 0 }))} className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-950 border-none rounded-lg text-xs outline-none dark:text-white" /></div>
-                      <div className="space-y-1.5"><label className="text-[10px] font-bold text-zinc-500 uppercase">Error Lmt</label><input type="number" value={settings.stopOnConsecutiveErrors} onChange={(e) => setSettings(prev => ({ ...prev, stopOnConsecutiveErrors: parseInt(e.target.value) || 0 }))} className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-950 border-none rounded-lg text-xs outline-none dark:text-white" /></div>
+                    <div className="grid grid-cols-2 gap-4 pt-4">
+                      <div className="space-y-2"><label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest ml-1">Batch Size</label><input type="number" value={settings.batchSize} onChange={(e) => setSettings(prev => ({ ...prev, batchSize: parseInt(e.target.value) || 0 }))} className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-950 border-none rounded-xl text-sm outline-none dark:text-white" /></div>
+                      <div className="space-y-2"><label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest ml-1">Pause (ms)</label><input type="number" value={settings.batchPause} onChange={(e) => setSettings(prev => ({ ...prev, batchPause: parseInt(e.target.value) || 0 }))} className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-950 border-none rounded-xl text-sm outline-none dark:text-white" /></div>
+                      <div className="space-y-2"><label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest ml-1">Hourly Lmt</label><input type="number" value={settings.hourlyLimit} onChange={(e) => setSettings(prev => ({ ...prev, hourlyLimit: parseInt(e.target.value) || 0 }))} className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-950 border-none rounded-xl text-sm outline-none dark:text-white" /></div>
+                      <div className="space-y-2"><label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest ml-1">Error Lmt</label><input type="number" value={settings.stopOnConsecutiveErrors} onChange={(e) => setSettings(prev => ({ ...prev, stopOnConsecutiveErrors: parseInt(e.target.value) || 0 }))} className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-950 border-none rounded-xl text-sm outline-none dark:text-white" /></div>
                     </div>
                   </>
                 )}
               </div>
-              <div className="p-4 shrink-0"><button onClick={() => setShowSettingsModal(false)} className="w-full py-4 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-xl font-bold active:scale-[0.98] transition-all">Save Config</button></div>
+              <div className="p-6 shrink-0"><button onClick={() => setShowSettingsModal(false)} className="w-full py-4 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-2xl font-bold active:scale-[0.98] transition-all text-sm">Save Config</button></div>
             </motion.div>
           </div>
         )}
