@@ -986,11 +986,11 @@ export default function App() {
                   <div className="grid grid-cols-2 gap-3">
                     <div className="p-4 rounded-[var(--r)] border-2" style={{borderColor:'var(--acid)',background:'var(--acid)20'}}>
                       <div className="text-[9px] font-black uppercase tracking-widest mb-1.5" style={{color:'var(--ink)'}}>Step 1</div>
-                      <p className="text-[10px] leading-relaxed" style={{fontFamily:"'DM Mono',monospace",color:'var(--muted)"}}>Kolom: No, Resi, Nama, HP, Alamat, Tanda, COD, DFOD, Barang</p>
+                      <p className="text-[10px] leading-relaxed" style={{fontFamily:"'DM Mono',monospace",color:'var(--muted)'}}>Kolom: No, Resi, Nama, HP, Alamat, Tanda, COD, DFOD, Barang</p>
                     </div>
                     <div className="p-4 rounded-[var(--r)] border-2" style={{borderColor:'var(--orange)',background:'var(--orange)15'}}>
                       <div className="text-[9px] font-black uppercase tracking-widest mb-1.5" style={{color:'var(--orange)'}}>Step 2</div>
-                      <p className="text-[10px] leading-relaxed" style={{fontFamily:"'DM Mono',monospace",color:'var(--muted)"}}>Copy range dari Excel & Paste ke textarea di bawah</p>
+                      <p className="text-[10px] leading-relaxed" style={{fontFamily:"'DM Mono',monospace",color:'var(--muted)'}}>Copy range dari Excel & Paste ke textarea di bawah</p>
                     </div>
                   </div>
                   <textarea value={bulkData} onChange={e=>setBulkData(e.target.value)}
