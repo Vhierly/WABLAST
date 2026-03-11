@@ -6,7 +6,7 @@ import {
   Sun, RotateCcw, Shield, Puzzle, Loader2, Zap, Terminal, Palette, Lock
 } from 'lucide-react';
 import { Toaster, toast } from 'react-hot-toast';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion'; // <-- Diubah agar kompatibel dengan semua versi
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { 
@@ -27,6 +27,16 @@ const formatCurrency = (val: string) => {
   return isNaN(num) ? val : new Intl.NumberFormat('id-ID').format(num);
 };
 
+// Safe Local Storage Wrapper (Mencegah Layar Putih)
+const getSafeStorage = (key: string, fallback: string | null = null) => {
+  if (typeof window === 'undefined') return fallback;
+  try {
+    return localStorage.getItem(key) ?? fallback;
+  } catch (e) {
+    return fallback;
+  }
+};
+
 export default function App() {
   const [entries, setEntries] = useState<BlastEntry[]>([]);
   const [templates, setTemplates] = useState<MessageTemplate[]>(DEFAULT_TEMPLATES);
@@ -44,7 +54,7 @@ export default function App() {
   const [showThemeModal, setShowThemeModal] = useState(false);
   const [themePassword, setThemePassword] = useState('');
   const [isNeoBrutalism, setIsNeoBrutalism] = useState(() => {
-    return localStorage.getItem('wa_blast_neo') === 'true';
+    return getSafeStorage('wa_blast_neo') === 'true';
   });
 
   const [activeSettingsTab, setActiveSettingsTab] = useState<'general' | 'antispam'>('general');
@@ -60,7 +70,8 @@ export default function App() {
   const [lastHourReset, setLastHourReset] = useState(Date.now());
   const [isLongBreak, setIsLongBreak] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(() => {
-    const saved = localStorage.getItem('wa_blast_theme');
+    const saved = getSafeStorage('wa_blast_theme');
+    if (typeof window === 'undefined') return false;
     return saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches);
   });
   const [nextActionTime, setNextActionTime] = useState(0);
@@ -72,6 +83,7 @@ export default function App() {
   const waWindowRef = useRef<Window | null>(null);
 
   const openInSameTab = (link: string) => {
+    if (typeof window === 'undefined') return null;
     if (waWindowRef.current && !waWindowRef.current.closed) {
       try {
         waWindowRef.current.location.replace(link);
@@ -88,10 +100,10 @@ export default function App() {
   };
 
   useEffect(() => {
-    const savedEntries = localStorage.getItem('wa_blast_entries');
-    const savedTemplates = localStorage.getItem('wa_blast_templates');
-    const savedActiveId = localStorage.getItem('wa_blast_active_template_id');
-    const savedSettings = localStorage.getItem('wa_blast_settings');
+    const savedEntries = getSafeStorage('wa_blast_entries');
+    const savedTemplates = getSafeStorage('wa_blast_templates');
+    const savedActiveId = getSafeStorage('wa_blast_active_template_id');
+    const savedSettings = getSafeStorage('wa_blast_settings');
     
     if (savedEntries) setEntries(JSON.parse(savedEntries));
     if (savedTemplates) {
@@ -106,13 +118,14 @@ export default function App() {
     if (savedSettings) setSettings(JSON.parse(savedSettings));
   }, []);
 
-  useEffect(() => localStorage.setItem('wa_blast_entries', JSON.stringify(entries)), [entries]);
-  useEffect(() => localStorage.setItem('wa_blast_templates', JSON.stringify(templates)), [templates]);
-  useEffect(() => localStorage.setItem('wa_blast_active_template_id', activeTemplateId), [activeTemplateId]);
-  useEffect(() => localStorage.setItem('wa_blast_settings', JSON.stringify(settings)), [settings]);
-  useEffect(() => localStorage.setItem('wa_blast_neo', isNeoBrutalism.toString()), [isNeoBrutalism]);
+  useEffect(() => { if (typeof window !== 'undefined') localStorage.setItem('wa_blast_entries', JSON.stringify(entries)); }, [entries]);
+  useEffect(() => { if (typeof window !== 'undefined') localStorage.setItem('wa_blast_templates', JSON.stringify(templates)); }, [templates]);
+  useEffect(() => { if (typeof window !== 'undefined') localStorage.setItem('wa_blast_active_template_id', activeTemplateId); }, [activeTemplateId]);
+  useEffect(() => { if (typeof window !== 'undefined') localStorage.setItem('wa_blast_settings', JSON.stringify(settings)); }, [settings]);
+  useEffect(() => { if (typeof window !== 'undefined') localStorage.setItem('wa_blast_neo', isNeoBrutalism.toString()); }, [isNeoBrutalism]);
   
   useEffect(() => {
+    if (typeof window === 'undefined') return;
     const theme = isDarkMode ? 'dark' : 'light';
     localStorage.setItem('wa_blast_theme', theme);
     if (isDarkMode && !isNeoBrutalism) {
@@ -130,7 +143,7 @@ export default function App() {
       setShowThemeModal(false);
       setThemePassword('');
       toast.success("CYBERPUNK BRUTALISM UNLOCKED! 👾⚡", { 
-        style: isNeoBrutalism ? { background: '#000', color: '#00FF41', border: '3px solid #00FF41', borderRadius: '0', boxShadow: '6px 6px 0px 0px #FF00E6' } : {}
+        style: { background: '#000', color: '#00FF41', border: '3px solid #00FF41', borderRadius: '0', boxShadow: '6px 6px 0px 0px #FF00E6' }
       });
     } else {
       toast.error("Akses Ditolak! Password salah.");
@@ -146,7 +159,7 @@ export default function App() {
   };
 
   const activeTemplate = templates.find(t => t.id === activeTemplateId) || templates[0];
-  const currentTemplateText = activeTemplate.variations?.[activeVariationIndex] || activeTemplate.text;
+  const currentTemplateText = activeTemplate?.variations?.[activeVariationIndex] || activeTemplate?.text || "";
 
   const updateActiveTemplateText = (text: string) => {
     setTemplates(prev => prev.map(t => {
@@ -237,14 +250,15 @@ export default function App() {
   };
 
   const generateMessage = (entry: BlastEntry, templateText?: string) => {
-    let text = templateText || activeTemplate.text;
+    if (!entry) return '';
+    let text = templateText || activeTemplate?.text || '';
     text = !entry.cod ? text.replace(/{if_cod}[\s\S]*?{\/if_cod}/gi, '') : text.replace(/{if_cod}/gi, '').replace(/{\/if_cod}/gi, '');
     text = !entry.dfod ? text.replace(/{if_dfod}[\s\S]*?{\/if_dfod}/gi, '') : text.replace(/{if_dfod}/gi, '').replace(/{\/if_dfod}/gi, '');
 
     let finalMessage = text
       .replace(/{salam}/gi, getGreeting())
       .replace(/{pengirim}/gi, settings.senderName || 'Admin')
-      .replace(/{nama}/gi, entry.recipientName)
+      .replace(/{nama}/gi, entry.recipientName || '')
       .replace(/{barang}/gi, entry.itemName || '-')
       .replace(/{resi}/gi, entry.receiptNumber || '-')
       .replace(/{alamat}/gi, entry.address || '-')
@@ -324,7 +338,7 @@ export default function App() {
     let currentDelay = settings.randomizeDelay || settings.speedMode !== 'custom' ? Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay : minDelay;
     if (useAdaptive) currentDelay += Math.floor(sentCount / 10) * 500;
 
-    if (useTyping) {
+    if (useTyping && entry) {
       let templateText = activeTemplate.text;
       if (settings.rotateTemplates) {
         const vars = activeTemplate.variations && activeTemplate.variations.length > 0 ? activeTemplate.variations : [activeTemplate.text];
@@ -335,7 +349,7 @@ export default function App() {
 
     if (settings.batchSize > 0 && sentCount >= nextBatchPauseAt && nextBatchPauseAt > 0) {
       currentDelay = settings.batchPause;
-      toast(`Anti-Spam: Istirahat sejenak selama ${settings.batchPause / 1000} detik...`, { icon: '🛡️', style: neo ? { background: '#000', color: '#FAFF00', border: '3px solid #FAFF00', borderRadius: '0', boxShadow: '6px 6px 0px 0px #FF00E6' } : {} });
+      toast(`Anti-Spam: Istirahat sejenak selama ${settings.batchPause / 1000} detik...`, { icon: '🛡️', style: isNeoBrutalism ? { background: '#000', color: '#FAFF00', border: '3px solid #FAFF00', borderRadius: '0', boxShadow: '6px 6px 0px 0px #FF00E6' } : undefined });
       setNextBatchPauseAt(sentCount + settings.batchSize + (Math.floor(Math.random() * 5) - 2));
     }
 
@@ -431,19 +445,19 @@ export default function App() {
             return currentEntries;
           });
         } else if (type === 'WA_WARNING_DETECTED') {
-          stopBlast(); addLog(`🚨 PERINGATAN SPAM OLEH WHATSAPP!`, 'error'); toast.error('PERINGATAN SPAM!', { icon: '🚨', style: neo ? { background: '#000', color: '#FF003C', border: '3px solid #FF003C', borderRadius: '0', boxShadow: '6px 6px 0px 0px #00F0FF' } : {} });
+          stopBlast(); addLog(`🚨 PERINGATAN SPAM OLEH WHATSAPP!`, 'error'); toast.error('PERINGATAN SPAM!', { icon: '🚨', style: isNeoBrutalism ? { background: '#000', color: '#FF003C', border: '3px solid #FF003C', borderRadius: '0', boxShadow: '6px 6px 0px 0px #00F0FF' } : undefined });
         }
       }
     };
 
-    window.addEventListener('message', handleExtensionMessage);
+    if (typeof window !== 'undefined') window.addEventListener('message', handleExtensionMessage);
     const heartbeatInterval = setInterval(() => {
       if (lastHeartbeat > 0 && Date.now() - lastHeartbeat > 20000 && isExtensionDetected) {
         setIsExtensionDetected(false); addLog(`🔌 Extension terputus`, 'warning');
       }
     }, 5000);
-    return () => { window.removeEventListener('message', handleExtensionMessage); clearInterval(heartbeatInterval); };
-  }, [lastHeartbeat, isExtensionDetected, settings.autoRetry, settings.maxRetries, settings.speedMode, neo]);
+    return () => { if (typeof window !== 'undefined') window.removeEventListener('message', handleExtensionMessage); clearInterval(heartbeatInterval); };
+  }, [lastHeartbeat, isExtensionDetected, settings.autoRetry, settings.maxRetries, settings.speedMode, isNeoBrutalism]);
 
   useEffect(() => {
     const handlePing = (event: MessageEvent) => {
@@ -452,16 +466,16 @@ export default function App() {
         setLastHeartbeat(Date.now());
       }
     };
-    window.addEventListener('message', handlePing);
+    if (typeof window !== 'undefined') window.addEventListener('message', handlePing);
     const checkAttr = () => {
-      if (document.documentElement.getAttribute('data-wasender-extension') === 'active') {
+      if (typeof document !== 'undefined' && document.documentElement.getAttribute('data-wasender-extension') === 'active') {
         if (!isExtensionDetected) { setIsExtensionDetected(true); addLog(`🔌 Extension aktif (DOM)`, 'success'); }
         setLastHeartbeat(Date.now());
       }
-      window.postMessage({ type: 'EXTENSION_PING' }, '*');
+      if (typeof window !== 'undefined') window.postMessage({ type: 'EXTENSION_PING' }, '*');
     };
     const attrInterval = setInterval(checkAttr, 2000); checkAttr();
-    return () => { window.removeEventListener('message', handlePing); clearInterval(attrInterval); };
+    return () => { if (typeof window !== 'undefined') window.removeEventListener('message', handlePing); clearInterval(attrInterval); };
   }, [isExtensionDetected]);
 
   useEffect(() => {
@@ -517,7 +531,8 @@ export default function App() {
         }
       }
     };
-    window.addEventListener('keydown', handleKeyDown); return () => window.removeEventListener('keydown', handleKeyDown);
+    if (typeof window !== 'undefined') window.addEventListener('keydown', handleKeyDown); 
+    return () => { if (typeof window !== 'undefined') window.removeEventListener('keydown', handleKeyDown); };
   }, [isBlasting, settings.manualMode, entries]);
 
   const filteredEntries = useMemo(() => {
@@ -563,7 +578,7 @@ export default function App() {
       {/* Secret Password Modal */}
       <AnimatePresence>
         {showThemeModal && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 backdrop-blur-sm bg-black/80">
+          <motion.div key="theme-modal" className="fixed inset-0 z-[200] flex items-center justify-center p-4 backdrop-blur-sm bg-black/80">
             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className={cn("p-8 w-full max-w-sm flex flex-col gap-5", neo ? "bg-black border-[3px] border-[#FF003C] shadow-[10px_10px_0px_0px_#00F0FF] text-[#00FF41]" : "bg-white dark:bg-zinc-900 rounded-[2rem] shadow-2xl border border-zinc-200 dark:border-zinc-800")}>
               <div className="flex justify-between items-center">
                 <h3 className={cn("font-black text-xl", neo ? "uppercase" : "dark:text-white")}>System Override</h3>
@@ -572,14 +587,14 @@ export default function App() {
               <input type="password" value={themePassword} onChange={e => setThemePassword(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleUnlockNeo()} placeholder="Enter Passcode..." className={cn("w-full px-5 py-4", tInput)} />
               <button onClick={handleUnlockNeo} className={cn("w-full py-4 text-sm flex items-center justify-center gap-2", tBtnPrimary)}><Lock size={16} /> UNLOCK</button>
             </motion.div>
-          </div>
+          </motion.div>
         )}
       </AnimatePresence>
 
       {/* FLOATING HUD WIDGET */}
       <AnimatePresence>
         {isBlasting && (
-          <motion.div 
+          <motion.div key="hud-widget"
             initial={{ opacity: 0, y: 50, scale: 0.9 }} 
             animate={{ opacity: 1, y: 0, scale: 1 }} 
             exit={{ opacity: 0, y: 20, scale: 0.9 }}
@@ -733,7 +748,7 @@ export default function App() {
                     <Pie data={statsData} innerRadius={neo ? 0 : 22} outerRadius={neo ? 30 : 32} paddingAngle={neo ? 0 : 5} dataKey="value" stroke={neo ? "#000" : "none"} strokeWidth={neo ? 2 : 0}>
                       {statsData.map((e, i) => <Cell key={i} fill={e.color} />)}
                     </Pie>
-                    <RechartsTooltip cursor={false} contentStyle={{ backgroundColor: neo ? '#000' : (isDarkMode ? '#18181b' : '#fff'), borderColor: neo ? '#00FF41' : (isDarkMode ? '#27272a' : '#e2e8f0'), borderWidth: neo ? '3px' : '1px', borderRadius: neo ? '0' : '12px', padding: '8px', fontSize: '10px', fontWeight: 'bold', color: neo ? '#fff' : '', boxShadow: neo ? '4px 4px 0px 0px #FF00E6' : '' }} />
+                    <RechartsTooltip cursor={false} contentStyle={{ backgroundColor: neo ? '#000' : (isDarkMode ? '#18181b' : '#fff'), borderColor: neo ? '#00FF41' : (isDarkMode ? '#27272a' : '#e2e8f0'), borderWidth: neo ? '3px' : '1px', borderRadius: neo ? '0' : '12px', padding: '8px', fontSize: '10px', fontWeight: 'bold', color: neo ? '#fff' : undefined, boxShadow: neo ? '4px 4px 0px 0px #FF00E6' : undefined }} />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
@@ -796,10 +811,10 @@ export default function App() {
                 <Puzzle size={14} className="md:w-4 md:h-4" /> Install Ext
               </button>
             )}
-            <button onClick={() => setShowBulkModal(true)} className={cn("px-4 py-2 md:px-5 md:py-2.5 text-[10px] md:text-xs flex items-center gap-2", tBtnSecondary)}>
-              <FileSpreadsheet size={14} className="md:w-4 md:h-4" /> Bulk
+            <button onClick={() => setShowBulkModal(true)} className={cn("flex-1 sm:flex-none justify-center px-4 py-2 md:px-5 md:py-2.5 text-[10px] md:text-xs flex items-center gap-2", tBtnSecondary)}>
+              <FileSpreadsheet size={14} className="md:w-4 md:h-4" /> Bulk Import
             </button>
-            <div className={cn("hidden md:block h-5 md:h-6 w-px mx-0.5 md:mx-1", neo ? "bg-[#FF00E6] w-[3px]" : "bg-zinc-200 dark:bg-zinc-800")} />
+            <div className={cn("hidden sm:block h-5 md:h-6 w-px mx-0.5 md:mx-1", neo ? "bg-[#FF00E6] w-[3px]" : "bg-zinc-200 dark:bg-zinc-800")} />
             <button onClick={exportToCSV} className={cn("p-2 md:p-3", tBtnIcon)} title="Export CSV"><Download size={14} className="md:w-4 md:h-4" /></button>
             <button onClick={handleResetDefault} className={cn("p-2 md:p-3", tBtnIcon)} title="Reset All"><RotateCcw size={14} className="md:w-4 md:h-4" /></button>
             {!neo && <button onClick={() => setIsDarkMode(!isDarkMode)} className={cn("p-2 md:p-3", tBtnIcon)}>{isDarkMode ? <Sun size={14} className="md:w-4 md:h-4" /> : <Moon size={14} className="md:w-4 md:h-4" />}</button>}
@@ -817,7 +832,7 @@ export default function App() {
               {/* Form Card */}
               <div className={cn("p-5 sm:p-6 lg:p-8", tCard)}>
                 <div className="flex items-center gap-3 mb-6 lg:mb-8">
-                  <div className={cn("w-8 h-8 lg:w-10 lg:h-10 flex items-center justify-center shrink-0", neo ? "bg-black border-[3px] border-[#00F0FF] text-[#00F0FF] shadow-[2px_2px_0px_0px_#FF00E6]" : "rounded-xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500")}><User className="w-4 h-4 lg:w-5 lg:h-5" /></div>
+                  <div className={cn("w-8 h-8 lg:w-10 lg:h-10 flex items-center justify-center shrink-0", neo ? "bg-black border-[3px] border-[#00F0FF] text-[#00F0FF] shadow-[2px_2px_0px_0px_#FF00E6]" : "rounded-xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500")}><User size={18} /></div>
                   <h2 className={cn("font-bold text-xs lg:text-sm uppercase tracking-widest", neo ? "text-[#00F0FF] font-black" : "dark:text-white")}>Input Data Baru</h2>
                 </div>
                 <form onSubmit={handleAddEntry} className="space-y-4 lg:space-y-5">
@@ -855,7 +870,7 @@ export default function App() {
                       <input type="text" value={formData.dfod} onChange={(e) => setFormData(prev => ({ ...prev, dfod: e.target.value.replace(/[^0-9.,]/g, '') }))} className={neo ? tInput : "w-full px-4 py-3 lg:px-5 lg:py-3.5 bg-blue-50/50 dark:bg-blue-500/10 border-none rounded-xl lg:rounded-2xl text-xs lg:text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all dark:text-white"} placeholder="0" />
                     </div>
                     <button type="submit" className={cn("flex items-center justify-center gap-2 mt-2 sm:mt-0 h-12 lg:h-[52px]", tBtnPrimary)}>
-                      <Plus size={16} className="lg:w-[18px] lg:h-[18px]" /> Tambah
+                      <Plus size={18} /> Tambah
                     </button>
                   </div>
                 </form>
@@ -865,7 +880,7 @@ export default function App() {
               <div className={cn("p-5 sm:p-6 lg:p-8 flex flex-col", tCard)}>
                 <div className="flex items-center justify-between mb-4 lg:mb-6">
                   <div className="flex items-center gap-2 lg:gap-3">
-                    <div className={cn("w-8 h-8 lg:w-10 lg:h-10 flex items-center justify-center shrink-0", neo ? "bg-black border-[3px] border-[#FAFF00] text-[#FAFF00] shadow-[2px_2px_0px_0px_#00F0FF]" : "rounded-xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-500")}><MessageSquare className="w-4 h-4 lg:w-5 lg:h-5" /></div>
+                    <div className={cn("w-8 h-8 lg:w-10 lg:h-10 flex items-center justify-center shrink-0", neo ? "bg-black border-[3px] border-[#FAFF00] text-[#FAFF00] shadow-[2px_2px_0px_0px_#00F0FF]" : "rounded-xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-500")}><MessageSquare size={18} /></div>
                     <h2 className={cn("font-bold text-xs lg:text-sm uppercase tracking-widest", neo ? "text-[#FAFF00] font-black" : "dark:text-white")}>Pesan Template</h2>
                   </div>
                   <div className={cn("flex p-1 lg:p-1.5", neo ? "bg-black border-[3px] border-[#FF00E6] shadow-[4px_4px_0px_0px_#00F0FF]" : "bg-zinc-100 dark:bg-zinc-800 rounded-lg lg:rounded-xl")}>
@@ -960,11 +975,11 @@ export default function App() {
                           {/* Kolom 3: Status */}
                           <div className={cn("col-span-3 flex flex-row lg:flex-col items-center lg:items-start justify-between lg:justify-center gap-3 pt-3 mt-1 lg:pt-0 lg:mt-0", neo ? "border-t-[3px] border-[#FF00E6] lg:border-none" : "border-t border-zinc-100 dark:border-zinc-800 lg:border-none")}>
                             <div className={cn("inline-flex items-center gap-1.5 lg:gap-2 px-2.5 py-1 lg:px-3 lg:py-1.5 text-[9px] lg:text-[10px]", neo ? ("border-[3px] border-white font-black uppercase bg-black shadow-[2px_2px_0px_0px_#00F0FF] " + (entry.status === 'sent' ? 'text-[#00FF41]' : entry.status === 'sending' ? 'text-[#00F0FF] animate-pulse' : entry.status === 'failed' ? 'text-[#FF003C]' : 'text-white')) : (entry.status === 'sent' ? "bg-emerald-100/50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-lg font-black uppercase tracking-widest" : entry.status === 'sending' ? "bg-blue-100/50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 animate-pulse rounded-lg font-black uppercase tracking-widest" : entry.status === 'failed' ? "bg-red-100/50 dark:bg-red-500/10 text-red-600 dark:text-red-400 rounded-lg font-black uppercase tracking-widest" : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 rounded-lg font-black uppercase tracking-widest"))}>
-                              {entry.status === 'sent' ? <CheckCircle2 size={12} className="lg:w-3.5 lg:h-3.5" /> : entry.status === 'sending' ? <Loader2 size={12} className="lg:w-3.5 lg:h-3.5 animate-spin" /> : entry.status === 'failed' ? <AlertCircle size={12} className="lg:w-3.5 lg:h-3.5" /> : <Clock size={12} className="lg:w-3.5 lg:h-3.5" />} {entry.status}
+                              {entry.status === 'sent' ? <CheckCircle2 size={14} className="lg:w-4 lg:h-4" /> : entry.status === 'sending' ? <Loader2 size={14} className="lg:w-4 lg:h-4 animate-spin" /> : entry.status === 'failed' ? <AlertCircle size={14} className="lg:w-4 lg:h-4" /> : <Clock size={14} className="lg:w-4 lg:h-4" />} {entry.status}
                             </div>
                             <button onClick={() => toggleReceived(entry.id)} className={cn("flex items-center gap-2 transition-colors", neo ? "border-[3px] border-[#FAFF00] bg-black shadow-[2px_2px_0px_0px_#FF00E6] px-2 py-1 text-[9px] lg:text-[10px] font-black uppercase text-[#FAFF00]" : (entry.isReceived ? "text-emerald-500 text-[10px] font-bold uppercase tracking-wider" : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 text-[10px] font-bold uppercase tracking-wider"))}>
-                              <div className={cn("flex items-center justify-center", neo ? "w-3 h-3 lg:w-3.5 lg:h-3.5 border-2 border-[#FAFF00] bg-black" : (entry.isReceived ? "w-4 h-4 lg:w-3.5 lg:h-3.5 rounded-full border-2 border-emerald-500 bg-emerald-500" : "w-4 h-4 lg:w-3.5 lg:h-3.5 rounded-full border-2 border-zinc-300 dark:border-zinc-600"))}>
-                                {entry.isReceived && <CheckCircle2 size={10} className={neo ? "text-[#FF00E6]" : "text-white lg:w-[10px] lg:h-[10px]"} strokeWidth={neo ? 4 : 3} />}
+                              <div className={cn("flex items-center justify-center", neo ? "w-3.5 h-3.5 lg:w-4 lg:h-4 border-2 border-[#FAFF00] bg-black" : (entry.isReceived ? "w-4 h-4 lg:w-4 lg:h-4 rounded-full border-2 border-emerald-500 bg-emerald-500" : "w-4 h-4 lg:w-4 lg:h-4 rounded-full border-2 border-zinc-300 dark:border-zinc-600"))}>
+                                {entry.isReceived && <CheckCircle2 size={10} className={neo ? "text-[#FF00E6]" : "text-white lg:w-[12px] lg:h-[12px]"} strokeWidth={neo ? 4 : 3} />}
                               </div>
                               Diterima
                             </button>
@@ -990,7 +1005,7 @@ export default function App() {
       {/* MODALS (Bulk & Preview & Settings) */}
       <AnimatePresence>
         {showBulkModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-8">
+          <motion.div key="bulk-modal" className="fixed inset-0 z-[150] flex items-center justify-center p-4 sm:p-8">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowBulkModal(false)} className="absolute inset-0 bg-zinc-950/60 backdrop-blur-sm" />
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className={cn("relative w-full max-w-2xl flex flex-col", neo ? "bg-[#0a0a0a] border-[3px] border-[#00FF41] shadow-[12px_12px_0px_0px_#FF00E6]" : "bg-white dark:bg-zinc-900 rounded-3xl lg:rounded-[2rem] shadow-2xl overflow-hidden border border-zinc-200 dark:border-zinc-800")}>
               <div className={cn("p-6 lg:p-8 flex items-center justify-between", neo ? "border-b-[3px] border-[#00F0FF] bg-[#111]" : "border-b border-zinc-100 dark:border-zinc-800")}>
@@ -1003,13 +1018,13 @@ export default function App() {
                 <button onClick={handleBulkImport} className={tBtnPrimary}>Import Data</button>
               </div>
             </motion.div>
-          </div>
+          </motion.div>
         )}
       </AnimatePresence>
 
       <AnimatePresence>
         {showPreviewModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-8">
+          <motion.div key="preview-modal" className="fixed inset-0 z-[150] flex items-center justify-center p-4 sm:p-8">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowPreviewModal(false)} className="absolute inset-0 bg-zinc-950/60 backdrop-blur-sm" />
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className={cn("relative w-full max-w-md", neo ? "bg-[#0a0a0a] border-[3px] border-[#00FF41] shadow-[12px_12px_0px_0px_#FF00E6]" : "bg-white dark:bg-zinc-900 rounded-3xl lg:rounded-[2rem] shadow-2xl overflow-hidden border border-zinc-200 dark:border-zinc-800")}>
               <div className={cn("p-6 lg:p-8 flex items-center justify-between", neo ? "border-b-[3px] border-[#00F0FF] bg-[#111]" : "border-b border-zinc-100 dark:border-zinc-800")}>
@@ -1025,18 +1040,18 @@ export default function App() {
                     <button onClick={() => {
                       const entry = entries.find(e => e.status === 'pending');
                       if (entry) { openInSameTab(getWALink(entry, entries.filter(e => e.status === 'sent').length)); updateStatus(entry.id, 'sent'); setShowPreviewModal(false); }
-                    }} className={cn("flex items-center justify-center gap-2", tBtnPrimary)}><Send size={16} className="lg:w-[18px] lg:h-[18px]" /> Send Now</button>
+                    }} className={cn("flex items-center justify-center gap-2", tBtnPrimary)}><Send size={18} className="lg:w-[18px] lg:h-[18px]" /> Send Now</button>
                   </div>
                 ) : <div className={cn("text-center py-8 lg:py-10 text-xs lg:text-sm", neo ? "text-[#00F0FF] font-black uppercase" : "text-zinc-500")}>No pending entries.</div>}
               </div>
             </motion.div>
-          </div>
+          </motion.div>
         )}
       </AnimatePresence>
 
       <AnimatePresence>
         {showSettingsModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-8">
+          <motion.div key="settings-modal" className="fixed inset-0 z-[150] flex items-center justify-center p-4 sm:p-8">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowSettingsModal(false)} className="absolute inset-0 bg-zinc-950/60 backdrop-blur-sm" />
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className={cn("relative w-full max-w-lg flex flex-col max-h-[90vh]", neo ? "bg-[#0a0a0a] border-[3px] border-[#00FF41] shadow-[12px_12px_0px_0px_#FF00E6]" : "bg-white dark:bg-zinc-900 rounded-3xl lg:rounded-[2.5rem] shadow-2xl overflow-hidden border border-zinc-200 dark:border-zinc-800")}>
               <div className={cn("p-6 lg:p-8 flex items-center justify-between shrink-0", neo ? "border-b-[3px] border-[#00F0FF] bg-[#111]" : "border-b border-zinc-100 dark:border-zinc-800")}>
@@ -1105,7 +1120,7 @@ export default function App() {
               </div>
               <div className={cn("p-4 lg:p-6 shrink-0", neo ? "bg-[#111] border-t-[3px] border-[#00F0FF]" : "")}><button onClick={() => setShowSettingsModal(false)} className={tBtnPrimary}>Save Config</button></div>
             </motion.div>
-          </div>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>
