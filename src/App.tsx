@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import {
-  Plus,
-  Send,
-  Trash2,
-  Play,
-  Square,
-  MessageSquare,
-  User,
-  Package,
-  Hash,
+import { 
+  Plus, 
+  Send, 
+  Trash2, 
+  Play, 
+  Square, 
+  MessageSquare, 
+  User, 
+  Package, 
+  Hash, 
   Phone,
   FileText,
   CheckCircle2,
@@ -31,34 +31,26 @@ import {
   Shield,
   Puzzle,
   Loader2,
-  Zap,
-  Menu,
-  Bell,
-  Activity,
-  TrendingUp,
-  Smartphone,
-  Globe,
-  Wifi,
-  WifiOff
+  Zap
 } from 'lucide-react';
 import { Toaster, toast } from 'react-hot-toast';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import {
-  PieChart,
-  Pie,
-  Cell,
-  ResponsiveContainer,
-  Tooltip as RechartsTooltip
+import { 
+  PieChart, 
+  Pie, 
+  Cell, 
+  ResponsiveContainer, 
+  Tooltip as RechartsTooltip 
 } from 'recharts';
-import {
-  BlastEntry,
+import { 
+  BlastEntry, 
   LogEntry,
-  MessageTemplate,
-  DEFAULT_TEMPLATES,
-  AppSettings,
-  DEFAULT_SETTINGS
+  MessageTemplate, 
+  DEFAULT_TEMPLATES, 
+  AppSettings, 
+  DEFAULT_SETTINGS 
 } from './types';
 import { downloadExtensionZip } from './utils/extensionDownloader';
 
@@ -66,15 +58,76 @@ function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-// Utility to nicely format numbers into Rupiah currency
 const formatCurrency = (val: string) => {
   if (!val) return '';
   const num = parseInt(val.replace(/\D/g, ''));
   return isNaN(num) ? val : new Intl.NumberFormat('id-ID').format(num);
 };
 
+// Toggle Switch Component
+const Toggle = ({ checked, onChange }: { checked: boolean; onChange: () => void }) => (
+  <button
+    onClick={onChange}
+    className={cn(
+      "relative w-11 h-6 rounded-full transition-all duration-300 border",
+      checked 
+        ? "bg-[#00FF88]/20 border-[#00FF88]/50" 
+        : "bg-[#0A0F14] border-[#1E2D3D]"
+    )}
+  >
+    <div className={cn(
+      "absolute top-0.5 w-5 h-5 rounded-full transition-all duration-300 shadow-sm",
+      checked 
+        ? "left-5 bg-[#00FF88] shadow-[0_0_8px_#00FF88]" 
+        : "left-0.5 bg-[#2A3F52]"
+    )} />
+  </button>
+);
+
+// Input Component
+const GlassInput = ({ className = '', ...props }: React.InputHTMLAttributes<HTMLInputElement>) => (
+  <input
+    {...props}
+    className={cn(
+      "w-full px-4 py-2.5 text-sm bg-[#060C12] border border-[#1E2D3D] rounded-lg",
+      "text-[#C8D8E8] placeholder-[#3A5068] outline-none",
+      "focus:border-[#00FF88]/50 focus:bg-[#060C12] focus:shadow-[0_0_0_1px_rgba(0,255,136,0.15)]",
+      "transition-all duration-200 font-mono",
+      className
+    )}
+  />
+);
+
+// Label Component
+const FieldLabel = ({ children }: { children: React.ReactNode }) => (
+  <label className="text-[9px] font-bold text-[#3A5068] uppercase tracking-[0.2em] font-mono">{children}</label>
+);
+
+// Card Component
+const GlassCard = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => (
+  <div className={cn(
+    "bg-[#0A0F14]/80 border border-[#1E2D3D] rounded-2xl backdrop-blur-sm",
+    "shadow-[0_4px_32px_rgba(0,0,0,0.4)]",
+    className
+  )}>
+    {children}
+  </div>
+);
+
+// Section Header
+const SectionHeader = ({ icon: Icon, title, right }: { icon: any; title: string; right?: React.ReactNode }) => (
+  <div className="flex items-center justify-between mb-5">
+    <div className="flex items-center gap-2.5">
+      <div className="w-6 h-6 rounded-md bg-[#00FF88]/10 flex items-center justify-center">
+        <Icon size={13} className="text-[#00FF88]" />
+      </div>
+      <span className="text-sm font-bold text-[#C8D8E8] tracking-wide font-mono">{title}</span>
+    </div>
+    {right}
+  </div>
+);
+
 export default function App() {
-  // ========== STATE (unchanged) ==========
   const [entries, setEntries] = useState<BlastEntry[]>([]);
   const [templates, setTemplates] = useState<MessageTemplate[]>(DEFAULT_TEMPLATES);
   const [activeTemplateId, setActiveTemplateId] = useState<string>(DEFAULT_TEMPLATES[0].id);
@@ -103,10 +156,7 @@ export default function App() {
     return saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches);
   });
   const [nextActionTime, setNextActionTime] = useState(0);
-  // Mobile sidebar state
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  // Form state
+  
   const [formData, setFormData] = useState({
     phone: '',
     recipientName: '',
@@ -117,22 +167,18 @@ export default function App() {
     dfod: ''
   });
 
-  // ========== EFFECTS (unchanged) ==========
-  // Load data
   useEffect(() => {
     const savedEntries = localStorage.getItem('wa_blast_entries');
     const savedTemplates = localStorage.getItem('wa_blast_templates');
     const savedActiveId = localStorage.getItem('wa_blast_active_template_id');
     const savedSettings = localStorage.getItem('wa_blast_settings');
-
+    
     if (savedEntries) setEntries(JSON.parse(savedEntries));
     if (savedTemplates) {
       const parsedTemplates: MessageTemplate[] = JSON.parse(savedTemplates);
       const mergedTemplates = [...parsedTemplates];
       DEFAULT_TEMPLATES.forEach(def => {
-        if (!mergedTemplates.find(t => t.id === def.id)) {
-          mergedTemplates.push(def);
-        }
+        if (!mergedTemplates.find(t => t.id === def.id)) mergedTemplates.push(def);
       });
       setTemplates(mergedTemplates);
     }
@@ -140,7 +186,6 @@ export default function App() {
     if (savedSettings) setSettings(JSON.parse(savedSettings));
   }, []);
 
-  // Save data
   useEffect(() => localStorage.setItem('wa_blast_entries', JSON.stringify(entries)), [entries]);
   useEffect(() => localStorage.setItem('wa_blast_templates', JSON.stringify(templates)), [templates]);
   useEffect(() => localStorage.setItem('wa_blast_active_template_id', activeTemplateId), [activeTemplateId]);
@@ -157,7 +202,6 @@ export default function App() {
     }
   }, [isDarkMode]);
 
-  // ========== HANDLERS (unchanged) ==========
   const handleResetDefault = () => {
     if (window.confirm('Apakah Anda yakin ingin menghapus semua data dan kembali ke pengaturan awal? Semua antrean dan template custom akan hilang.')) {
       addLog(`🔄 Sistem direset ke pengaturan awal`, 'warning');
@@ -187,7 +231,6 @@ export default function App() {
       toast.error('Nomor HP dan Nama Penerima wajib diisi');
       return;
     }
-
     const newEntry: BlastEntry = {
       id: crypto.randomUUID(),
       ...formData,
@@ -195,7 +238,6 @@ export default function App() {
       isReceived: false,
       createdAt: Date.now()
     };
-
     setEntries(prev => [newEntry, ...prev]);
     setFormData({ phone: '', recipientName: '', itemName: '', receiptNumber: '', address: '', cod: '', dfod: '' });
     addLog(`➕ Data ditambahkan: ${newEntry.recipientName} (${newEntry.phone})`, 'info');
@@ -203,32 +245,23 @@ export default function App() {
   };
 
   const handleBulkImport = () => {
-    if (!bulkData.trim()) {
-      toast.error('Data kosong');
-      return;
-    }
-
+    if (!bulkData.trim()) { toast.error('Data kosong'); return; }
     const lines = bulkData.trim().split(/\r?\n/);
     const newEntries: BlastEntry[] = [];
     let successCount = 0;
-
     lines.forEach(line => {
       const delimiter = line.includes('\t') ? '\t' : ',';
       const columns = line.split(delimiter).map(col => col.trim());
-
       if (columns.length >= 4) {
         const firstCol = columns[0].toLowerCase();
         const secondCol = (columns[1] || '').toLowerCase();
         if (firstCol === 'no' || secondCol === 'resi/awb' || secondCol === 'resi') return;
-
         const tanda = (columns[5] || '').toUpperCase();
         const rawCod = columns[6] || '';
         const rawDfod = columns[7] || '';
         const itemNameValue = columns[8] || '';
-
         let cod = '';
         let dfod = '';
-
         if (tanda === 'COD') {
           const cleanCod = rawCod.replace(/[^0-9]/g, '');
           if (cleanCod && !isNaN(Number(cleanCod))) cod = cleanCod;
@@ -236,24 +269,10 @@ export default function App() {
           const cleanDfod = rawDfod.replace(/[^0-9]/g, '');
           if (cleanDfod && !isNaN(Number(cleanDfod))) dfod = cleanDfod;
         }
-
-        newEntries.push({
-          id: crypto.randomUUID(),
-          receiptNumber: columns[1] || '',
-          recipientName: columns[2] || '',
-          phone: columns[3] || '',
-          address: columns[4] || '',
-          itemName: itemNameValue,
-          cod: cod,
-          dfod: dfod,
-          status: 'pending',
-          isReceived: false,
-          createdAt: Date.now()
-        });
+        newEntries.push({ id: crypto.randomUUID(), receiptNumber: columns[1] || '', recipientName: columns[2] || '', phone: columns[3] || '', address: columns[4] || '', itemName: itemNameValue, cod, dfod, status: 'pending', isReceived: false, createdAt: Date.now() });
         successCount++;
       }
     });
-
     if (newEntries.length > 0) {
       setEntries(prev => [...newEntries, ...prev]);
       setBulkData('');
@@ -279,39 +298,19 @@ export default function App() {
     else if (hour >= 11 && hour < 15) base = 'Siang';
     else if (hour >= 15 && hour < 18) base = 'Sore';
     else base = 'Malam';
-
     if (settings.useRandomGreetings) {
-      const variations = [
-        `Selamat ${base}`,
-        `${base} Kak`,
-        `Halo, Selamat ${base}`,
-        `Halo Kak, Selamat ${base}`,
-        `Permisi, Selamat ${base}`,
-        `Halo`,
-        base
-      ];
+      const variations = [`Selamat ${base}`, `${base} Kak`, `Halo, Selamat ${base}`, `Halo Kak, Selamat ${base}`, `Permisi, Selamat ${base}`, `Halo`, base];
       return variations[Math.floor(Math.random() * variations.length)];
     }
-
     return `Selamat ${base}`;
   };
 
   const generateMessage = (entry: BlastEntry, templateText?: string) => {
     let text = templateText || activeTemplate.text;
-
-    // Handle conditional blocks {if_cod}...{/if_cod}
-    if (!entry.cod) {
-      text = text.replace(/{if_cod}[\s\S]*?{\/if_cod}/gi, '');
-    } else {
-      text = text.replace(/{if_cod}/gi, '').replace(/{\/if_cod}/gi, '');
-    }
-
-    if (!entry.dfod) {
-      text = text.replace(/{if_dfod}[\s\S]*?{\/if_dfod}/gi, '');
-    } else {
-      text = text.replace(/{if_dfod}/gi, '').replace(/{\/if_dfod}/gi, '');
-    }
-
+    if (!entry.cod) text = text.replace(/{if_cod}[\s\S]*?{\/if_cod}/gi, '');
+    else text = text.replace(/{if_cod}/gi, '').replace(/{\/if_cod}/gi, '');
+    if (!entry.dfod) text = text.replace(/{if_dfod}[\s\S]*?{\/if_dfod}/gi, '');
+    else text = text.replace(/{if_dfod}/gi, '').replace(/{\/if_dfod}/gi, '');
     let finalMessage = text
       .replace(/{salam}/gi, getGreeting())
       .replace(/{pengirim}/gi, settings.senderName || 'Admin')
@@ -321,39 +320,23 @@ export default function App() {
       .replace(/{alamat}/gi, entry.address || '-')
       .replace(/{cod}/gi, entry.cod ? `Rp ${formatCurrency(entry.cod)}` : '-')
       .replace(/{dfod}/gi, entry.dfod ? `Rp ${formatCurrency(entry.dfod)}` : '-');
-
     if (settings.useGlobalSpintax) {
       finalMessage = finalMessage.replace(/{([^{}]+)}/g, (match, p1) => {
-        if (p1.includes('|')) {
-          const choices = p1.split('|');
-          return choices[Math.floor(Math.random() * choices.length)];
-        }
+        if (p1.includes('|')) { const choices = p1.split('|'); return choices[Math.floor(Math.random() * choices.length)]; }
         return match;
       });
     }
-
     if (settings.randomizeEmojis) {
       const emojis = ['😊', '🙏', '📦', '🚚', '✨', '✅', '📍', '🚚', '📦', '🚛'];
       const words = finalMessage.split(' ');
-      finalMessage = words.map(word => {
-        if (Math.random() > 0.9) return word + ' ' + emojis[Math.floor(Math.random() * emojis.length)];
-        return word;
-      }).join(' ');
+      finalMessage = words.map(word => { if (Math.random() > 0.9) return word + ' ' + emojis[Math.floor(Math.random() * emojis.length)]; return word; }).join(' ');
     }
-
-    if (settings.addRandomSuffix) {
-      finalMessage += `\n\n_Ref: ${Math.random().toString(36).substring(7).toUpperCase()}_`;
-    }
-
+    if (settings.addRandomSuffix) finalMessage += `\n\n_Ref: ${Math.random().toString(36).substring(7).toUpperCase()}_`;
     if (settings.useInvisibleChars) {
       const zwsp = '\u200B';
       const words = finalMessage.split(' ');
-      finalMessage = words.map(word => {
-        if (Math.random() > 0.7) return word + zwsp;
-        return word;
-      }).join(' ');
+      finalMessage = words.map(word => { if (Math.random() > 0.7) return word + zwsp; return word; }).join(' ');
     }
-
     if (settings.randomizeFormatting) {
       const paragraphs = finalMessage.split('\n\n');
       finalMessage = paragraphs.map((p, i) => {
@@ -364,7 +347,6 @@ export default function App() {
         return p + '\n\n';
       }).join('');
     }
-
     return finalMessage;
   };
 
@@ -372,16 +354,12 @@ export default function App() {
     let phone = entry.phone.replace(/\D/g, '');
     if (phone.startsWith('0')) phone = '62' + phone.slice(1);
     if (!phone.startsWith('62')) phone = '62' + phone;
-
     let templateText = activeTemplate.text;
     if (settings.rotateTemplates) {
       const count = sentCountOverride !== undefined ? sentCountOverride : entries.filter(e => e.status === 'sent').length;
-      const variations = activeTemplate.variations && activeTemplate.variations.length > 0
-        ? activeTemplate.variations
-        : [activeTemplate.text];
+      const variations = activeTemplate.variations && activeTemplate.variations.length > 0 ? activeTemplate.variations : [activeTemplate.text];
       templateText = variations[count % variations.length];
     }
-
     const message = encodeURIComponent(generateMessage(entry, templateText));
     let link = `https://web.whatsapp.com/send?phone=${phone}&text=${message}`;
     if (settings.autoSend) link += '&autosend=true';
@@ -414,49 +392,31 @@ export default function App() {
     let maxDelay = settings.maxDelay;
     let useTyping = settings.simulateTyping;
     let useAdaptive = settings.adaptiveDelay;
-
-    if (settings.speedMode === 'safe') {
-      minDelay = 15000; maxDelay = 30000; useTyping = true; useAdaptive = true;
-    } else if (settings.speedMode === 'normal') {
-      minDelay = 8000; maxDelay = 15000; useTyping = true; useAdaptive = true;
-    } else if (settings.speedMode === 'fast') {
-      minDelay = 3000; maxDelay = 7000; useTyping = false; useAdaptive = false;
-    } else if (settings.speedMode === 'turbo') {
-      minDelay = 1000; maxDelay = 2000; useTyping = false; useAdaptive = false;
-    }
-
-    let currentDelay = settings.randomizeDelay || settings.speedMode !== 'custom'
-      ? Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay
-      : minDelay;
-
+    if (settings.speedMode === 'safe') { minDelay = 15000; maxDelay = 30000; useTyping = true; useAdaptive = true; }
+    else if (settings.speedMode === 'normal') { minDelay = 8000; maxDelay = 15000; useTyping = true; useAdaptive = true; }
+    else if (settings.speedMode === 'fast') { minDelay = 3000; maxDelay = 7000; useTyping = false; useAdaptive = false; }
+    else if (settings.speedMode === 'turbo') { minDelay = 1000; maxDelay = 2000; useTyping = false; useAdaptive = false; }
+    let currentDelay = settings.randomizeDelay || settings.speedMode !== 'custom' ? Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay : minDelay;
     if (useAdaptive) currentDelay += Math.floor(sentCount / 10) * 500;
-
     if (useTyping) {
       let templateText = activeTemplate.text;
       if (settings.rotateTemplates) {
-        const variations = activeTemplate.variations && activeTemplate.variations.length > 0
-          ? activeTemplate.variations
-          : [activeTemplate.text];
+        const variations = activeTemplate.variations && activeTemplate.variations.length > 0 ? activeTemplate.variations : [activeTemplate.text];
         templateText = variations[sentCount % variations.length];
       }
       const message = generateMessage(entry, templateText);
       currentDelay += Math.min(message.length * 50, 5000);
     }
-
     if (settings.batchSize > 0 && sentCount >= nextBatchPauseAt && nextBatchPauseAt > 0) {
       currentDelay = settings.batchPause;
       toast(`Anti-Spam: Istirahat sejenak selama ${settings.batchPause / 1000} detik...`, { icon: '🛡️' });
       setNextBatchPauseAt(sentCount + settings.batchSize + (Math.floor(Math.random() * 5) - 2));
     }
-
     if (settings.longBreakAfter > 0 && sentCount > 0 && sentCount % settings.longBreakAfter === 0) {
       currentDelay = settings.longBreakDuration * 60 * 1000;
       setIsLongBreak(true);
       addLog(`😴 Mengambil istirahat panjang selama ${settings.longBreakDuration} menit...`, 'warning');
-    } else {
-      setIsLongBreak(false);
-    }
-
+    } else { setIsLongBreak(false); }
     return currentDelay;
   };
 
@@ -465,42 +425,23 @@ export default function App() {
       toast.error('Extension tidak terdeteksi! Gunakan Mode Manual atau hubungkan extension.', { icon: '🔌' });
       return;
     }
-
     const pending = entries.filter(e => e.status === 'pending');
-    if (pending.length === 0) {
-      toast.error('Tidak ada pesan pending');
-      return;
-    }
-
+    if (pending.length === 0) { toast.error('Tidak ada pesan pending'); return; }
     let entriesToProcess = [...pending];
     if (settings.shuffleQueue) {
       entriesToProcess = entriesToProcess.sort(() => Math.random() - 0.5);
       setEntries(prev => [...prev.filter(e => e.status !== 'pending'), ...entriesToProcess]);
     }
-
     const firstEntry = entriesToProcess[0];
     addLog(`🎬 Memulai proses blast...${settings.shuffleQueue ? ' (Urutan Diacak)' : ''}`, 'info');
-
     const newWindow = window.open(getWALink(firstEntry), 'WAsenderTab');
-    if (!newWindow) {
-      toast.error('Popup terblokir! Harap izinkan popup di browser Anda.', { duration: 8000, icon: '🚫' });
-      return;
-    }
+    if (!newWindow) { toast.error('Popup terblokir! Harap izinkan popup di browser Anda.', { duration: 8000, icon: '🚫' }); return; }
     window.focus();
-
-    if (settings.autoSend) {
-      updateStatus(firstEntry.id, 'sending');
-    } else {
-      updateStatus(firstEntry.id, 'sent');
-      setNextActionTime(Date.now() + calculateNextDelay(entries.filter(e => e.status === 'sent').length + 1, entriesToProcess[1] || firstEntry));
-    }
-
+    if (settings.autoSend) { updateStatus(firstEntry.id, 'sending'); }
+    else { updateStatus(firstEntry.id, 'sent'); setNextActionTime(Date.now() + calculateNextDelay(entries.filter(e => e.status === 'sent').length + 1, entriesToProcess[1] || firstEntry)); }
     setIsBlasting(true);
     setCurrentIndex(0);
-
-    if (settings.batchSize > 0) {
-      setNextBatchPauseAt(entries.filter(e => e.status === 'sent').length + settings.batchSize + (Math.floor(Math.random() * 5) - 2));
-    }
+    if (settings.batchSize > 0) setNextBatchPauseAt(entries.filter(e => e.status === 'sent').length + settings.batchSize + (Math.floor(Math.random() * 5) - 2));
   };
 
   const stopBlast = () => {
@@ -518,16 +459,12 @@ export default function App() {
         if (settings.speedMode === 'turbo') timeoutDuration = 5000;
         else if (settings.speedMode === 'fast') timeoutDuration = 10000;
         else if (settings.speedMode === 'normal') timeoutDuration = 15000;
-
         const timer = setTimeout(() => {
           addLog(`⏭️ Auto-Next: Melanjutkan otomatis untuk ${sendingEntry.recipientName}...`, 'info');
           updateStatus(sendingEntry.id, 'sent');
-
           const sentCount = entries.filter(e => e.status === 'sent').length + 1;
           const pending = entries.filter(e => e.status === 'pending' && e.id !== sendingEntry.id);
-          if (pending.length > 0) {
-            setNextActionTime(Date.now() + calculateNextDelay(sentCount, pending[0]));
-          }
+          if (pending.length > 0) setNextActionTime(Date.now() + calculateNextDelay(sentCount, pending[0]));
         }, timeoutDuration);
         return () => clearTimeout(timer);
       }
@@ -538,23 +475,17 @@ export default function App() {
     const handleExtensionMessage = (event: MessageEvent) => {
       if (event.data && event.data.source === 'wasender-extension') {
         const { type, entryId, status: waStatus } = event.data;
-
         if (type === 'WA_STATUS_UPDATE') {
           setEntries(currentEntries => {
             const entry = currentEntries.find(e => e.id === entryId);
             if (!entry || entry.status === 'sent') return currentEntries;
-
             if (waStatus === 'sent') {
               setConsecutiveErrors(0);
               setSentThisHour(prev => prev + 1);
               addLog(`✅ Pesan terkirim ke ${entry.recipientName} (${entry.receiptNumber})`, 'success');
-
               const sentCount = currentEntries.filter(e => e.status === 'sent').length + 1;
               const pending = currentEntries.filter(e => e.status === 'pending' && e.id !== entryId);
-              if (pending.length > 0) {
-                setNextActionTime(Date.now() + calculateNextDelay(sentCount, pending[0]));
-              }
-
+              if (pending.length > 0) setNextActionTime(Date.now() + calculateNextDelay(sentCount, pending[0]));
               return currentEntries.map(e => e.id === entryId ? { ...e, status: 'sent' } : e);
             } else if (waStatus === 'invalid') {
               const currentRetries = entry.retryCount || 0;
@@ -576,7 +507,6 @@ export default function App() {
         }
       }
     };
-
     window.addEventListener('message', handleExtensionMessage);
     const heartbeatInterval = setInterval(() => {
       if (lastHeartbeat > 0 && Date.now() - lastHeartbeat > 20000 && isExtensionDetected) {
@@ -584,108 +514,53 @@ export default function App() {
         addLog(`🔌 Extension terputus atau tidak terdeteksi`, 'warning');
       }
     }, 5000);
-
-    return () => {
-      window.removeEventListener('message', handleExtensionMessage);
-      clearInterval(heartbeatInterval);
-    };
+    return () => { window.removeEventListener('message', handleExtensionMessage); clearInterval(heartbeatInterval); };
   }, [lastHeartbeat, isExtensionDetected, settings.autoRetry, settings.maxRetries, settings.speedMode]);
 
   useEffect(() => {
     const handlePing = (event: MessageEvent) => {
       if (event.data && event.data.source === 'wasender-extension' && event.data.type === 'EXTENSION_PONG') {
-        if (!isExtensionDetected) {
-          setIsExtensionDetected(true);
-          addLog(`🔌 Extension terdeteksi dan aktif`, 'success');
-        }
+        if (!isExtensionDetected) { setIsExtensionDetected(true); addLog(`🔌 Extension terdeteksi dan aktif`, 'success'); }
         setLastHeartbeat(Date.now());
       }
     };
     window.addEventListener('message', handlePing);
-
     const checkAttr = () => {
       if (document.documentElement.getAttribute('data-wasender-extension') === 'active') {
-        if (!isExtensionDetected) {
-          setIsExtensionDetected(true);
-          addLog(`🔌 Extension terdeteksi via DOM`, 'success');
-        }
+        if (!isExtensionDetected) { setIsExtensionDetected(true); addLog(`🔌 Extension terdeteksi via DOM`, 'success'); }
         setLastHeartbeat(Date.now());
       }
       window.postMessage({ type: 'EXTENSION_PING' }, '*');
     };
-
     const attrInterval = setInterval(checkAttr, 2000);
     checkAttr();
-
-    return () => {
-      window.removeEventListener('message', handlePing);
-      clearInterval(attrInterval);
-    };
+    return () => { window.removeEventListener('message', handlePing); clearInterval(attrInterval); };
   }, [isExtensionDetected]);
 
   useEffect(() => {
-    if (!isBlasting || settings.manualMode) {
-      setCountdown(0);
-      return;
-    }
-
+    if (!isBlasting || settings.manualMode) { setCountdown(0); return; }
     const engineTick = () => {
       const now = Date.now();
-
-      if (now - lastHourReset > 3600000) {
-        setSentThisHour(0);
-        setLastHourReset(now);
-      }
-
-      if (sentThisHour >= settings.hourlyLimit) {
-        setIsBlasting(false);
-        addLog(`⏳ Limit per jam tercapai.`, 'warning');
-        return;
-      }
-
+      if (now - lastHourReset > 3600000) { setSentThisHour(0); setLastHourReset(now); }
+      if (sentThisHour >= settings.hourlyLimit) { setIsBlasting(false); addLog(`⏳ Limit per jam tercapai.`, 'warning'); return; }
       const pendingEntries = entries.filter(e => e.status === 'pending');
       const sendingEntries = entries.filter(e => e.status === 'sending');
-
-      if (sendingEntries.length > 0) {
-        setCountdown(0);
-        return;
-      }
-
+      if (sendingEntries.length > 0) { setCountdown(0); return; }
       if (pendingEntries.length > 0) {
         const entry = pendingEntries[0];
-
         if (now >= nextActionTime) {
           addLog(`🚀 Mengirim ke ${entry.recipientName}...`, 'info');
-
           const waLink = getWALink(entry, entries.filter(e => e.status === 'sent').length);
           const newWindow = window.open(waLink, 'WAsenderTab');
-
-          if (!newWindow) {
-            addLog(`⚠️ Browser memblokir pembukaan tab otomatis.`, 'warning');
-            setNextActionTime(Date.now() + 3000);
-            return;
-          }
-
+          if (!newWindow) { addLog(`⚠️ Browser memblokir pembukaan tab otomatis.`, 'warning'); setNextActionTime(Date.now() + 3000); return; }
           window.focus();
-
-          if (settings.autoSend) {
-            updateStatus(entry.id, 'sending');
-          } else {
-            updateStatus(entry.id, 'sent');
-            setNextActionTime(Date.now() + calculateNextDelay(entries.filter(e => e.status === 'sent').length + 1, pendingEntries[1] || entry));
-          }
-        } else {
-          setCountdown(Math.max(0, Math.ceil((nextActionTime - now) / 1000)));
-        }
-      } else {
-        setIsBlasting(false);
-        addLog(`🏁 Blast selesai!`, 'success');
-      }
+          if (settings.autoSend) { updateStatus(entry.id, 'sending'); }
+          else { updateStatus(entry.id, 'sent'); setNextActionTime(Date.now() + calculateNextDelay(entries.filter(e => e.status === 'sent').length + 1, pendingEntries[1] || entry)); }
+        } else { setCountdown(Math.max(0, Math.ceil((nextActionTime - now) / 1000))); }
+      } else { setIsBlasting(false); addLog(`🏁 Blast selesai!`, 'success'); }
     };
-
     engineTick();
     const interval = setInterval(engineTick, 1000);
-
     return () => clearInterval(interval);
   }, [isBlasting, entries, nextActionTime, settings.manualMode, settings.hourlyLimit, isExtensionDetected, sentThisHour, lastHourReset]);
 
@@ -701,13 +576,12 @@ export default function App() {
         }
       }
     };
-
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isBlasting, settings.manualMode, entries]);
 
   const filteredEntries = useMemo(() => {
-    return entries.filter(e =>
+    return entries.filter(e => 
       e.recipientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       e.phone.includes(searchQuery) ||
       e.receiptNumber.toLowerCase().includes(searchQuery.toLowerCase())
@@ -719,9 +593,9 @@ export default function App() {
     const pending = entries.filter(e => e.status === 'pending').length;
     const received = entries.filter(e => e.isReceived).length;
     return [
-      { name: 'Sent', value: sent, color: '#10b981' },
-      { name: 'Pending', value: pending, color: '#f59e0b' },
-      { name: 'Received', value: received, color: '#3b82f6' }
+      { name: 'Sent', value: sent, color: '#00FF88' },
+      { name: 'Pending', value: pending, color: '#F59E0B' },
+      { name: 'Received', value: received, color: '#38BDF8' }
     ];
   }, [entries]);
 
@@ -743,18 +617,8 @@ export default function App() {
   const exportToCSV = () => {
     if (entries.length === 0) return;
     const headers = ['Phone', 'Name', 'Item', 'Receipt', 'Status', 'Received', 'Created At'];
-    const rows = entries.map(e => [
-      e.phone,
-      e.recipientName,
-      e.itemName,
-      e.receiptNumber,
-      e.status,
-      e.isReceived ? 'YES' : 'NO',
-      new Date(e.createdAt).toLocaleString()
-    ]);
-    const csvContent = [headers, ...rows]
-      .map(r => r.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
-      .join('\n');
+    const rows = entries.map(e => [e.phone, e.recipientName, e.itemName, e.receiptNumber, e.status, e.isReceived ? 'YES' : 'NO', new Date(e.createdAt).toLocaleString()]);
+    const csvContent = [headers, ...rows].map(r => r.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
@@ -763,125 +627,127 @@ export default function App() {
     toast.success('Laporan berhasil diunduh');
   };
 
-  // ========== RENDER (completely redesigned UI - bold & modern) ==========
+  const statusConfig = {
+    sent: { bg: 'bg-[#00FF88]/10 border-[#00FF88]/20', text: 'text-[#00FF88]', icon: <CheckCircle2 size={10} /> },
+    sending: { bg: 'bg-[#38BDF8]/10 border-[#38BDF8]/20 animate-pulse', text: 'text-[#38BDF8]', icon: <Loader2 size={10} className="animate-spin" /> },
+    failed: { bg: 'bg-[#FF4444]/10 border-[#FF4444]/20', text: 'text-[#FF4444]', icon: <AlertCircle size={10} /> },
+    pending: { bg: 'bg-[#F59E0B]/10 border-[#F59E0B]/20', text: 'text-[#F59E0B]', icon: <Clock size={10} /> },
+  };
+
   return (
-    <div className={cn(
-      "min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 dark:from-slate-950 dark:via-purple-950 dark:to-slate-950 text-slate-100 font-sans antialiased transition-colors duration-300",
-      isDarkMode ? "dark" : ""
-    )}>
-      <Toaster position="top-right" toastOptions={{
-        className: 'bg-slate-800 text-white border border-slate-700 rounded-2xl shadow-2xl',
-        duration: 4000
+    <div className={cn("min-h-screen font-mono text-[#C8D8E8]", isDarkMode && "dark")}
+      style={{ background: 'linear-gradient(135deg, #020608 0%, #060C12 50%, #020810 100%)' }}>
+      
+      {/* Subtle grid overlay */}
+      <div className="fixed inset-0 pointer-events-none z-0" style={{
+        backgroundImage: 'linear-gradient(rgba(0,255,136,0.015) 1px, transparent 1px), linear-gradient(90deg, rgba(0,255,136,0.015) 1px, transparent 1px)',
+        backgroundSize: '40px 40px'
       }} />
 
-      {/* Blast Overlay (unchanged logic, enhanced design) */}
-      <AnimatePresence>
-        {isBlasting && (
+      <Toaster position="top-right" toastOptions={{
+        style: { background: '#0A0F14', border: '1px solid #1E2D3D', color: '#C8D8E8', fontFamily: 'monospace', fontSize: '13px' }
+      }} />
+
+      {/* BLAST OVERLAY */}
+      {isBlasting && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6"
+          style={{ background: 'rgba(2,6,8,0.92)', backdropFilter: 'blur(16px)' }}>
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-xl flex items-center justify-center p-6"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="w-full max-w-md rounded-2xl border border-[#00FF88]/20 overflow-hidden"
+            style={{ background: 'linear-gradient(135deg, #0A0F14 0%, #060C12 100%)', boxShadow: '0 0 60px rgba(0,255,136,0.1), inset 0 1px 0 rgba(0,255,136,0.1)' }}
           >
-            <motion.div
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: 20 }}
-              className="bg-slate-800/90 backdrop-blur-xl rounded-3xl p-8 max-w-md w-full shadow-2xl border border-purple-500/30 text-center space-y-6"
-            >
-              <div className="relative w-24 h-24 mx-auto">
-                <div className="absolute inset-0 border-4 border-purple-500/30 rounded-full" />
-                <div className="absolute inset-0 border-4 border-purple-500 rounded-full border-t-transparent animate-spin" />
+            {/* Top accent */}
+            <div className="h-px w-full bg-gradient-to-r from-transparent via-[#00FF88]/50 to-transparent" />
+            
+            <div className="p-8 text-center space-y-6">
+              {/* Animated orb */}
+              <div className="relative w-20 h-20 mx-auto">
+                <div className="absolute inset-0 rounded-full border-2 border-[#00FF88]/10 animate-ping" />
+                <div className="absolute inset-1 rounded-full border border-[#00FF88]/30 animate-spin" style={{ animationDuration: '3s' }} />
+                <div className="absolute inset-3 rounded-full border border-[#00FF88]/60" />
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <Play size={32} className="text-purple-400 fill-current" />
+                  <div className="w-10 h-10 rounded-full bg-[#00FF88]/10 flex items-center justify-center border border-[#00FF88]/30">
+                    <Play size={16} className="text-[#00FF88] fill-current ml-0.5" />
+                  </div>
                 </div>
               </div>
-              <div className="space-y-2">
-                <h3 className="text-xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                  {isLongBreak ? '😴 Long Break Active' :
-                    entries.some(e => e.status === 'sending') ? '⏳ Menunggu WA Web...' :
-                      'Blasting in Progress...'}
+
+              <div className="space-y-1">
+                <h3 className="text-lg font-bold text-[#C8D8E8] tracking-wider uppercase">
+                  {isLongBreak ? 'LONG BREAK' : entries.some(e => e.status === 'sending') ? 'PROCESSING...' : 'ENGINE ACTIVE'}
                 </h3>
-                <p className="text-sm text-slate-400">
-                  Pesan terkirim: <span className="font-bold text-purple-400">{entries.filter(e => e.status === 'sent').length}</span> / <span className="font-bold">{entries.length}</span>
-                </p>
-
-                {!settings.manualMode ? (
-                  <div className="py-4">
-                    <div className={cn(
-                      "text-4xl font-black tabular-nums",
-                      isLongBreak ? "text-amber-400" :
-                        entries.some(e => e.status === 'sending') ? "text-blue-400 animate-pulse" :
-                          "text-purple-400"
-                    )}>
-                      {entries.some(e => e.status === 'sending') ? '--:--' : `${Math.floor(countdown / 60)}:${(countdown % 60).toString().padStart(2, '0')}`}
-                    </div>
-                    <p className="text-[10px] text-slate-500 uppercase tracking-widest mt-1">
-                      {entries.some(e => e.status === 'sending') ? 'Memproses di WA Web' : isLongBreak ? 'Break ends in' : 'Next message in'}
-                    </p>
-
-                    {Date.now() >= nextActionTime && entries.filter(e => e.status === 'pending').length > 0 && !entries.some(e => e.status === 'sending') && (
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="mt-4"
-                      >
-                        <button
-                          onClick={() => {
-                            const pending = entries.filter(e => e.status === 'pending');
-                            if (pending.length > 0) {
-                              const entry = pending[0];
-                              const sentCount = entries.filter(e => e.status === 'sent').length;
-                              const newWindow = window.open(getWALink(entry, sentCount), 'WAsenderTab');
-                              if (newWindow) {
-                                window.focus();
-                                if (settings.autoSend) {
-                                  updateStatus(entry.id, 'sending');
-                                } else {
-                                  updateStatus(entry.id, 'sent');
-                                  setNextActionTime(Date.now() + calculateNextDelay(sentCount + 1, entries.filter(e => e.status === 'pending')[1] || entry));
-                                }
-                              }
-                            }
-                          }}
-                          className="w-full py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold text-sm shadow-lg flex items-center justify-center gap-2 transition-all"
-                        >
-                          <Play size={14} fill="white" /> Klik jika tab tidak terbuka otomatis
-                        </button>
-                      </motion.div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="py-6 space-y-2">
-                    <div className="px-4 py-2 bg-purple-900/30 text-purple-300 rounded-xl text-xs font-bold border border-purple-700/50">
-                      MODE MANUAL AKTIF
-                    </div>
-                    <p className="text-[10px] text-slate-500">Tekan [SPASI] atau klik tombol di bawah untuk lanjut.</p>
-                  </div>
-                )}
-
-                <div className="pt-2 flex flex-col gap-2">
-                  <p className="text-[10px] text-amber-400 font-bold uppercase tracking-widest animate-pulse">
-                    PENTING: Tekan [ENTER] pada tab WhatsApp untuk mengirim!
-                  </p>
-                  <p className="text-[9px] text-slate-500 italic">
-                    Browser tidak mengizinkan klik otomatis di dalam WhatsApp. Tekan Enter setiap kali pesan muncul.
-                  </p>
+                <div className="text-xs text-[#3A5068]">
+                  SENT <span className="text-[#00FF88] font-bold">{entries.filter(e => e.status === 'sent').length}</span>
+                  <span className="mx-2 text-[#1E2D3D]">/</span>
+                  <span className="text-[#C8D8E8]">{entries.length}</span> TOTAL
                 </div>
               </div>
-              <div className="flex flex-col gap-3">
+
+              {!settings.manualMode ? (
+                <div className="space-y-2">
+                  <div className={cn(
+                    "text-5xl font-black tabular-nums tracking-tighter",
+                    isLongBreak ? "text-[#F59E0B]" : entries.some(e => e.status === 'sending') ? "text-[#38BDF8]" : "text-[#00FF88]"
+                  )} style={!isLongBreak && !entries.some(e => e.status === 'sending') ? { textShadow: '0 0 30px rgba(0,255,136,0.5)' } : {}}>
+                    {entries.some(e => e.status === 'sending') ? '--:--' : `${Math.floor(countdown / 60).toString().padStart(2,'0')}:${(countdown % 60).toString().padStart(2, '0')}`}
+                  </div>
+                  <div className="text-[9px] text-[#3A5068] uppercase tracking-[0.25em]">
+                    {entries.some(e => e.status === 'sending') ? 'AWAITING WA WEB' : isLongBreak ? 'BREAK ENDS IN' : 'NEXT MESSAGE'}
+                  </div>
+                  
+                  {Date.now() >= nextActionTime && entries.filter(e => e.status === 'pending').length > 0 && !entries.some(e => e.status === 'sending') && (
+                    <div className="mt-4">
+                      <button
+                        onClick={() => {
+                          const pending = entries.filter(e => e.status === 'pending');
+                          if (pending.length > 0) {
+                            const entry = pending[0];
+                            const sentCount = entries.filter(e => e.status === 'sent').length;
+                            const newWindow = window.open(getWALink(entry, sentCount), 'WAsenderTab');
+                            if (newWindow) {
+                              window.focus();
+                              if (settings.autoSend) updateStatus(entry.id, 'sending');
+                              else { updateStatus(entry.id, 'sent'); setNextActionTime(Date.now() + calculateNextDelay(sentCount + 1, entries.filter(e => e.status === 'pending')[1] || entry)); }
+                            }
+                          }
+                        }}
+                        className="w-full py-3 rounded-xl font-bold text-xs tracking-wider uppercase transition-all border border-[#F59E0B]/30 bg-[#F59E0B]/10 text-[#F59E0B] hover:bg-[#F59E0B]/20"
+                      >
+                        ▶ TAB TIDAK TERBUKA? KLIK DI SINI
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="py-4 space-y-2">
+                  <div className="px-4 py-2 rounded-lg border border-[#00FF88]/20 bg-[#00FF88]/5 text-[#00FF88] text-[10px] font-bold tracking-widest uppercase">
+                    MANUAL MODE AKTIF
+                  </div>
+                  <p className="text-[10px] text-[#3A5068]">Tekan [SPASI] atau klik tombol di bawah untuk lanjut.</p>
+                </div>
+              )}
+
+              <div className="space-y-1 py-2 border-t border-[#1E2D3D]">
+                <p className="text-[9px] text-[#F59E0B] font-bold uppercase tracking-widest animate-pulse">
+                  ⚠ TEKAN [ENTER] DI TAB WHATSAPP UNTUK MENGIRIM
+                </p>
+                <p className="text-[9px] text-[#3A5068] italic">
+                  Browser tidak mengizinkan klik otomatis di WhatsApp Web.
+                </p>
+              </div>
+
+              <div className="space-y-2">
                 {entries.some(e => e.status === 'sending') && (
                   <button
                     onClick={() => {
                       const sending = entries.find(e => e.status === 'sending');
-                      if (sending) {
-                        addLog(`⏭️ Paksa lanjut: Melewati konfirmasi untuk ${sending.recipientName}`, 'warning');
-                        updateStatus(sending.id, 'sent');
-                      }
+                      if (sending) { addLog(`⏭️ Paksa lanjut: Melewati konfirmasi untuk ${sending.recipientName}`, 'warning'); updateStatus(sending.id, 'sent'); }
                     }}
-                    className="w-full py-3 bg-blue-600 text-white rounded-2xl font-bold shadow-lg shadow-blue-600/20 text-sm hover:bg-blue-700 transition-all"
+                    className="w-full py-3 rounded-xl font-bold text-xs tracking-wider uppercase border border-[#38BDF8]/30 bg-[#38BDF8]/10 text-[#38BDF8] hover:bg-[#38BDF8]/20 transition-all"
                   >
-                    Paksa Lanjut ke Nomor Berikutnya
+                    PAKSA LANJUT →
                   </button>
                 )}
                 <button
@@ -894,303 +760,143 @@ export default function App() {
                       updateStatus(entry.id, 'sent');
                     }
                   }}
-                  className="w-full py-3 bg-purple-900/30 text-purple-300 rounded-2xl font-bold text-sm hover:bg-purple-800/40 transition-all border border-purple-700/50"
+                  className="w-full py-3 rounded-xl font-bold text-xs tracking-wider uppercase border border-[#00FF88]/20 bg-[#00FF88]/5 text-[#00FF88] hover:bg-[#00FF88]/10 transition-all"
                 >
-                  Kirim Berikutnya (Manual)
+                  KIRIM BERIKUTNYA (MANUAL)
                 </button>
                 <button
                   onClick={stopBlast}
-                  className="w-full py-3 bg-red-500 hover:bg-red-600 text-white rounded-2xl font-bold transition-all shadow-lg shadow-red-500/20 text-sm"
+                  className="w-full py-3 rounded-xl font-bold text-xs tracking-wider uppercase border border-[#FF4444]/30 bg-[#FF4444]/10 text-[#FF4444] hover:bg-[#FF4444]/20 transition-all"
                 >
-                  Berhenti
+                  ■ STOP ENGINE
                 </button>
               </div>
-            </motion.div>
+            </div>
+            <div className="h-px w-full bg-gradient-to-r from-transparent via-[#FF4444]/30 to-transparent" />
           </motion.div>
-        )}
-      </AnimatePresence>
+        </div>
+      )}
 
-      {/* Header - Glassmorphism */}
-      <header className="sticky top-0 z-30 bg-slate-900/70 backdrop-blur-xl border-b border-purple-500/20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2 hover:bg-purple-500/20 rounded-xl transition-colors"
-            >
-              <Menu size={20} />
-            </button>
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-purple-500/30">
-                <Send size={18} className="sm:w-5 sm:h-5" />
+      {/* HEADER */}
+      <header className="sticky top-0 z-30 border-b border-[#1E2D3D]"
+        style={{ background: 'rgba(6,12,18,0.9)', backdropFilter: 'blur(20px)' }}>
+        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="relative w-8 h-8 rounded-lg bg-[#00FF88]/10 border border-[#00FF88]/20 flex items-center justify-center">
+              <Send size={15} className="text-[#00FF88]" />
+              <div className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[#00FF88]" style={{ boxShadow: '0 0 6px #00FF88' }} />
+            </div>
+            <div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-sm font-bold text-[#C8D8E8] tracking-widest">WASENDER</span>
+                <span className="text-xs font-black text-[#00FF88]" style={{ textShadow: '0 0 10px #00FF88' }}>PRO</span>
               </div>
-              <div>
-                <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">WAsender PRO</h1>
-                <p className="text-[8px] sm:text-[10px] text-slate-500 font-mono uppercase tracking-widest hidden sm:block">Advanced WhatsApp Blast Engine</p>
-              </div>
+              <div className="text-[8px] text-[#3A5068] tracking-[0.3em] uppercase">Advanced Blast Engine</div>
             </div>
           </div>
-
-          <div className="flex items-center gap-1 sm:gap-3">
-            {/* Extension status */}
-            <div className={cn(
-              "hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold border transition-all",
-              isExtensionDetected
-                ? "bg-green-500/10 text-green-400 border-green-500/30"
-                : "bg-red-500/10 text-red-400 border-red-500/30"
-            )}>
-              {isExtensionDetected ? <Wifi size={12} /> : <WifiOff size={12} />}
-              <span className="hidden md:inline">{isExtensionDetected ? "Connected" : "Disconnected"}</span>
+          
+          <div className="flex items-center gap-2">
+            {!isExtensionDetected && (
+              <button
+                onClick={downloadExtensionZip}
+                className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg border border-[#F59E0B]/20 bg-[#F59E0B]/5 text-[#F59E0B] hover:bg-[#F59E0B]/10 transition-all text-[10px] font-bold tracking-wider uppercase"
+              >
+                <Puzzle size={13} /> Setup Extension
+              </button>
+            )}
+            <button onClick={handleResetDefault} className="p-2 rounded-lg border border-[#FF4444]/20 bg-[#FF4444]/5 text-[#FF4444] hover:bg-[#FF4444]/10 transition-all" title="Reset">
+              <RotateCcw size={15} />
+            </button>
+            <button onClick={() => setIsDarkMode(!isDarkMode)} className="p-2 rounded-lg border border-[#1E2D3D] bg-[#0A0F14] text-[#3A5068] hover:text-[#00FF88] hover:border-[#00FF88]/20 transition-all">
+              {isDarkMode ? <Sun size={15} /> : <Moon size={15} />}
+            </button>
+            <button onClick={() => setShowSettingsModal(true)} className="p-2 rounded-lg border border-[#1E2D3D] bg-[#0A0F14] text-[#3A5068] hover:text-[#00FF88] hover:border-[#00FF88]/20 transition-all">
+              <Settings2 size={15} />
+            </button>
+            <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg border border-[#1E2D3D] bg-[#0A0F14]">
+              <div className={cn("w-1.5 h-1.5 rounded-full", isBlasting ? "bg-[#00FF88] animate-pulse" : "bg-[#1E2D3D]")}
+                style={isBlasting ? { boxShadow: '0 0 6px #00FF88' } : {}} />
+              <span className="text-[9px] text-[#3A5068] uppercase tracking-widest">{isBlasting ? 'ACTIVE' : 'IDLE'}</span>
             </div>
-
-            {/* Quick action buttons */}
-            <button
-              onClick={downloadExtensionZip}
-              className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-400 hover:bg-amber-500/20 transition-all text-xs font-bold"
-              title="Download Extension Helper"
-            >
-              <Puzzle size={14} />
-              <span className="hidden lg:inline">Extension</span>
-            </button>
-
-            <button
-              onClick={handleResetDefault}
-              className="p-2 sm:p-2.5 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 hover:bg-red-500/20 transition-all"
-              title="Reset ke Pengaturan Awal"
-            >
-              <RotateCcw size={16} sm:size={18} />
-            </button>
-
-            <button
-              onClick={() => setIsDarkMode(!isDarkMode)}
-              className="p-2 sm:p-2.5 bg-slate-800 border border-slate-700 rounded-xl text-slate-400 hover:text-purple-400 transition-all"
-              title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-            >
-              {isDarkMode ? <Sun size={16} sm:size={18} /> : <Moon size={16} sm:size={18} />}
-            </button>
-
-            <button
-              onClick={() => setShowSettingsModal(true)}
-              className="p-2 sm:p-2.5 bg-slate-800 border border-slate-700 rounded-xl text-slate-400 hover:text-purple-400 transition-all"
-              title="Settings"
-            >
-              <Settings2 size={16} sm:size={18} />
-            </button>
-
-            <button
-              onClick={exportToCSV}
-              className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-purple-500/10 border border-purple-500/30 rounded-xl text-purple-400 hover:bg-purple-500/20 transition-all text-xs font-bold"
-            >
-              <Download size={14} /> Export
-            </button>
-
-            {/* Start/Stop button - prominent */}
-            <button
-              onClick={isBlasting ? stopBlast : startBlast}
-              disabled={entries.length === 0}
-              className={cn(
-                "px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center gap-2 shadow-lg",
-                isBlasting
-                  ? "bg-red-500 text-white shadow-red-500/30 hover:bg-red-600"
-                  : "bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-purple-500/30 hover:shadow-xl hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
-              )}
-            >
-              {isBlasting ? <Square size={14} sm:size={16} fill="currentColor" /> : <Play size={14} sm:size={16} fill="currentColor" />}
-              <span className="hidden sm:inline">{isBlasting ? 'Stop' : 'Start'}</span>
+            <button onClick={exportToCSV} className="flex items-center gap-1.5 text-[10px] font-bold text-[#3A5068] hover:text-[#00FF88] uppercase tracking-wider transition-colors">
+              <Download size={13} /> Export
             </button>
           </div>
         </div>
-
-        {/* Mobile menu (collapsible) */}
-        <AnimatePresence>
-          {mobileMenuOpen && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="lg:hidden bg-slate-800/90 backdrop-blur-xl border-t border-purple-500/20 px-4 py-4 space-y-3"
-            >
-              <div className="flex items-center justify-between">
-                <div className={cn(
-                  "flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold",
-                  isExtensionDetected ? "bg-green-500/10 text-green-400" : "bg-red-500/10 text-red-400"
-                )}>
-                  {isExtensionDetected ? <Wifi size={14} /> : <WifiOff size={14} />}
-                  <span>{isExtensionDetected ? "Extension Connected" : "Extension Disconnected"}</span>
-                </div>
-                <button
-                  onClick={downloadExtensionZip}
-                  className="flex items-center gap-2 px-3 py-2 bg-amber-500/10 rounded-lg text-amber-400 text-xs font-bold"
-                >
-                  <Puzzle size={14} /> Download Extension
-                </button>
-              </div>
-              <button
-                onClick={exportToCSV}
-                className="w-full flex items-center justify-center gap-2 py-2 bg-purple-500/10 rounded-lg text-purple-400 text-xs font-bold border border-purple-500/30"
-              >
-                <Download size={14} /> Export CSV
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
-        {/* Top Stats Cards - responsive grid */}
-        <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-4 sm:mb-8">
-          <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-3 sm:p-4 border border-purple-500/20">
-            <div className="flex items-center gap-2 text-purple-400 mb-1">
-              <Activity size={14} className="sm:w-4 sm:h-4" />
-              <span className="text-[10px] sm:text-xs font-medium uppercase tracking-wider">Sent</span>
+      <main className="relative z-10 max-w-7xl mx-auto px-6 py-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        {/* LEFT SIDEBAR */}
+        <div className="lg:col-span-4 space-y-5">
+          
+          {/* Stats */}
+          <GlassCard className="p-5">
+            <SectionHeader icon={BarChart3} title="OVERVIEW" right={<History size={13} className="text-[#1E2D3D]" />} />
+            <div className="h-44 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={statsData} innerRadius={55} outerRadius={72} paddingAngle={4} dataKey="value" strokeWidth={0}>
+                    {statsData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} opacity={0.9} />
+                    ))}
+                  </Pie>
+                  <RechartsTooltip contentStyle={{ background: '#0A0F14', border: '1px solid #1E2D3D', color: '#C8D8E8', fontFamily: 'monospace', fontSize: '11px', borderRadius: '8px' }} />
+                </PieChart>
+              </ResponsiveContainer>
             </div>
-            <div className="text-lg sm:text-2xl font-bold text-green-400">{entries.filter(e => e.status === 'sent').length}</div>
-          </div>
-          <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-3 sm:p-4 border border-purple-500/20">
-            <div className="flex items-center gap-2 text-purple-400 mb-1">
-              <Clock size={14} className="sm:w-4 sm:h-4" />
-              <span className="text-[10px] sm:text-xs font-medium uppercase tracking-wider">Pending</span>
-            </div>
-            <div className="text-lg sm:text-2xl font-bold text-amber-400">{entries.filter(e => e.status === 'pending').length}</div>
-          </div>
-          <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-3 sm:p-4 border border-purple-500/20">
-            <div className="flex items-center gap-2 text-purple-400 mb-1">
-              <CheckCircle2 size={14} className="sm:w-4 sm:h-4" />
-              <span className="text-[10px] sm:text-xs font-medium uppercase tracking-wider">Received</span>
-            </div>
-            <div className="text-lg sm:text-2xl font-bold text-blue-400">{entries.filter(e => e.isReceived).length}</div>
-          </div>
-        </div>
-
-        {/* Search and Bulk Import Bar */}
-        <div className="flex flex-col sm:flex-row gap-3 mb-4 sm:mb-6">
-          <div className="relative flex-1">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Cari nama, nomor, atau resi..."
-              className="w-full pl-12 pr-4 py-3 bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-2xl focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 outline-none transition-all text-sm text-white placeholder-slate-500"
-            />
-          </div>
-          <button
-            onClick={() => setShowBulkModal(true)}
-            className="flex items-center justify-center gap-2 px-6 py-3 bg-purple-500/10 border border-purple-500/30 rounded-2xl text-purple-400 font-bold text-sm hover:bg-purple-500/20 transition-all"
-          >
-            <FileSpreadsheet size={18} /> Bulk Import
-          </button>
-          <button
-            onClick={() => setShowPreviewModal(true)}
-            disabled={entries.filter(e => e.status === 'pending').length === 0}
-            className="flex items-center justify-center gap-2 px-6 py-3 bg-slate-800 border border-slate-700 rounded-2xl text-slate-300 font-bold text-sm hover:bg-slate-700 transition-all disabled:opacity-50"
-          >
-            <Search size={18} /> Preview
-          </button>
-        </div>
-
-        {/* Add Entry Form - Card */}
-        <section className="bg-slate-800/50 backdrop-blur-sm rounded-3xl p-4 sm:p-6 border border-purple-500/20 mb-6">
-          <h2 className="text-lg font-bold text-purple-400 mb-4 flex items-center gap-2">
-            <Plus size={20} /> Tambah Data Baru
-          </h2>
-          <form onSubmit={handleAddEntry} className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div>
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Phone *</label>
-                <input
-                  type="text"
-                  value={formData.phone}
-                  onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                  placeholder="0812..."
-                  className="w-full mt-1 p-3 text-sm bg-slate-900/50 border border-slate-700 rounded-xl focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 outline-none transition-all text-white placeholder-slate-600"
-                />
-              </div>
-              <div>
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Name *</label>
-                <input
-                  type="text"
-                  value={formData.recipientName}
-                  onChange={(e) => setFormData(prev => ({ ...prev, recipientName: e.target.value }))}
-                  placeholder="Recipient Name"
-                  className="w-full mt-1 p-3 text-sm bg-slate-900/50 border border-slate-700 rounded-xl focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 outline-none transition-all text-white placeholder-slate-600"
-                />
-              </div>
-              <div>
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Item Name</label>
-                <input
-                  type="text"
-                  value={formData.itemName}
-                  onChange={(e) => setFormData(prev => ({ ...prev, itemName: e.target.value }))}
-                  placeholder="Nama Barang"
-                  className="w-full mt-1 p-3 text-sm bg-slate-900/50 border border-slate-700 rounded-xl focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 outline-none transition-all text-white placeholder-slate-600"
-                />
-              </div>
-              <div>
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Resi</label>
-                <input
-                  type="text"
-                  value={formData.receiptNumber}
-                  onChange={(e) => setFormData(prev => ({ ...prev, receiptNumber: e.target.value }))}
-                  placeholder="Resi Number"
-                  className="w-full mt-1 p-3 text-sm bg-slate-900/50 border border-slate-700 rounded-xl focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 outline-none transition-all text-white placeholder-slate-600"
-                />
-              </div>
-              <div className="sm:col-span-2 lg:col-span-1">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Address</label>
-                <input
-                  type="text"
-                  value={formData.address}
-                  onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
-                  placeholder="Alamat Lengkap"
-                  className="w-full mt-1 p-3 text-sm bg-slate-900/50 border border-slate-700 rounded-xl focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 outline-none transition-all text-white placeholder-slate-600"
-                />
-              </div>
-              <div>
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">COD</label>
-                <input
-                  type="text"
-                  value={formData.cod}
-                  onChange={(e) => setFormData(prev => ({ ...prev, cod: e.target.value.replace(/[^0-9.,]/g, '') }))}
-                  placeholder="274,398"
-                  className="w-full mt-1 p-3 text-sm bg-slate-900/50 border border-slate-700 rounded-xl focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 outline-none transition-all text-white placeholder-slate-600"
-                />
-              </div>
-              <div>
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">DFOD</label>
-                <input
-                  type="text"
-                  value={formData.dfod}
-                  onChange={(e) => setFormData(prev => ({ ...prev, dfod: e.target.value.replace(/[^0-9.,]/g, '') }))}
-                  placeholder="10,000"
-                  className="w-full mt-1 p-3 text-sm bg-slate-900/50 border border-slate-700 rounded-xl focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 outline-none transition-all text-white placeholder-slate-600"
-                />
-              </div>
-              <div className="flex items-end">
-                <button
-                  type="submit"
-                  className="w-full py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl font-bold text-sm hover:shadow-lg hover:shadow-purple-500/30 transition-all flex items-center justify-center gap-2"
-                >
-                  <Plus size={18} /> Tambah ke Antrean
-                </button>
-              </div>
-            </div>
-          </form>
-        </section>
-
-        {/* Two-column layout for main content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left column - Templates & Settings */}
-          <div className="space-y-6">
-            {/* Templates Card */}
-            <section className="bg-slate-800/50 backdrop-blur-sm rounded-3xl p-4 sm:p-6 border border-purple-500/20">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <MessageSquare size={18} className="text-purple-400" />
-                  <h2 className="font-bold text-purple-400">Templates</h2>
+            <div className="grid grid-cols-3 gap-2 mt-2">
+              {statsData.map(s => (
+                <div key={s.name} className="p-3 rounded-xl border border-[#1E2D3D] bg-[#060C12] text-center">
+                  <div className="text-[8px] text-[#3A5068] uppercase tracking-wider mb-1">{s.name}</div>
+                  <div className="text-xl font-black" style={{ color: s.color, textShadow: `0 0 15px ${s.color}60` }}>{s.value}</div>
                 </div>
-                <div className="flex items-center gap-1">
-                  <span className="text-[9px] font-bold text-purple-400 uppercase tracking-tighter mr-2 animate-pulse">Auto-saved</span>
+              ))}
+            </div>
+          </GlassCard>
+
+          {/* Engine Settings */}
+          <GlassCard className="p-5">
+            <SectionHeader icon={Timer} title="ENGINE" />
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <FieldLabel>Nama Pengirim</FieldLabel>
+                <GlassInput
+                  type="text"
+                  value={settings.senderName}
+                  onChange={(e) => setSettings(prev => ({ ...prev, senderName: e.target.value }))}
+                  placeholder="Admin JNT"
+                />
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <FieldLabel>Blast Delay</FieldLabel>
+                  <span className="text-[10px] font-bold text-[#00FF88]" style={{ textShadow: '0 0 8px #00FF88' }}>{settings.delay / 1000}s</span>
+                </div>
+                <input
+                  type="range"
+                  min="1000" max="10000" step="500"
+                  value={settings.delay}
+                  onChange={(e) => setSettings(prev => ({ ...prev, delay: parseInt(e.target.value) }))}
+                  className="w-full h-1 rounded-full appearance-none cursor-pointer"
+                  style={{ accentColor: '#00FF88', background: `linear-gradient(to right, #00FF88 ${(settings.delay - 1000) / 90}%, #1E2D3D ${(settings.delay - 1000) / 90}%)` }}
+                />
+                <div className="flex justify-between text-[8px] text-[#3A5068] uppercase tracking-widest">
+                  <span>FAST</span>
+                  <span>SAFE</span>
+                </div>
+              </div>
+            </div>
+          </GlassCard>
+
+          {/* Templates */}
+          <GlassCard className="p-5">
+            <SectionHeader 
+              icon={Settings2} 
+              title="TEMPLATES"
+              right={
+                <div className="flex items-center gap-2">
+                  <span className="text-[8px] text-[#00FF88] uppercase tracking-widest">Auto-saved</span>
                   <button
                     onClick={() => {
                       const def = DEFAULT_TEMPLATES.find(t => t.id === activeTemplateId);
@@ -1200,285 +906,382 @@ export default function App() {
                         toast.success('Template direset ke default');
                       }
                     }}
-                    className="p-2 text-slate-500 hover:text-amber-400 hover:bg-amber-500/10 rounded-xl transition-all"
+                    className="p-1.5 rounded-lg border border-[#1E2D3D] text-[#3A5068] hover:text-[#F59E0B] hover:border-[#F59E0B]/20 transition-all"
                     title="Reset to Default"
                   >
-                    <History size={18} />
+                    <History size={13} />
                   </button>
                 </div>
-              </div>
+              }
+            />
+            
+            <div className="flex gap-1.5 mb-4 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
+              {templates.map(t => (
+                <button
+                  key={t.id}
+                  onClick={() => { setActiveTemplateId(t.id); setActiveVariationIndex(0); }}
+                  className={cn(
+                    "whitespace-nowrap px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all border",
+                    activeTemplateId === t.id
+                      ? "bg-[#00FF88]/10 text-[#00FF88] border-[#00FF88]/30"
+                      : "bg-[#060C12] text-[#3A5068] border-[#1E2D3D] hover:border-[#00FF88]/20 hover:text-[#C8D8E8]"
+                  )}
+                >
+                  {t.name}
+                </button>
+              ))}
+            </div>
 
-              <div className="flex gap-2 mb-4 overflow-x-auto pb-2 custom-scrollbar">
-                {templates.map(t => (
-                  <button
-                    key={t.id}
-                    onClick={() => {
-                      setActiveTemplateId(t.id);
-                      setActiveVariationIndex(0);
-                    }}
-                    className={cn(
-                      "whitespace-nowrap px-4 py-2 rounded-xl text-xs font-bold transition-all border",
-                      activeTemplateId === t.id
-                        ? "bg-purple-500 text-white border-purple-500 shadow-md shadow-purple-500/30"
-                        : "bg-slate-900/50 text-slate-400 border-slate-700 hover:bg-slate-800"
-                    )}
-                  >
-                    {t.name}
-                  </button>
-                ))}
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-[8px] text-[#3A5068] uppercase tracking-widest">VAR:</span>
+              {[0, 1, 2].map(idx => (
+                <button
+                  key={idx}
+                  onClick={() => setActiveVariationIndex(idx)}
+                  className={cn(
+                    "w-7 h-7 rounded-lg text-[10px] font-bold border transition-all",
+                    activeVariationIndex === idx
+                      ? "bg-[#00FF88]/10 text-[#00FF88] border-[#00FF88]/30"
+                      : "bg-[#060C12] text-[#3A5068] border-[#1E2D3D]"
+                  )}
+                >
+                  {idx + 1}
+                </button>
+              ))}
+              <div className="ml-auto text-[8px] text-[#3A5068]">
+                {settings.rotateTemplates ? "ROTASI ON" : "ROTASI OFF"}
               </div>
+            </div>
 
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mr-2">Variasi:</span>
-                {[0, 1, 2].map(idx => (
-                  <button
-                    key={idx}
-                    onClick={() => setActiveVariationIndex(idx)}
-                    className={cn(
-                      "w-8 h-8 rounded-lg text-xs font-bold transition-all border flex items-center justify-center",
-                      activeVariationIndex === idx
-                        ? "bg-purple-500/20 text-purple-400 border-purple-500"
-                        : "bg-slate-900/50 text-slate-500 border-slate-700"
-                    )}
-                  >
-                    {idx + 1}
-                  </button>
-                ))}
-                <div className="ml-auto text-[9px] text-slate-500 italic">
-                  {settings.rotateTemplates ? "Rotasi Aktif" : "Rotasi Mati"}
-                </div>
-              </div>
+            <textarea
+              value={currentTemplateText}
+              onChange={(e) => updateActiveTemplateText(e.target.value)}
+              className="w-full h-36 p-3 text-xs bg-[#060C12] border border-[#1E2D3D] rounded-xl outline-none transition-all resize-none text-[#C8D8E8] leading-relaxed focus:border-[#00FF88]/30"
+              style={{ scrollbarWidth: 'thin', scrollbarColor: '#1E2D3D transparent' }}
+              placeholder="Tulis template pesan..."
+            />
+            
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {['{salam}', '{pengirim}', '{nama}', '{barang}', '{resi}', '{alamat}', '{cod}', '{dfod}', '{if_cod}', '{/if_cod}', '{if_dfod}', '{/if_dfod}'].map(tag => (
+                <button
+                  key={tag}
+                  onClick={() => updateActiveTemplateText(currentTemplateText + ' ' + tag)}
+                  className="text-[9px] font-bold tracking-wide px-2 py-1 bg-[#060C12] border border-[#1E2D3D] hover:border-[#00FF88]/30 hover:text-[#00FF88] rounded text-[#3A5068] transition-all"
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
 
-              <textarea
-                value={currentTemplateText}
-                onChange={(e) => updateActiveTemplateText(e.target.value)}
-                className="w-full h-40 p-4 text-sm bg-slate-900/50 border border-slate-700 rounded-2xl focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 outline-none transition-all resize-none leading-relaxed text-white placeholder-slate-600 custom-scrollbar"
-                placeholder="Tulis template pesan..."
-              />
-              <div className="mt-3 flex flex-wrap gap-2">
-                {['{salam}', '{pengirim}', '{nama}', '{barang}', '{resi}', '{alamat}', '{cod}', '{dfod}', '{if_cod}', '{/if_cod}', '{if_dfod}', '{/if_dfod}'].map(tag => (
-                  <button
-                    key={tag}
-                    onClick={() => updateActiveTemplateText(currentTemplateText + ' ' + tag)}
-                    className="text-[10px] font-bold tracking-wider px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-slate-300 transition-colors"
-                  >
-                    {tag}
-                  </button>
-                ))}
+            <div className="mt-3 p-3 rounded-xl border border-[#38BDF8]/15 bg-[#38BDF8]/5">
+              <div className="flex items-center gap-1.5 mb-1">
+                <Sparkles size={11} className="text-[#38BDF8]" />
+                <span className="text-[8px] font-bold text-[#38BDF8] uppercase tracking-wider">SPINTAX TIP</span>
               </div>
-              <div className="mt-4 p-3 bg-blue-900/20 border border-blue-700/30 rounded-xl">
-                <div className="flex items-center gap-2 mb-1">
-                  <Sparkles size={12} className="text-blue-400" />
-                  <span className="text-[10px] font-bold text-blue-400 uppercase tracking-wider">Anti-Ban Tip: Spintax</span>
-                </div>
-                <p className="text-[10px] text-blue-300 leading-relaxed">
-                  Gunakan format <span className="font-mono font-bold bg-blue-800/30 px-1 rounded">{"{Halo|Hai|Pagi}"}</span> agar pesan diacak otomatis.
-                </p>
-              </div>
-            </section>
+              <p className="text-[9px] text-[#3A5068] leading-relaxed">
+                Gunakan <span className="font-mono font-bold text-[#38BDF8] bg-[#38BDF8]/10 px-1 rounded">{"{Halo|Hai|Pagi}"}</span> untuk variasi pesan otomatis.
+              </p>
+            </div>
+          </GlassCard>
+        </div>
 
-            {/* System Console - compact */}
-            <section className="bg-slate-800/50 backdrop-blur-sm rounded-3xl p-4 border border-purple-500/20">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-purple-400 animate-pulse" />
-                  <h2 className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">System Console</h2>
+        {/* MAIN CONTENT */}
+        <div className="lg:col-span-8 space-y-5">
+          
+          {/* Toolbar */}
+          <GlassCard className="p-4">
+            <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#3A5068]" size={14} />
+                <GlassInput
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="SEARCH: name / phone / resi..."
+                  className="pl-9"
+                />
+              </div>
+              <div className="flex gap-2 items-center flex-wrap">
+                <div className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[9px] font-bold uppercase tracking-wider transition-all",
+                  isExtensionDetected
+                    ? "border-[#00FF88]/20 bg-[#00FF88]/5 text-[#00FF88]"
+                    : "border-[#1E2D3D] bg-[#060C12] text-[#3A5068]"
+                )}>
+                  <Puzzle size={11} className={isExtensionDetected ? "animate-pulse" : ""} />
+                  {isExtensionDetected ? "CONNECTED" : "DISCONNECTED"}
                 </div>
                 <button
-                  onClick={() => setLogs([])}
-                  className="text-[9px] font-bold text-slate-500 hover:text-white uppercase tracking-widest transition-colors"
+                  onClick={() => setShowBulkModal(true)}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[#1E2D3D] bg-[#060C12] text-[#3A5068] hover:border-[#00FF88]/20 hover:text-[#00FF88] transition-all text-[10px] font-bold uppercase tracking-wider"
                 >
-                  Clear Logs
+                  <FileSpreadsheet size={13} /> BULK
+                </button>
+                <button
+                  onClick={() => setShowPreviewModal(true)}
+                  disabled={entries.filter(e => e.status === 'pending').length === 0}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[#1E2D3D] bg-[#060C12] text-[#3A5068] hover:border-[#38BDF8]/20 hover:text-[#38BDF8] transition-all text-[10px] font-bold uppercase tracking-wider disabled:opacity-40"
+                >
+                  <Search size={13} /> PREVIEW
+                </button>
+                <button
+                  onClick={isBlasting ? stopBlast : startBlast}
+                  disabled={entries.length === 0}
+                  className={cn(
+                    "flex items-center gap-2 px-5 py-2 rounded-lg font-black text-[10px] uppercase tracking-widest transition-all border disabled:opacity-40",
+                    isBlasting
+                      ? "border-[#FF4444]/30 bg-[#FF4444]/10 text-[#FF4444] hover:bg-[#FF4444]/20"
+                      : "border-[#00FF88]/30 bg-[#00FF88]/10 text-[#00FF88] hover:bg-[#00FF88]/15"
+                  )}
+                  style={!isBlasting ? { boxShadow: '0 0 20px rgba(0,255,136,0.1)' } : {}}
+                >
+                  {isBlasting ? <Square size={13} fill="currentColor" /> : <Play size={13} fill="currentColor" />}
+                  {isBlasting ? 'STOP' : 'START'}
                 </button>
               </div>
-              <div className="h-32 overflow-y-auto custom-scrollbar font-mono text-[11px] space-y-1 px-1">
-                {logs.length === 0 ? (
-                  <div className="text-slate-600 italic">Waiting for system actions...</div>
-                ) : (
-                  logs.map(log => (
-                    <div key={log.id} className="flex gap-3 leading-relaxed group">
-                      <span className="text-slate-600 shrink-0">[{new Date(log.timestamp).toLocaleTimeString([], { hour12: false })}]</span>
-                      <span className={cn(
-                        "break-all",
-                        log.type === 'success' ? "text-green-400" :
-                          log.type === 'error' ? "text-red-400" :
-                            log.type === 'warning' ? "text-amber-400" :
-                              "text-blue-400"
-                      )}>
-                        {log.message}
-                      </span>
-                    </div>
-                  ))
-                )}
-              </div>
-            </section>
-          </div>
+            </div>
+          </GlassCard>
 
-          {/* Right column - Queue Table */}
-          <div className="lg:col-span-2">
-            <div className="bg-slate-800/50 backdrop-blur-sm rounded-3xl border border-purple-500/20 overflow-hidden">
-              <div className="p-4 sm:p-6 border-b border-slate-700 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <FileText size={18} className="text-purple-400" />
-                  <h2 className="font-bold text-purple-400">Queue Management</h2>
-                  <span className="ml-2 px-2 py-0.5 bg-slate-700 text-[10px] font-bold text-slate-300 rounded-md">{filteredEntries.length} items</span>
+          {/* Warning Banner */}
+          {!isBlasting && entries.length > 0 && (
+            <div className="flex items-start gap-3 p-3 rounded-xl border border-[#F59E0B]/15 bg-[#F59E0B]/5">
+              <AlertCircle className="text-[#F59E0B] shrink-0 mt-0.5" size={14} />
+              <p className="text-[10px] text-[#F59E0B]/70 leading-relaxed">
+                <span className="font-bold text-[#F59E0B]">PENTING:</span> Mesin akan membuka WhatsApp Web di tab yang sama. Pastikan Anda telah <span className="font-bold text-[#F59E0B]">MENGIZINKAN POPUP</span> di browser.
+              </p>
+            </div>
+          )}
+
+          {/* Add Entry Form */}
+          <GlassCard className="p-5">
+            <form onSubmit={handleAddEntry} className="space-y-3">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="space-y-1.5">
+                  <FieldLabel>Phone</FieldLabel>
+                  <GlassInput type="text" value={formData.phone} onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))} placeholder="0812..." />
                 </div>
-
-                {isConfirmingClear ? (
-                  <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-2">
-                    <span className="text-[10px] font-bold text-red-400 uppercase">Confirm?</span>
-                    <button onClick={clearAll} className="px-3 py-1.5 text-[10px] font-bold uppercase bg-red-500 text-white rounded-lg">Yes</button>
-                    <button onClick={() => setIsConfirmingClear(false)} className="px-3 py-1.5 text-[10px] font-bold uppercase bg-slate-700 text-slate-300 rounded-lg">No</button>
-                  </div>
-                ) : (
-                  <button onClick={() => setIsConfirmingClear(true)} className="p-2 text-slate-500 hover:text-red-400 transition-colors">
-                    <Trash2 size={18} />
-                  </button>
-                )}
+                <div className="space-y-1.5">
+                  <FieldLabel>Name</FieldLabel>
+                  <GlassInput type="text" value={formData.recipientName} onChange={(e) => setFormData(prev => ({ ...prev, recipientName: e.target.value }))} placeholder="Recipient Name" />
+                </div>
+                <div className="space-y-1.5">
+                  <FieldLabel>Item Name</FieldLabel>
+                  <GlassInput type="text" value={formData.itemName} onChange={(e) => setFormData(prev => ({ ...prev, itemName: e.target.value }))} placeholder="Nama Barang" />
+                </div>
               </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+                <div className="space-y-1.5">
+                  <FieldLabel>Resi</FieldLabel>
+                  <GlassInput type="text" value={formData.receiptNumber} onChange={(e) => setFormData(prev => ({ ...prev, receiptNumber: e.target.value }))} placeholder="Resi Number" />
+                </div>
+                <div className="space-y-1.5 md:col-span-2">
+                  <FieldLabel>Address</FieldLabel>
+                  <GlassInput type="text" value={formData.address} onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))} placeholder="Alamat Lengkap" />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+                <div className="space-y-1.5">
+                  <FieldLabel>COD</FieldLabel>
+                  <GlassInput type="text" value={formData.cod} onChange={(e) => setFormData(prev => ({ ...prev, cod: e.target.value.replace(/[^0-9.,]/g, '') }))} placeholder="274,398" />
+                </div>
+                <div className="space-y-1.5">
+                  <FieldLabel>DFOD</FieldLabel>
+                  <GlassInput type="text" value={formData.dfod} onChange={(e) => setFormData(prev => ({ ...prev, dfod: e.target.value.replace(/[^0-9.,]/g, '') }))} placeholder="10,000" />
+                </div>
+                <button
+                  type="submit"
+                  className="py-2.5 rounded-lg border border-[#00FF88]/30 bg-[#00FF88]/10 text-[#00FF88] font-bold text-[10px] uppercase tracking-widest hover:bg-[#00FF88]/20 transition-all flex items-center justify-center gap-2"
+                >
+                  <Plus size={14} /> ADD TO QUEUE
+                </button>
+              </div>
+            </form>
+          </GlassCard>
 
-              <div className="overflow-x-auto custom-scrollbar">
-                <table className="w-full text-left">
-                  <thead>
-                    <tr className="bg-slate-900/50">
-                      <th className="px-4 sm:px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Recipient</th>
-                      <th className="px-4 sm:px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Details</th>
-                      <th className="px-4 sm:px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Status</th>
-                      <th className="px-4 sm:px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Received</th>
-                      <th className="px-4 sm:px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-700">
-                    <AnimatePresence mode="popLayout">
-                      {filteredEntries.length === 0 ? (
-                        <motion.tr initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center">
-                          <td colSpan={5} className="px-6 py-16 text-slate-500 text-sm italic">
-                            No matching records found.
-                          </td>
-                        </motion.tr>
-                      ) : (
-                        filteredEntries.map((entry, index) => (
+          {/* Console */}
+          <GlassCard className="p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-[#00FF88] animate-pulse" style={{ boxShadow: '0 0 6px #00FF88' }} />
+                <span className="text-[8px] text-[#3A5068] uppercase tracking-[0.25em]">SYS CONSOLE</span>
+              </div>
+              <button onClick={() => setLogs([])} className="text-[8px] font-bold text-[#3A5068] hover:text-[#FF4444] uppercase tracking-widest transition-colors">CLR</button>
+            </div>
+            <div className="h-28 overflow-y-auto text-[10px] space-y-0.5 font-mono" style={{ scrollbarWidth: 'thin', scrollbarColor: '#1E2D3D transparent' }}>
+              {logs.length === 0 ? (
+                <span className="text-[#1E2D3D] italic">_waiting for system events...</span>
+              ) : (
+                logs.map(log => (
+                  <div key={log.id} className="flex gap-3 leading-relaxed">
+                    <span className="text-[#1E2D3D] shrink-0">[{new Date(log.timestamp).toLocaleTimeString([], { hour12: false })}]</span>
+                    <span className={cn(
+                      log.type === 'success' ? "text-[#00FF88]" :
+                      log.type === 'error' ? "text-[#FF4444]" :
+                      log.type === 'warning' ? "text-[#F59E0B]" :
+                      "text-[#38BDF8]"
+                    )}>{log.message}</span>
+                  </div>
+                ))
+              )}
+            </div>
+          </GlassCard>
+
+          {/* Queue Table */}
+          <GlassCard className="overflow-hidden">
+            <div className="px-5 py-4 border-b border-[#1E2D3D] flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <FileText size={14} className="text-[#00FF88]" />
+                <span className="text-xs font-bold text-[#C8D8E8] uppercase tracking-wider">Queue</span>
+                <span className="px-2 py-0.5 rounded border border-[#1E2D3D] bg-[#060C12] text-[8px] font-bold text-[#3A5068]">{filteredEntries.length}</span>
+              </div>
+              {isConfirmingClear ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-[9px] font-bold text-[#FF4444] uppercase tracking-wider">CONFIRM?</span>
+                  <button onClick={clearAll} className="px-2.5 py-1 text-[9px] font-bold uppercase rounded border border-[#FF4444]/30 bg-[#FF4444]/10 text-[#FF4444]">YES</button>
+                  <button onClick={() => setIsConfirmingClear(false)} className="px-2.5 py-1 text-[9px] font-bold uppercase rounded border border-[#1E2D3D] text-[#3A5068]">NO</button>
+                </div>
+              ) : (
+                <button onClick={() => setIsConfirmingClear(true)} className="p-1.5 text-[#1E2D3D] hover:text-[#FF4444] transition-colors">
+                  <Trash2 size={14} />
+                </button>
+              )}
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="border-b border-[#1E2D3D]">
+                    {['RECIPIENT', 'DETAILS', 'STATUS', 'RECEIVED', ''].map(h => (
+                      <th key={h} className="px-5 py-3 text-[8px] font-bold text-[#3A5068] uppercase tracking-widest">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  <AnimatePresence mode="popLayout">
+                    {filteredEntries.length === 0 ? (
+                      <motion.tr initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                        <td colSpan={5} className="px-5 py-16 text-center text-[#1E2D3D] text-xs italic">
+                          — no records found —
+                        </td>
+                      </motion.tr>
+                    ) : (
+                      filteredEntries.map((entry, index) => {
+                        const sc = statusConfig[entry.status as keyof typeof statusConfig] || statusConfig.pending;
+                        return (
                           <motion.tr
                             key={entry.id}
                             layout
-                            initial={{ opacity: 0, y: 10 }}
+                            initial={{ opacity: 0, y: 8 }}
                             animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, x: -10 }}
+                            exit={{ opacity: 0, x: -8 }}
                             className={cn(
-                              "group transition-all",
-                              isBlasting && index === currentIndex
-                                ? "bg-purple-500/10"
-                                : "hover:bg-slate-700/50"
+                              "group border-b border-[#0A0F14] transition-all",
+                              isBlasting && index === currentIndex ? "bg-[#00FF88]/5" : "hover:bg-[#0A0F14]"
                             )}
                           >
-                            <td className="px-4 sm:px-6 py-4">
-                              <div className="font-bold text-sm">{entry.recipientName}</div>
-                              <div className="text-xs text-slate-500 font-mono">{entry.phone}</div>
+                            <td className="px-5 py-4">
+                              <div className="text-xs font-bold text-[#C8D8E8]">{entry.recipientName}</div>
+                              <div className="text-[9px] text-[#3A5068] font-mono mt-0.5">{entry.phone}</div>
                             </td>
-                            <td className="px-4 sm:px-6 py-4">
-                              <div className="text-sm font-medium truncate max-w-[150px] sm:max-w-[200px]" title={entry.itemName}>{entry.itemName || '-'}</div>
-                              <div className="flex flex-col gap-1">
-                                <div className="text-[10px] text-slate-500 font-mono uppercase tracking-wider">Resi: {entry.receiptNumber || '-'}</div>
-                                {entry.address && <div className="text-[10px] text-slate-500 truncate max-w-[150px] sm:max-w-[200px]" title={entry.address}>{entry.address}</div>}
-                                <div className="flex gap-2 flex-wrap">
-                                  {entry.cod && <div className="text-[10px] text-amber-400 font-bold uppercase tracking-wider">COD: Rp {formatCurrency(entry.cod)}</div>}
-                                  {entry.dfod && <div className="text-[10px] text-blue-400 font-bold uppercase tracking-wider">DFOD: Rp {formatCurrency(entry.dfod)}</div>}
-                                </div>
+                            <td className="px-5 py-4">
+                              <div className="text-xs text-[#8899AA] truncate max-w-[180px]">{entry.itemName || '—'}</div>
+                              <div className="text-[9px] text-[#3A5068] font-mono mt-0.5">RESI: {entry.receiptNumber || '—'}</div>
+                              {entry.address && <div className="text-[9px] text-[#3A5068] truncate max-w-[180px]">{entry.address}</div>}
+                              <div className="flex gap-2 mt-0.5">
+                                {entry.cod && <span className="text-[9px] text-[#F59E0B] font-bold">COD: Rp {formatCurrency(entry.cod)}</span>}
+                                {entry.dfod && <span className="text-[9px] text-[#38BDF8] font-bold">DFOD: Rp {formatCurrency(entry.dfod)}</span>}
                               </div>
                             </td>
-                            <td className="px-4 sm:px-6 py-4">
-                              <div className={cn(
-                                "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest",
-                                entry.status === 'sent'
-                                  ? "bg-green-500/20 text-green-400"
-                                  : entry.status === 'sending'
-                                    ? "bg-blue-500/20 text-blue-400 animate-pulse"
-                                    : entry.status === 'failed'
-                                      ? "bg-red-500/20 text-red-400"
-                                      : "bg-amber-500/20 text-amber-400"
-                              )}>
-                                {entry.status === 'sent' ? <CheckCircle2 size={10} /> : entry.status === 'sending' ? <Loader2 size={10} className="animate-spin" /> : entry.status === 'failed' ? <AlertCircle size={10} /> : <Clock size={10} />}
+                            <td className="px-5 py-4">
+                              <div className={cn("inline-flex items-center gap-1 px-2 py-1 rounded border text-[9px] font-bold uppercase tracking-wider", sc.bg, sc.text)}>
+                                {sc.icon}
                                 {entry.status}
                               </div>
                             </td>
-                            <td className="px-4 sm:px-6 py-4">
+                            <td className="px-5 py-4">
                               <button
                                 onClick={() => toggleReceived(entry.id)}
                                 className={cn(
-                                  "flex items-center gap-2 px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all",
+                                  "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-[9px] font-bold uppercase tracking-wider transition-all",
                                   entry.isReceived
-                                    ? "bg-blue-500/20 text-blue-400 border border-blue-500/30"
-                                    : "bg-slate-700 text-slate-400 border border-transparent"
+                                    ? "border-[#38BDF8]/20 bg-[#38BDF8]/5 text-[#38BDF8]"
+                                    : "border-[#1E2D3D] bg-[#060C12] text-[#3A5068] hover:border-[#38BDF8]/20"
                                 )}
                               >
-                                <div className={cn(
-                                  "w-3 h-3 rounded-sm border flex items-center justify-center transition-all",
-                                  entry.isReceived ? "bg-blue-500 border-blue-500" : "border-slate-500"
-                                )}>
-                                  {entry.isReceived && <CheckCircle2 size={10} className="text-white" />}
+                                <div className={cn("w-3 h-3 rounded border flex items-center justify-center transition-all", entry.isReceived ? "bg-[#38BDF8] border-[#38BDF8]" : "border-[#1E2D3D]")}>
+                                  {entry.isReceived && <CheckCircle2 size={8} className="text-[#060C12]" />}
                                 </div>
-                                {entry.isReceived ? 'Diterima' : 'Belum'}
+                                {entry.isReceived ? 'DITERIMA' : 'BELUM'}
                               </button>
                             </td>
-                            <td className="px-4 sm:px-6 py-4 text-right">
+                            <td className="px-5 py-4">
                               <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button onClick={() => handleSendManual(entry)} className="p-2 text-purple-400 hover:bg-purple-500/20 rounded-xl"><ExternalLink size={16} /></button>
-                                <button onClick={() => setEntries(prev => prev.filter(e => e.id !== entry.id))} className="p-2 text-slate-500 hover:text-red-400 rounded-xl"><Trash2 size={16} /></button>
+                                <button onClick={() => handleSendManual(entry)} className="p-1.5 rounded-lg text-[#3A5068] hover:text-[#00FF88] hover:bg-[#00FF88]/5 transition-all">
+                                  <ExternalLink size={13} />
+                                </button>
+                                <button onClick={() => setEntries(prev => prev.filter(e => e.id !== entry.id))} className="p-1.5 rounded-lg text-[#3A5068] hover:text-[#FF4444] hover:bg-[#FF4444]/5 transition-all">
+                                  <Trash2 size={13} />
+                                </button>
                               </div>
                             </td>
                           </motion.tr>
-                        ))
-                      )}
-                    </AnimatePresence>
-                  </tbody>
-                </table>
-              </div>
+                        );
+                      })
+                    )}
+                  </AnimatePresence>
+                </tbody>
+              </table>
             </div>
-          </div>
+          </GlassCard>
         </div>
       </main>
 
-      {/* Bulk Import Modal - redesigned */}
+      {/* BULK IMPORT MODAL */}
       <AnimatePresence>
         {showBulkModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowBulkModal(false)} className="absolute inset-0 bg-black/70 backdrop-blur-md" />
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowBulkModal(false)} className="absolute inset-0 bg-black/70" style={{ backdropFilter: 'blur(12px)' }} />
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              initial={{ opacity: 0, scale: 0.96, y: 16 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-2xl max-h-[90vh] bg-slate-800 rounded-[2rem] shadow-2xl overflow-hidden border border-purple-500/30 flex flex-col"
+              exit={{ opacity: 0, scale: 0.96, y: 16 }}
+              className="relative w-full max-w-2xl max-h-[90vh] rounded-2xl overflow-hidden flex flex-col border border-[#1E2D3D]"
+              style={{ background: '#0A0F14', boxShadow: '0 0 80px rgba(0,0,0,0.8)' }}
             >
-              <div className="p-6 border-b border-slate-700 flex items-center justify-between bg-slate-900/50">
+              <div className="h-px w-full bg-gradient-to-r from-transparent via-[#00FF88]/40 to-transparent" />
+              <div className="px-7 py-5 border-b border-[#1E2D3D] flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-purple-500/20 text-purple-400 rounded-xl flex items-center justify-center"><FileSpreadsheet size={20} /></div>
+                  <div className="w-9 h-9 rounded-xl bg-[#00FF88]/10 border border-[#00FF88]/20 flex items-center justify-center">
+                    <FileSpreadsheet size={16} className="text-[#00FF88]" />
+                  </div>
                   <div>
-                    <h2 className="text-xl font-bold text-purple-400">Bulk Import</h2>
-                    <p className="text-xs text-slate-500">Copy-paste data from Excel or CSV</p>
+                    <h2 className="text-sm font-bold text-[#C8D8E8] uppercase tracking-widest">Bulk Import</h2>
+                    <p className="text-[9px] text-[#3A5068]">Copy-paste data dari Excel atau CSV</p>
                   </div>
                 </div>
-                <button onClick={() => setShowBulkModal(false)} className="p-2 hover:bg-slate-700 rounded-full transition-colors"><X size={20} /></button>
+                <button onClick={() => setShowBulkModal(false)} className="p-1.5 rounded-lg text-[#3A5068] hover:text-[#FF4444] hover:bg-[#FF4444]/5 transition-all"><X size={16} /></button>
               </div>
-              <div className="p-6 space-y-6 overflow-y-auto custom-scrollbar flex-1">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-4 bg-purple-500/10 rounded-2xl border border-purple-500/30">
-                    <div className="text-[10px] font-bold text-purple-400 uppercase tracking-widest mb-1">Step 1</div>
-                    <p className="text-xs text-purple-300">Kolom: No, Resi, Nama, HP, Alamat, Tanda, Nominal COD, Nominal DFOD, Barang</p>
+              <div className="p-7 space-y-5 overflow-y-auto flex-1" style={{ scrollbarWidth: 'thin', scrollbarColor: '#1E2D3D transparent' }}>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-4 rounded-xl border border-[#00FF88]/15 bg-[#00FF88]/5">
+                    <div className="text-[8px] font-bold text-[#00FF88] uppercase tracking-widest mb-1">Step 1</div>
+                    <p className="text-[10px] text-[#3A5068] leading-relaxed">Kolom: No, Resi, Nama, HP, Alamat, Tanda, Nominal COD, Nominal DFOD, Barang</p>
                   </div>
-                  <div className="p-4 bg-blue-500/10 rounded-2xl border border-blue-500/30">
-                    <div className="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-1">Step 2</div>
-                    <p className="text-xs text-blue-300">Copy range dari Excel & Paste di bawah</p>
+                  <div className="p-4 rounded-xl border border-[#38BDF8]/15 bg-[#38BDF8]/5">
+                    <div className="text-[8px] font-bold text-[#38BDF8] uppercase tracking-widest mb-1">Step 2</div>
+                    <p className="text-[10px] text-[#3A5068] leading-relaxed">Copy range dari Excel & Paste di area bawah</p>
                   </div>
                 </div>
                 <textarea
                   value={bulkData}
                   onChange={(e) => setBulkData(e.target.value)}
-                  placeholder="1	JX123456789	Budi Santoso	08123456789	Jl. Merdeka No. 1	COD	150000	0	Sepatu..."
-                  className="w-full h-64 p-6 text-sm font-mono bg-slate-900/50 border border-slate-700 rounded-[1.5rem] focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 outline-none transition-all resize-none text-white placeholder-slate-600 custom-scrollbar"
+                  placeholder="1&#9;JX123456789&#9;Budi Santoso&#9;08123456789&#9;Jl. Merdeka No. 1&#9;COD&#9;150000&#9;0&#9;Sepatu..."
+                  className="w-full h-56 p-4 text-[10px] font-mono bg-[#060C12] border border-[#1E2D3D] rounded-xl outline-none resize-none text-[#C8D8E8] placeholder-[#1E2D3D] focus:border-[#00FF88]/30 transition-all"
+                  style={{ scrollbarWidth: 'thin', scrollbarColor: '#1E2D3D transparent' }}
                 />
-                <div className="flex gap-4">
-                  <button onClick={() => setShowBulkModal(false)} className="flex-1 py-4 bg-slate-700 text-slate-300 rounded-2xl font-bold hover:bg-slate-600 transition-all">Cancel</button>
-                  <button onClick={handleBulkImport} className="flex-[2] py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-2xl font-bold shadow-lg shadow-purple-500/30 hover:shadow-xl transition-all">Import Data</button>
+                <div className="flex gap-3">
+                  <button onClick={() => setShowBulkModal(false)} className="flex-1 py-3 rounded-xl border border-[#1E2D3D] bg-[#060C12] text-[#3A5068] font-bold text-[10px] uppercase tracking-wider hover:text-[#C8D8E8] transition-all">CANCEL</button>
+                  <button onClick={handleBulkImport} className="flex-[2] py-3 rounded-xl border border-[#00FF88]/30 bg-[#00FF88]/10 text-[#00FF88] font-bold text-[10px] uppercase tracking-wider hover:bg-[#00FF88]/20 transition-all">IMPORT DATA</button>
                 </div>
               </div>
             </motion.div>
@@ -1486,50 +1289,52 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* Preview Modal - redesigned */}
+      {/* PREVIEW MODAL */}
       <AnimatePresence>
         {showPreviewModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowPreviewModal(false)} className="absolute inset-0 bg-black/70 backdrop-blur-md" />
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowPreviewModal(false)} className="absolute inset-0 bg-black/70" style={{ backdropFilter: 'blur(12px)' }} />
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              initial={{ opacity: 0, scale: 0.96, y: 16 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-lg max-h-[90vh] bg-slate-800 rounded-[2rem] shadow-2xl overflow-hidden border border-purple-500/30 flex flex-col"
+              exit={{ opacity: 0, scale: 0.96, y: 16 }}
+              className="relative w-full max-w-lg max-h-[90vh] rounded-2xl overflow-hidden flex flex-col border border-[#1E2D3D]"
+              style={{ background: '#0A0F14', boxShadow: '0 0 80px rgba(0,0,0,0.8)' }}
             >
-              <div className="p-6 border-b border-slate-700 flex items-center justify-between bg-slate-900/50">
+              <div className="h-px w-full bg-gradient-to-r from-transparent via-[#38BDF8]/40 to-transparent" />
+              <div className="px-6 py-5 border-b border-[#1E2D3D] flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-blue-500/20 text-blue-400 rounded-xl flex items-center justify-center"><MessageSquare size={20} /></div>
+                  <div className="w-9 h-9 rounded-xl bg-[#38BDF8]/10 border border-[#38BDF8]/20 flex items-center justify-center">
+                    <MessageSquare size={16} className="text-[#38BDF8]" />
+                  </div>
                   <div>
-                    <h2 className="text-lg font-bold text-blue-400">Message Preview</h2>
-                    <p className="text-[10px] text-slate-500 uppercase tracking-wider">First Pending Entry</p>
+                    <h2 className="text-sm font-bold text-[#C8D8E8] uppercase tracking-widest">Message Preview</h2>
+                    <p className="text-[9px] text-[#3A5068]">First Pending Entry</p>
                   </div>
                 </div>
-                <button onClick={() => setShowPreviewModal(false)} className="p-2 hover:bg-slate-700 rounded-full transition-colors"><X size={20} /></button>
+                <button onClick={() => setShowPreviewModal(false)} className="p-1.5 rounded-lg text-[#3A5068] hover:text-[#FF4444] hover:bg-[#FF4444]/5 transition-all"><X size={16} /></button>
               </div>
-              <div className="p-6 space-y-4 overflow-y-auto custom-scrollbar flex-1">
+              <div className="p-6 space-y-4 overflow-y-auto flex-1" style={{ scrollbarWidth: 'thin', scrollbarColor: '#1E2D3D transparent' }}>
                 {entries.find(e => e.status === 'pending') ? (
                   <>
-                    <div className="p-4 bg-slate-900/50 rounded-2xl border border-slate-700">
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className="w-8 h-8 bg-purple-500/20 text-purple-400 rounded-lg flex items-center justify-center text-xs font-bold">
+                    <div className="p-4 rounded-xl border border-[#1E2D3D] bg-[#060C12]">
+                      <div className="flex items-center gap-3 mb-3 pb-3 border-b border-[#1E2D3D]">
+                        <div className="w-8 h-8 rounded-lg bg-[#00FF88]/10 border border-[#00FF88]/20 text-[#00FF88] text-xs font-bold flex items-center justify-center">
                           {entries.find(e => e.status === 'pending')?.recipientName.charAt(0)}
                         </div>
                         <div>
-                          <div className="text-xs font-bold">{entries.find(e => e.status === 'pending')?.recipientName}</div>
-                          <div className="text-[10px] text-slate-500 font-mono">{entries.find(e => e.status === 'pending')?.phone}</div>
+                          <div className="text-xs font-bold text-[#C8D8E8]">{entries.find(e => e.status === 'pending')?.recipientName}</div>
+                          <div className="text-[9px] text-[#3A5068] font-mono">{entries.find(e => e.status === 'pending')?.phone}</div>
                         </div>
                       </div>
-                      <div className="bg-slate-800 p-4 rounded-xl border border-slate-700 text-sm whitespace-pre-wrap leading-relaxed text-slate-300 font-sans">
+                      <div className="text-xs whitespace-pre-wrap leading-relaxed text-[#8899AA]">
                         {(() => {
                           const entry = entries.find(e => e.status === 'pending');
                           if (!entry) return '';
                           const sentCount = entries.filter(e => e.status === 'sent').length;
                           let templateText = activeTemplate.text;
                           if (settings.rotateTemplates) {
-                            const variations = activeTemplate.variations && activeTemplate.variations.length > 0
-                              ? activeTemplate.variations
-                              : [activeTemplate.text];
+                            const variations = activeTemplate.variations && activeTemplate.variations.length > 0 ? activeTemplate.variations : [activeTemplate.text];
                             templateText = variations[sentCount % variations.length];
                           }
                           return generateMessage(entry, templateText);
@@ -1537,7 +1342,7 @@ export default function App() {
                       </div>
                     </div>
                     <div className="flex gap-3">
-                      <button onClick={() => setShowPreviewModal(false)} className="flex-1 py-3 bg-slate-700 text-slate-300 rounded-xl font-bold text-sm hover:bg-slate-600 transition-all">Close</button>
+                      <button onClick={() => setShowPreviewModal(false)} className="flex-1 py-2.5 rounded-xl border border-[#1E2D3D] bg-[#060C12] text-[#3A5068] font-bold text-[10px] uppercase tracking-wider hover:text-[#C8D8E8] transition-all">CLOSE</button>
                       <button
                         onClick={() => {
                           const entry = entries.find(e => e.status === 'pending');
@@ -1549,16 +1354,16 @@ export default function App() {
                             setShowPreviewModal(false);
                           }
                         }}
-                        className="flex-1 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl font-bold text-sm shadow-lg shadow-purple-500/30 hover:shadow-xl transition-all flex items-center justify-center gap-2"
+                        className="flex-1 py-2.5 rounded-xl border border-[#00FF88]/30 bg-[#00FF88]/10 text-[#00FF88] font-bold text-[10px] uppercase tracking-wider hover:bg-[#00FF88]/20 transition-all flex items-center justify-center gap-2"
                       >
-                        <Send size={16} /> Send Now
+                        <Send size={12} /> SEND NOW
                       </button>
                     </div>
                   </>
                 ) : (
                   <div className="text-center py-12">
-                    <Clock size={48} className="mx-auto text-slate-600 mb-4" />
-                    <p className="text-slate-500 text-sm italic">No pending entries to preview.</p>
+                    <Clock size={36} className="mx-auto text-[#1E2D3D] mb-3" />
+                    <p className="text-[#1E2D3D] text-xs italic">No pending entries to preview.</p>
                   </div>
                 )}
               </div>
@@ -1567,424 +1372,268 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* Settings Modal - redesigned */}
+      {/* SETTINGS MODAL */}
       <AnimatePresence>
         {showSettingsModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowSettingsModal(false)} className="absolute inset-0 bg-black/70 backdrop-blur-md" />
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowSettingsModal(false)} className="absolute inset-0 bg-black/70" style={{ backdropFilter: 'blur(12px)' }} />
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              initial={{ opacity: 0, scale: 0.96, y: 16 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-md max-h-[90vh] bg-slate-800 rounded-[2rem] shadow-2xl overflow-hidden border border-purple-500/30 flex flex-col"
+              exit={{ opacity: 0, scale: 0.96, y: 16 }}
+              className="relative w-full max-w-md max-h-[90vh] rounded-2xl overflow-hidden flex flex-col border border-[#1E2D3D]"
+              style={{ background: '#0A0F14', boxShadow: '0 0 80px rgba(0,0,0,0.8)' }}
             >
-              <div className="p-6 border-b border-slate-700 flex items-center justify-between bg-slate-900/50">
+              <div className="h-px w-full bg-gradient-to-r from-transparent via-[#00FF88]/40 to-transparent" />
+              <div className="px-6 py-5 border-b border-[#1E2D3D] flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-purple-500/20 text-purple-400 rounded-xl flex items-center justify-center"><Settings2 size={20} /></div>
+                  <div className="w-9 h-9 rounded-xl bg-[#00FF88]/10 border border-[#00FF88]/20 flex items-center justify-center">
+                    <Settings2 size={16} className="text-[#00FF88]" />
+                  </div>
                   <div>
-                    <h2 className="text-lg font-bold text-purple-400">Settings</h2>
-                    <p className="text-[10px] text-slate-500 uppercase tracking-wider">Engine Configuration</p>
+                    <h2 className="text-sm font-bold text-[#C8D8E8] uppercase tracking-widest">Settings</h2>
+                    <p className="text-[9px] text-[#3A5068]">Engine Configuration</p>
                   </div>
                 </div>
-                <button onClick={() => setShowSettingsModal(false)} className="p-2 hover:bg-slate-700 rounded-full transition-colors"><X size={20} /></button>
+                <button onClick={() => setShowSettingsModal(false)} className="p-1.5 rounded-lg text-[#3A5068] hover:text-[#FF4444] hover:bg-[#FF4444]/5 transition-all"><X size={16} /></button>
               </div>
 
               {/* Tabs */}
-              <div className="flex px-6 pt-4 gap-4 border-b border-slate-700 shrink-0">
-                <button
-                  onClick={() => setActiveSettingsTab('general')}
-                  className={cn(
-                    "pb-3 text-xs font-bold uppercase tracking-widest transition-all relative",
-                    activeSettingsTab === 'general' ? "text-purple-400" : "text-slate-500"
-                  )}
-                >
-                  General
-                  {activeSettingsTab === 'general' && <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-500 rounded-full" />}
-                </button>
-                <button
-                  onClick={() => setActiveSettingsTab('antispam')}
-                  className={cn(
-                    "pb-3 text-xs font-bold uppercase tracking-widest transition-all relative",
-                    activeSettingsTab === 'antispam' ? "text-purple-400" : "text-slate-500"
-                  )}
-                >
-                  Anti-Spam
-                  {activeSettingsTab === 'antispam' && <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-500 rounded-full" />}
-                </button>
+              <div className="flex px-6 pt-4 gap-5 border-b border-[#1E2D3D]">
+                {(['general', 'antispam'] as const).map(tab => (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveSettingsTab(tab)}
+                    className={cn(
+                      "pb-3 text-[10px] font-bold uppercase tracking-widest transition-all relative",
+                      activeSettingsTab === tab ? "text-[#00FF88]" : "text-[#3A5068]"
+                    )}
+                  >
+                    {tab}
+                    {activeSettingsTab === tab && (
+                      <motion.div layoutId="settingsTab" className="absolute bottom-0 left-0 right-0 h-px bg-[#00FF88]" style={{ boxShadow: '0 0 8px #00FF88' }} />
+                    )}
+                  </button>
+                ))}
               </div>
 
-              <div className="p-6 overflow-y-auto custom-scrollbar flex-1">
+              <div className="p-6 overflow-y-auto flex-1" style={{ scrollbarWidth: 'thin', scrollbarColor: '#1E2D3D transparent' }}>
                 {activeSettingsTab === 'antispam' && (
-                  <div className="mb-6 p-4 bg-purple-500/10 rounded-2xl border border-purple-500/30">
+                  <div className="mb-5 p-4 rounded-xl border border-[#00FF88]/15 bg-[#00FF88]/5">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-[10px] font-bold text-purple-400 uppercase tracking-widest">Safety Score</span>
-                      <span className={cn(
-                        "text-xs font-black",
-                        safetyScore > 80 ? "text-green-400" : safetyScore > 50 ? "text-amber-400" : "text-red-400"
-                      )}>{safetyScore}%</span>
+                      <span className="text-[8px] font-bold text-[#00FF88] uppercase tracking-widest">Safety Score</span>
+                      <span className={cn("text-xs font-black", safetyScore > 80 ? "text-[#00FF88]" : safetyScore > 50 ? "text-[#F59E0B]" : "text-[#FF4444]")}>
+                        {safetyScore}%
+                      </span>
                     </div>
-                    <div className="h-1.5 w-full bg-slate-700 rounded-full overflow-hidden">
+                    <div className="h-1 w-full bg-[#1E2D3D] rounded-full overflow-hidden">
                       <motion.div
                         initial={{ width: 0 }}
                         animate={{ width: `${safetyScore}%` }}
-                        className={cn(
-                          "h-full transition-all duration-500",
-                          safetyScore > 80 ? "bg-green-500" : safetyScore > 50 ? "bg-amber-500" : "bg-red-500"
-                        )}
+                        className={cn("h-full", safetyScore > 80 ? "bg-[#00FF88]" : safetyScore > 50 ? "bg-[#F59E0B]" : "bg-[#FF4444]")}
+                        style={{ boxShadow: safetyScore > 80 ? '0 0 8px #00FF88' : safetyScore > 50 ? '0 0 8px #F59E0B' : '0 0 8px #FF4444' }}
                       />
                     </div>
-                    <p className="text-[9px] text-slate-500 mt-2 italic">
-                      {safetyScore > 80 ? "Sangat Aman: Pola pengiriman sangat mirip manusia." :
-                        safetyScore > 50 ? "Cukup Aman: Disarankan menambah jeda atau variasi pesan." :
-                          "Beresiko Tinggi: Akun Anda rentan terkena banned!"}
+                    <p className="text-[9px] text-[#3A5068] mt-2 italic">
+                      {safetyScore > 80 ? "Sangat Aman: Pola pengiriman sangat mirip manusia." : safetyScore > 50 ? "Cukup Aman: Disarankan menambah jeda atau variasi." : "Beresiko Tinggi: Rentan terkena banned!"}
                     </p>
                   </div>
                 )}
-                {activeSettingsTab === 'general' ? (
-                  <div className="space-y-6">
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-                          <User size={14} /> Nama Pengirim
-                        </label>
-                        <input
-                          type="text"
-                          value={settings.senderName}
-                          onChange={(e) => setSettings(prev => ({ ...prev, senderName: e.target.value }))}
-                          className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 outline-none transition-all text-sm text-white placeholder-slate-600"
-                          placeholder="Admin JNT"
-                        />
-                      </div>
 
-                      {/* Speed Presets */}
-                      <div className="space-y-3 pt-2">
-                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-                          <Zap size={14} className="text-amber-400" /> Pilih Kecepatan Blast
-                        </label>
-                        <div className="grid grid-cols-2 gap-2">
-                          {[
-                            { id: 'safe', label: 'Main Aman', desc: '15-30s', icon: '🛡️' },
-                            { id: 'normal', label: 'Normal', desc: '8-15s', icon: '⚖️' },
-                            { id: 'fast', label: 'Percepat', desc: '3-7s', icon: '⚡' },
-                            { id: 'turbo', label: 'Turbo', desc: '1-2s', icon: '🚀' },
-                          ].map((mode) => (
-                            <button
-                              key={mode.id}
-                              onClick={() => setSettings(prev => ({ ...prev, speedMode: mode.id as any }))}
-                              className={cn(
-                                "p-3 rounded-xl border text-left transition-all",
-                                settings.speedMode === mode.id
-                                  ? "bg-purple-500/20 border-purple-500 ring-1 ring-purple-500"
-                                  : "bg-slate-900/50 border-slate-700 hover:border-purple-500/50"
-                              )}
-                            >
-                              <div className="flex items-center justify-between mb-1">
-                                <span className="text-lg">{mode.icon}</span>
-                                {settings.speedMode === mode.id && <div className="w-2 h-2 bg-purple-500 rounded-full" />}
-                              </div>
-                              <div className="text-xs font-bold">{mode.label}</div>
-                              <div className="text-[10px] text-slate-500">{mode.desc}</div>
-                            </button>
-                          ))}
+                {activeSettingsTab === 'general' ? (
+                  <div className="space-y-5">
+                    <div className="space-y-1.5">
+                      <FieldLabel>Nama Pengirim</FieldLabel>
+                      <GlassInput type="text" value={settings.senderName} onChange={(e) => setSettings(prev => ({ ...prev, senderName: e.target.value }))} placeholder="Admin JNT" />
+                    </div>
+
+                    <div className="space-y-3">
+                      <FieldLabel>Pilih Kecepatan Blast</FieldLabel>
+                      <div className="grid grid-cols-2 gap-2">
+                        {[
+                          { id: 'safe', label: 'Main Aman', desc: '15-30s', icon: '🛡️' },
+                          { id: 'normal', label: 'Normal', desc: '8-15s', icon: '⚖️' },
+                          { id: 'fast', label: 'Percepat', desc: '3-7s', icon: '⚡' },
+                          { id: 'turbo', label: 'Turbo', desc: '1-2s', icon: '🚀' },
+                        ].map((mode) => (
                           <button
-                            onClick={() => setSettings(prev => ({ ...prev, speedMode: 'custom' }))}
+                            key={mode.id}
+                            onClick={() => setSettings(prev => ({ ...prev, speedMode: mode.id as any }))}
                             className={cn(
-                              "col-span-2 p-3 rounded-xl border text-left transition-all",
-                              settings.speedMode === 'custom'
-                                ? "bg-purple-500/20 border-purple-500 ring-1 ring-purple-500"
-                                : "bg-slate-900/50 border-slate-700 hover:border-purple-500/50"
+                              "p-3 rounded-xl border text-left transition-all",
+                              settings.speedMode === mode.id
+                                ? "border-[#00FF88]/30 bg-[#00FF88]/10"
+                                : "border-[#1E2D3D] bg-[#060C12] hover:border-[#00FF88]/15"
                             )}
                           >
-                            <div className="flex items-center justify-between">
-                              <div className="text-xs font-bold">⚙️ Custom (Atur Manual)</div>
-                              {settings.speedMode === 'custom' && <div className="w-2 h-2 bg-purple-500 rounded-full" />}
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-base">{mode.icon}</span>
+                              {settings.speedMode === mode.id && <div className="w-1.5 h-1.5 rounded-full bg-[#00FF88]" style={{ boxShadow: '0 0 6px #00FF88' }} />}
                             </div>
+                            <div className="text-[10px] font-bold text-[#C8D8E8]">{mode.label}</div>
+                            <div className="text-[9px] text-[#3A5068]">{mode.desc}</div>
                           </button>
-                        </div>
-                      </div>
-
-                      {settings.speedMode === 'custom' && (
-                        <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
-                          <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-                            <Timer size={14} /> Blast Delay (Milliseconds)
-                          </label>
-                          <input
-                            type="number"
-                            value={settings.delay}
-                            onChange={(e) => setSettings(prev => ({ ...prev, delay: parseInt(e.target.value) || 1000 }))}
-                            className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 outline-none transition-all text-sm text-white"
-                            placeholder="5000"
-                            min="1000"
-                            step="500"
-                          />
-                        </div>
-                      )}
-
-                      <div className="flex items-center justify-between p-4 bg-slate-900/50 rounded-2xl border border-slate-700">
-                        <div className="space-y-1">
-                          <div className="text-xs font-bold">Mode Manual</div>
-                          <div className="text-[10px] text-slate-500">Kirim berikutnya hanya saat Anda klik/tekan Spasi.</div>
-                        </div>
+                        ))}
                         <button
-                          onClick={() => setSettings(prev => ({ ...prev, manualMode: !prev.manualMode }))}
+                          onClick={() => setSettings(prev => ({ ...prev, speedMode: 'custom' }))}
                           className={cn(
-                            "w-12 h-6 rounded-full transition-all relative",
-                            settings.manualMode ? "bg-purple-500" : "bg-slate-600"
+                            "col-span-2 p-3 rounded-xl border text-left transition-all",
+                            settings.speedMode === 'custom' ? "border-[#00FF88]/30 bg-[#00FF88]/10" : "border-[#1E2D3D] bg-[#060C12] hover:border-[#00FF88]/15"
                           )}
                         >
-                          <div className={cn(
-                            "absolute top-1 w-4 h-4 bg-white rounded-full transition-all",
-                            settings.manualMode ? "left-7" : "left-1"
-                          )} />
-                        </button>
-                      </div>
-
-                      <div className="flex items-center justify-between p-4 bg-slate-900/50 rounded-2xl border border-slate-700">
-                        <div className="space-y-1">
-                          <div className="text-xs font-bold">Auto Retry</div>
-                          <div className="text-[10px] text-slate-500">Coba kirim ulang otomatis jika gagal.</div>
-                        </div>
-                        <button
-                          onClick={() => setSettings(prev => ({ ...prev, autoRetry: !prev.autoRetry }))}
-                          className={cn(
-                            "w-12 h-6 rounded-full transition-all relative",
-                            settings.autoRetry ? "bg-purple-500" : "bg-slate-600"
-                          )}
-                        >
-                          <div className={cn(
-                            "absolute top-1 w-4 h-4 bg-white rounded-full transition-all",
-                            settings.autoRetry ? "left-7" : "left-1"
-                          )} />
-                        </button>
-                      </div>
-
-                      {settings.autoRetry && (
-                        <div className="space-y-2">
-                          <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-                            <RotateCcw size={14} /> Max Retries
-                          </label>
-                          <input
-                            type="number"
-                            value={settings.maxRetries}
-                            onChange={(e) => setSettings(prev => ({ ...prev, maxRetries: parseInt(e.target.value) || 1 }))}
-                            className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 outline-none transition-all text-sm text-white"
-                            min="1"
-                            max="10"
-                          />
-                        </div>
-                      )}
-
-                      <div className="pt-2">
-                        <button
-                          onClick={() => {
-                            if (window.confirm('Kembalikan semua template ke pengaturan default? Template yang Anda ubah akan tertimpa.')) {
-                              setTemplates(DEFAULT_TEMPLATES);
-                              setActiveTemplateId(DEFAULT_TEMPLATES[0].id);
-                              setActiveVariationIndex(0);
-                              toast.success('Template berhasil dipulihkan');
-                            }
-                          }}
-                          className="w-full py-3 bg-slate-700 text-slate-300 rounded-xl font-bold text-xs hover:bg-slate-600 transition-all flex items-center justify-center gap-2"
-                        >
-                          <RotateCcw size={14} /> Restore Default Templates
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold text-[#C8D8E8]">⚙️ Custom (Atur Manual)</span>
+                            {settings.speedMode === 'custom' && <div className="w-1.5 h-1.5 rounded-full bg-[#00FF88]" />}
+                          </div>
                         </button>
                       </div>
                     </div>
+
+                    {settings.speedMode === 'custom' && (
+                      <div className="space-y-1.5">
+                        <FieldLabel>Blast Delay (Milliseconds)</FieldLabel>
+                        <GlassInput type="number" value={settings.delay} onChange={(e) => setSettings(prev => ({ ...prev, delay: parseInt(e.target.value) || 1000 }))} placeholder="5000" min="1000" step="500" />
+                      </div>
+                    )}
+
+                    {[
+                      { key: 'manualMode', label: 'Mode Manual', desc: 'Kirim berikutnya hanya saat Anda klik/tekan Spasi.' },
+                      { key: 'autoRetry', label: 'Auto Retry', desc: 'Coba kirim ulang otomatis jika gagal.' },
+                    ].map(item => (
+                      <div key={item.key} className="flex items-center justify-between p-3 rounded-xl border border-[#1E2D3D] bg-[#060C12]">
+                        <div>
+                          <div className="text-[10px] font-bold text-[#C8D8E8]">{item.label}</div>
+                          <div className="text-[9px] text-[#3A5068] mt-0.5">{item.desc}</div>
+                        </div>
+                        <Toggle checked={!!settings[item.key as keyof AppSettings]} onChange={() => setSettings(prev => ({ ...prev, [item.key]: !prev[item.key as keyof AppSettings] }))} />
+                      </div>
+                    ))}
+
+                    {settings.autoRetry && (
+                      <div className="space-y-1.5">
+                        <FieldLabel>Max Retries</FieldLabel>
+                        <GlassInput type="number" value={settings.maxRetries} onChange={(e) => setSettings(prev => ({ ...prev, maxRetries: parseInt(e.target.value) || 1 }))} min="1" max="10" />
+                      </div>
+                    )}
+
+                    <button
+                      onClick={() => {
+                        if (window.confirm('Kembalikan semua template ke pengaturan default?')) {
+                          setTemplates(DEFAULT_TEMPLATES);
+                          setActiveTemplateId(DEFAULT_TEMPLATES[0].id);
+                          setActiveVariationIndex(0);
+                          toast.success('Template berhasil dipulihkan');
+                        }
+                      }}
+                      className="w-full py-3 rounded-xl border border-[#1E2D3D] bg-[#060C12] text-[#3A5068] font-bold text-[10px] uppercase tracking-wider hover:text-[#C8D8E8] transition-all flex items-center justify-center gap-2"
+                    >
+                      <RotateCcw size={12} /> RESTORE DEFAULT TEMPLATES
+                    </button>
                   </div>
                 ) : (
-                  <div className="space-y-6">
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between p-3 bg-purple-500/10 rounded-xl border border-purple-500/30">
-                        <div className="space-y-0.5">
-                          <div className="text-xs font-bold">Randomize Delay</div>
-                          <div className="text-[9px] text-slate-500">Jeda waktu acak agar tidak terdeteksi bot.</div>
-                        </div>
-                        <button
-                          onClick={() => setSettings(prev => ({ ...prev, randomizeDelay: !prev.randomizeDelay }))}
-                          className={cn(
-                            "w-10 h-5 rounded-full transition-all relative",
-                            settings.randomizeDelay ? "bg-purple-500" : "bg-slate-600"
-                          )}
-                        >
-                          <div className={cn(
-                            "absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all",
-                            settings.randomizeDelay ? "left-5.5" : "left-0.5"
-                          )} />
-                        </button>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-3 rounded-xl border border-[#1E2D3D] bg-[#060C12]">
+                      <div>
+                        <div className="text-[10px] font-bold text-[#C8D8E8]">Randomize Delay</div>
+                        <div className="text-[9px] text-[#3A5068] mt-0.5">Jeda waktu acak agar tidak terdeteksi bot.</div>
                       </div>
-
-                      {settings.randomizeDelay && (
-                        <div className="space-y-2 px-1">
-                          <label className="text-[10px] font-bold text-slate-500 uppercase">Max Delay (ms)</label>
-                          <input
-                            type="number"
-                            value={settings.maxDelay}
-                            onChange={(e) => setSettings(prev => ({ ...prev, maxDelay: parseInt(e.target.value) || 10000 }))}
-                            className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-xs text-white"
-                            step="500"
-                          />
-                        </div>
-                      )}
-
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold text-slate-500 uppercase">Batch Size</label>
-                          <input
-                            type="number"
-                            value={settings.batchSize}
-                            onChange={(e) => setSettings(prev => ({ ...prev, batchSize: parseInt(e.target.value) || 0 }))}
-                            className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-xs text-white"
-                            placeholder="10"
-                          />
-                          <p className="text-[8px] text-slate-500 italic">Istirahat tiap X pesan.</p>
-                        </div>
-                        <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold text-slate-500 uppercase">Pause (ms)</label>
-                          <input
-                            type="number"
-                            value={settings.batchPause}
-                            onChange={(e) => setSettings(prev => ({ ...prev, batchPause: parseInt(e.target.value) || 0 }))}
-                            className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-xs text-white"
-                            placeholder="30000"
-                          />
-                          <p className="text-[8px] text-slate-500 italic">Lama istirahat.</p>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold text-slate-500 uppercase">Hourly Limit</label>
-                          <input
-                            type="number"
-                            value={settings.hourlyLimit}
-                            onChange={(e) => setSettings(prev => ({ ...prev, hourlyLimit: parseInt(e.target.value) || 0 }))}
-                            className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-xs text-white"
-                            placeholder="50"
-                          />
-                          <p className="text-[8px] text-slate-500 italic">Maks pesan per jam.</p>
-                        </div>
-                        <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold text-slate-500 uppercase">Stop on Errors</label>
-                          <input
-                            type="number"
-                            value={settings.stopOnConsecutiveErrors}
-                            onChange={(e) => setSettings(prev => ({ ...prev, stopOnConsecutiveErrors: parseInt(e.target.value) || 0 }))}
-                            className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-xs text-white"
-                            placeholder="3"
-                          />
-                          <p className="text-[8px] text-slate-500 italic">Stop jika X gagal urut.</p>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold text-slate-500 uppercase">Long Break After</label>
-                          <input
-                            type="number"
-                            value={settings.longBreakAfter}
-                            onChange={(e) => setSettings(prev => ({ ...prev, longBreakAfter: parseInt(e.target.value) || 0 }))}
-                            className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-xs text-white"
-                            placeholder="25"
-                          />
-                          <p className="text-[8px] text-slate-500 italic">Istirahat tiap X pesan.</p>
-                        </div>
-                        <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold text-slate-500 uppercase">Duration (min)</label>
-                          <input
-                            type="number"
-                            value={settings.longBreakDuration}
-                            onChange={(e) => setSettings(prev => ({ ...prev, longBreakDuration: parseInt(e.target.value) || 0 }))}
-                            className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-xs text-white"
-                            placeholder="10"
-                          />
-                          <p className="text-[8px] text-slate-500 italic">Lama istirahat (menit).</p>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 gap-3">
-                        {[
-                          { key: 'shuffleQueue', label: 'Shuffle Queue', desc: 'Acak urutan antrean saat memulai blast.' },
-                          { key: 'useRandomGreetings', label: 'Random Greetings', desc: 'Variasi kata sapaan otomatis.' },
-                          { key: 'addRandomSuffix', label: 'Random Suffix (Ref ID)', desc: 'Tambah ID unik di akhir pesan.' },
-                          { key: 'useInvisibleChars', label: 'Invisible Characters', desc: 'Sisipkan karakter tak terlihat.' },
-                          { key: 'simulateTyping', label: 'Simulate Typing', desc: 'Tambah jeda berdasarkan panjang pesan.' },
-                          { key: 'adaptiveDelay', label: 'Adaptive Delay', desc: 'Delay bertambah seiring jumlah pesan.' },
-                          { key: 'randomizeFormatting', label: 'Random Formatting', desc: 'Variasi spasi dan baris baru.' },
-                          { key: 'rotateTemplates', label: 'Template Rotation', desc: 'Gunakan template berbeda bergantian.' },
-                          { key: 'randomizeEmojis', label: 'Randomize Emojis', desc: 'Sisipkan emoji acak di setiap pesan.' },
-                          { key: 'useGlobalSpintax', label: 'Global Spintax', desc: 'Aktifkan parser {pilihan1|pilihan2}.' },
-                          { key: 'autoSend', label: 'Auto Send Mode', desc: 'Kirim otomatis via Chrome Extension.' }
-                        ].map((item) => (
-                          <div key={item.key} className="flex items-center justify-between p-3 bg-slate-900/50 rounded-xl border border-slate-700">
-                            <div className="space-y-0.5">
-                              <div className="text-xs font-bold">{item.label}</div>
-                              <div className="text-[9px] text-slate-500">{item.desc}</div>
-                            </div>
-                            <button
-                              onClick={() => setSettings(prev => ({ ...prev, [item.key]: !prev[item.key as keyof AppSettings] }))}
-                              className={cn(
-                                "w-10 h-5 rounded-full transition-all relative",
-                                settings[item.key as keyof AppSettings] ? "bg-purple-500" : "bg-slate-600"
-                              )}
-                            >
-                              <div className={cn(
-                                "absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all",
-                                settings[item.key as keyof AppSettings] ? "left-5.5" : "left-0.5"
-                              )} />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-
-                      {settings.autoSend && (
-                        <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl space-y-4">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2 text-amber-400">
-                              <Puzzle size={16} />
-                              <span className="text-xs font-bold uppercase tracking-wider">Chrome Extension Required</span>
-                            </div>
-                            <div className={cn(
-                              "px-2 py-0.5 rounded text-[8px] font-bold uppercase",
-                              isExtensionDetected ? "bg-green-500 text-white" : "bg-amber-500 text-white"
-                            )}>
-                              {isExtensionDetected ? "Connected" : "Not Found"}
-                            </div>
-                          </div>
-
-                          <p className="text-[10px] leading-relaxed text-amber-300">
-                            Fitur ini membutuhkan Chrome Extension khusus untuk menekan tombol kirim secara otomatis di WhatsApp Web.
-                          </p>
-
-                          <button
-                            onClick={downloadExtensionZip}
-                            className="w-full py-3 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-amber-600/30 transition-all"
-                          >
-                            <Download size={16} /> Download Extension (.zip)
-                          </button>
-
-                          <div className="space-y-2">
-                            <div className="text-[10px] font-bold text-amber-300">Cara Instalasi (Hanya 1 Menit):</div>
-                            <ol className="text-[10px] space-y-2 text-amber-300/70 list-decimal ml-4">
-                              <li>Klik tombol <b>Download Extension</b> di atas.</li>
-                              <li>Ekstrak file <code className="bg-amber-800/30 px-1 rounded">wasender-pro-helper.zip</code> menjadi folder.</li>
-                              <li>Buka <code className="bg-amber-800/30 px-1 rounded">chrome://extensions</code> di browser Chrome.</li>
-                              <li>Aktifkan <b>Developer Mode</b> di pojok kanan atas.</li>
-                              <li>Klik <b>Load Unpacked</b> dan pilih folder hasil ekstrak tadi.</li>
-                            </ol>
-                          </div>
-                        </div>
-                      )}
+                      <Toggle checked={settings.randomizeDelay} onChange={() => setSettings(prev => ({ ...prev, randomizeDelay: !prev.randomizeDelay }))} />
                     </div>
+
+                    {settings.randomizeDelay && (
+                      <div className="space-y-1.5">
+                        <FieldLabel>Max Delay (ms)</FieldLabel>
+                        <GlassInput type="number" value={settings.maxDelay} onChange={(e) => setSettings(prev => ({ ...prev, maxDelay: parseInt(e.target.value) || 10000 }))} step="500" />
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-2 gap-3">
+                      {[
+                        { key: 'batchSize', label: 'Batch Size', desc: 'Istirahat tiap X pesan.', placeholder: '10' },
+                        { key: 'batchPause', label: 'Pause (ms)', desc: 'Lama istirahat.', placeholder: '30000' },
+                        { key: 'hourlyLimit', label: 'Hourly Limit', desc: 'Maks pesan per jam.', placeholder: '50' },
+                        { key: 'stopOnConsecutiveErrors', label: 'Stop on Errors', desc: 'Stop jika X gagal urut.', placeholder: '3' },
+                        { key: 'longBreakAfter', label: 'Long Break After', desc: 'Istirahat tiap X pesan.', placeholder: '25' },
+                        { key: 'longBreakDuration', label: 'Duration (min)', desc: 'Lama istirahat.', placeholder: '10' },
+                      ].map(field => (
+                        <div key={field.key} className="space-y-1">
+                          <FieldLabel>{field.label}</FieldLabel>
+                          <GlassInput
+                            type="number"
+                            value={settings[field.key as keyof AppSettings] as number}
+                            onChange={(e) => setSettings(prev => ({ ...prev, [field.key]: parseInt(e.target.value) || 0 }))}
+                            placeholder={field.placeholder}
+                            className="text-[10px]"
+                          />
+                          <p className="text-[8px] text-[#3A5068] italic">{field.desc}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="space-y-2">
+                      {[
+                        { key: 'shuffleQueue', label: 'Shuffle Queue', desc: 'Acak urutan antrean saat memulai blast.' },
+                        { key: 'useRandomGreetings', label: 'Random Greetings', desc: 'Variasi kata sapaan otomatis.' },
+                        { key: 'addRandomSuffix', label: 'Random Suffix (Ref ID)', desc: 'Tambah ID unik di akhir pesan.' },
+                        { key: 'useInvisibleChars', label: 'Invisible Characters', desc: 'Sisipkan karakter tak terlihat.' },
+                        { key: 'simulateTyping', label: 'Simulate Typing', desc: 'Tambah jeda berdasarkan panjang pesan.' },
+                        { key: 'adaptiveDelay', label: 'Adaptive Delay', desc: 'Delay bertambah seiring jumlah pesan.' },
+                        { key: 'randomizeFormatting', label: 'Random Formatting', desc: 'Variasi spasi dan baris baru.' },
+                        { key: 'rotateTemplates', label: 'Template Rotation', desc: 'Gunakan template berbeda bergantian.' },
+                        { key: 'randomizeEmojis', label: 'Randomize Emojis', desc: 'Sisipkan emoji acak di setiap pesan.' },
+                        { key: 'useGlobalSpintax', label: 'Global Spintax', desc: 'Aktifkan parser {pilihan1|pilihan2}.' },
+                        { key: 'autoSend', label: 'Auto Send Mode', desc: 'Kirim otomatis via Chrome Extension.' },
+                      ].map(item => (
+                        <div key={item.key} className="flex items-center justify-between p-3 rounded-xl border border-[#1E2D3D] bg-[#060C12]">
+                          <div>
+                            <div className="text-[10px] font-bold text-[#C8D8E8]">{item.label}</div>
+                            <div className="text-[9px] text-[#3A5068] mt-0.5">{item.desc}</div>
+                          </div>
+                          <Toggle checked={!!settings[item.key as keyof AppSettings]} onChange={() => setSettings(prev => ({ ...prev, [item.key]: !prev[item.key as keyof AppSettings] }))} />
+                        </div>
+                      ))}
+                    </div>
+
+                    {settings.autoSend && (
+                      <div className="p-4 rounded-xl border border-[#F59E0B]/20 bg-[#F59E0B]/5 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 text-[#F59E0B]">
+                            <Puzzle size={13} />
+                            <span className="text-[9px] font-bold uppercase tracking-wider">Chrome Extension Required</span>
+                          </div>
+                          <div className={cn("px-2 py-0.5 rounded text-[8px] font-bold uppercase", isExtensionDetected ? "bg-[#00FF88]/10 text-[#00FF88] border border-[#00FF88]/20" : "bg-[#F59E0B]/10 text-[#F59E0B] border border-[#F59E0B]/20")}>
+                            {isExtensionDetected ? "CONNECTED" : "NOT FOUND"}
+                          </div>
+                        </div>
+                        <p className="text-[9px] text-[#3A5068] leading-relaxed">
+                          Fitur ini membutuhkan Chrome Extension khusus untuk menekan tombol kirim secara otomatis di WhatsApp Web.
+                        </p>
+                        <button onClick={downloadExtensionZip} className="w-full py-2.5 rounded-lg border border-[#F59E0B]/30 bg-[#F59E0B]/10 text-[#F59E0B] font-bold text-[9px] uppercase tracking-wider hover:bg-[#F59E0B]/20 transition-all flex items-center justify-center gap-2">
+                          <Download size={13} /> DOWNLOAD EXTENSION (.ZIP)
+                        </button>
+                        <div className="space-y-2">
+                          <div className="text-[9px] font-bold text-[#F59E0B] uppercase tracking-wider">Cara Instalasi:</div>
+                          <ol className="text-[9px] space-y-1.5 text-[#3A5068] list-decimal ml-4">
+                            <li>Klik tombol <b className="text-[#C8D8E8]">Download Extension</b> di atas.</li>
+                            <li>Ekstrak file <code className="bg-[#F59E0B]/10 text-[#F59E0B] px-1 rounded">wasender-pro-helper.zip</code></li>
+                            <li>Buka <code className="bg-[#060C12] text-[#38BDF8] px-1 rounded">chrome://extensions</code></li>
+                            <li>Aktifkan <b className="text-[#C8D8E8]">Developer Mode</b> di pojok kanan atas.</li>
+                            <li>Klik <b className="text-[#C8D8E8]">Load Unpacked</b> dan pilih folder ekstrak.</li>
+                          </ol>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
 
-              <div className="p-6 border-t border-slate-700 bg-slate-900/50 shrink-0">
+              <div className="p-5 border-t border-[#1E2D3D]">
                 <button
                   onClick={() => setShowSettingsModal(false)}
-                  className="w-full py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-2xl font-bold shadow-lg shadow-purple-500/30 hover:shadow-xl transition-all"
+                  className="w-full py-3 rounded-xl border border-[#00FF88]/30 bg-[#00FF88]/10 text-[#00FF88] font-bold text-[10px] uppercase tracking-widest hover:bg-[#00FF88]/20 transition-all"
+                  style={{ boxShadow: '0 0 20px rgba(0,255,136,0.08)' }}
                 >
-                  Save Configuration
+                  SAVE CONFIGURATION
                 </button>
               </div>
             </motion.div>
@@ -1992,9 +1641,9 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      <footer className="max-w-7xl mx-auto px-6 py-8 border-t border-purple-500/20 text-center">
-        <div className="text-[10px] text-slate-500 uppercase tracking-[0.3em] font-mono font-bold">
-          WAsender PRO Engine • v2.0.0 • Enterprise Edition
+      <footer className="relative z-10 max-w-7xl mx-auto px-6 py-8 border-t border-[#1E2D3D] text-center">
+        <div className="text-[8px] text-[#1E2D3D] uppercase tracking-[0.4em] font-mono">
+          WASENDER PRO ENGINE • v2.0.0 • ENTERPRISE EDITION
         </div>
       </footer>
     </div>
