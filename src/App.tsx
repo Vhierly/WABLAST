@@ -1,19 +1,56 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { 
-  Plus, Send, Trash2, Play, Square, MessageSquare, User, Package, Hash, Phone,
-  FileText, CheckCircle2, Clock, AlertCircle, Settings2, Download, FileSpreadsheet,
-  X, Search, Sparkles, BarChart3, History, Timer, ExternalLink, ChevronRight, Moon,
-  Sun, RotateCcw, Shield, Puzzle, Loader2, Zap, Terminal
+import React, { useState, useEffect, useMemo } from 'react';
+import {
+  Plus,
+  Send,
+  Trash2,
+  Play,
+  Square,
+  MessageSquare,
+  User,
+  Package,
+  Hash,
+  Phone,
+  FileText,
+  CheckCircle2,
+  Clock,
+  AlertCircle,
+  Settings2,
+  Download,
+  FileSpreadsheet,
+  X,
+  Search,
+  Sparkles,
+  BarChart3,
+  History,
+  Timer,
+  ExternalLink,
+  ChevronRight,
+  Moon,
+  Sun,
+  RotateCcw,
+  Shield,
+  Puzzle,
+  Loader2,
+  Zap
 } from 'lucide-react';
 import { Toaster, toast } from 'react-hot-toast';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { 
-  PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip 
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  Tooltip as RechartsTooltip
 } from 'recharts';
-import { 
-  BlastEntry, LogEntry, MessageTemplate, DEFAULT_TEMPLATES, AppSettings, DEFAULT_SETTINGS 
+import {
+  BlastEntry,
+  LogEntry,
+  MessageTemplate,
+  DEFAULT_TEMPLATES,
+  AppSettings,
+  DEFAULT_SETTINGS
 } from './types';
 import { downloadExtensionZip } from './utils/extensionDownloader';
 
@@ -21,6 +58,7 @@ function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+// Utility to nicely format numbers into Rupiah currency
 const formatCurrency = (val: string) => {
   if (!val) return '';
   const num = parseInt(val.replace(/\D/g, ''));
@@ -28,6 +66,7 @@ const formatCurrency = (val: string) => {
 };
 
 export default function App() {
+  // ========== STATE (unchanged) ==========
   const [entries, setEntries] = useState<BlastEntry[]>([]);
   const [templates, setTemplates] = useState<MessageTemplate[]>(DEFAULT_TEMPLATES);
   const [activeTemplateId, setActiveTemplateId] = useState<string>(DEFAULT_TEMPLATES[0].id);
@@ -56,41 +95,34 @@ export default function App() {
     return saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches);
   });
   const [nextActionTime, setNextActionTime] = useState(0);
-  
+
+  // Form state
   const [formData, setFormData] = useState({
-    phone: '', recipientName: '', itemName: '', receiptNumber: '', address: '', cod: '', dfod: ''
+    phone: '',
+    recipientName: '',
+    itemName: '',
+    receiptNumber: '',
+    address: '',
+    cod: '',
+    dfod: ''
   });
 
-  const waWindowRef = useRef<Window | null>(null);
-
-  const openInSameTab = (link: string) => {
-    if (waWindowRef.current && !waWindowRef.current.closed) {
-      try {
-        waWindowRef.current.location.replace(link);
-        waWindowRef.current.focus();
-        return waWindowRef.current;
-      } catch (e) {
-        waWindowRef.current = window.open(link, 'WAsenderTab');
-        return waWindowRef.current;
-      }
-    } else {
-      waWindowRef.current = window.open(link, 'WAsenderTab');
-      return waWindowRef.current;
-    }
-  };
-
+  // ========== EFFECTS (unchanged) ==========
+  // Load data
   useEffect(() => {
     const savedEntries = localStorage.getItem('wa_blast_entries');
     const savedTemplates = localStorage.getItem('wa_blast_templates');
     const savedActiveId = localStorage.getItem('wa_blast_active_template_id');
     const savedSettings = localStorage.getItem('wa_blast_settings');
-    
+
     if (savedEntries) setEntries(JSON.parse(savedEntries));
     if (savedTemplates) {
       const parsedTemplates: MessageTemplate[] = JSON.parse(savedTemplates);
       const mergedTemplates = [...parsedTemplates];
       DEFAULT_TEMPLATES.forEach(def => {
-        if (!mergedTemplates.find(t => t.id === def.id)) mergedTemplates.push(def);
+        if (!mergedTemplates.find(t => t.id === def.id)) {
+          mergedTemplates.push(def);
+        }
       });
       setTemplates(mergedTemplates);
     }
@@ -98,6 +130,7 @@ export default function App() {
     if (savedSettings) setSettings(JSON.parse(savedSettings));
   }, []);
 
+  // Save data
   useEffect(() => localStorage.setItem('wa_blast_entries', JSON.stringify(entries)), [entries]);
   useEffect(() => localStorage.setItem('wa_blast_templates', JSON.stringify(templates)), [templates]);
   useEffect(() => localStorage.setItem('wa_blast_active_template_id', activeTemplateId), [activeTemplateId]);
@@ -114,6 +147,7 @@ export default function App() {
     }
   }, [isDarkMode]);
 
+  // ========== HANDLERS (unchanged) ==========
   const handleResetDefault = () => {
     if (window.confirm('Apakah Anda yakin ingin menghapus semua data dan kembali ke pengaturan awal? Semua antrean dan template custom akan hilang.')) {
       addLog(`🔄 Sistem direset ke pengaturan awal`, 'warning');
@@ -143,9 +177,15 @@ export default function App() {
       toast.error('Nomor HP dan Nama Penerima wajib diisi');
       return;
     }
+
     const newEntry: BlastEntry = {
-      id: crypto.randomUUID(), ...formData, status: 'pending', isReceived: false, createdAt: Date.now()
+      id: crypto.randomUUID(),
+      ...formData,
+      status: 'pending',
+      isReceived: false,
+      createdAt: Date.now()
     };
+
     setEntries(prev => [newEntry, ...prev]);
     setFormData({ phone: '', recipientName: '', itemName: '', receiptNumber: '', address: '', cod: '', dfod: '' });
     addLog(`➕ Data ditambahkan: ${newEntry.recipientName} (${newEntry.phone})`, 'info');
@@ -153,7 +193,11 @@ export default function App() {
   };
 
   const handleBulkImport = () => {
-    if (!bulkData.trim()) return toast.error('Data kosong');
+    if (!bulkData.trim()) {
+      toast.error('Data kosong');
+      return;
+    }
+
     const lines = bulkData.trim().split(/\r?\n/);
     const newEntries: BlastEntry[] = [];
     let successCount = 0;
@@ -161,28 +205,40 @@ export default function App() {
     lines.forEach(line => {
       const delimiter = line.includes('\t') ? '\t' : ',';
       const columns = line.split(delimiter).map(col => col.trim());
-      
+
       if (columns.length >= 4) {
         const firstCol = columns[0].toLowerCase();
         const secondCol = (columns[1] || '').toLowerCase();
         if (firstCol === 'no' || secondCol === 'resi/awb' || secondCol === 'resi') return;
 
         const tanda = (columns[5] || '').toUpperCase();
-        let cod = '', dfod = '';
-        
+        const rawCod = columns[6] || '';
+        const rawDfod = columns[7] || '';
+        const itemNameValue = columns[8] || '';
+
+        let cod = '';
+        let dfod = '';
+
         if (tanda === 'COD') {
-          const cleanCod = (columns[6] || '').replace(/[^0-9]/g, '');
+          const cleanCod = rawCod.replace(/[^0-9]/g, '');
           if (cleanCod && !isNaN(Number(cleanCod))) cod = cleanCod;
         } else if (tanda === 'DFOD') {
-          const cleanDfod = (columns[7] || '').replace(/[^0-9]/g, '');
+          const cleanDfod = rawDfod.replace(/[^0-9]/g, '');
           if (cleanDfod && !isNaN(Number(cleanDfod))) dfod = cleanDfod;
         }
 
         newEntries.push({
           id: crypto.randomUUID(),
-          receiptNumber: columns[1] || '', recipientName: columns[2] || '', phone: columns[3] || '',
-          address: columns[4] || '', itemName: columns[8] || '', cod, dfod,
-          status: 'pending', isReceived: false, createdAt: Date.now()
+          receiptNumber: columns[1] || '',
+          recipientName: columns[2] || '',
+          phone: columns[3] || '',
+          address: columns[4] || '',
+          itemName: itemNameValue,
+          cod: cod,
+          dfod: dfod,
+          status: 'pending',
+          isReceived: false,
+          createdAt: Date.now()
         });
         successCount++;
       }
@@ -190,7 +246,8 @@ export default function App() {
 
     if (newEntries.length > 0) {
       setEntries(prev => [...newEntries, ...prev]);
-      setBulkData(''); setShowBulkModal(false);
+      setBulkData('');
+      setShowBulkModal(false);
       addLog(`📥 Bulk Import: ${successCount} data berhasil diimpor`, 'success');
       toast.success(`${successCount} data berhasil diimpor`);
     } else {
@@ -199,24 +256,51 @@ export default function App() {
   };
 
   const clearAll = () => {
-    setEntries([]); setIsConfirmingClear(false);
-    addLog(`🗑️ Semua data antrean dihapus`, 'warning'); toast.success('Semua data dihapus');
+    setEntries([]);
+    setIsConfirmingClear(false);
+    addLog(`🗑️ Semua data antrean dihapus`, 'warning');
+    toast.success('Semua data dihapus');
   };
 
   const getGreeting = () => {
     const hour = new Date().getHours();
-    let base = hour >= 5 && hour < 11 ? 'Pagi' : hour >= 11 && hour < 15 ? 'Siang' : hour >= 15 && hour < 18 ? 'Sore' : 'Malam';
+    let base = '';
+    if (hour >= 5 && hour < 11) base = 'Pagi';
+    else if (hour >= 11 && hour < 15) base = 'Siang';
+    else if (hour >= 15 && hour < 18) base = 'Sore';
+    else base = 'Malam';
+
     if (settings.useRandomGreetings) {
-      const vars = [`Selamat ${base}`, `${base} Kak`, `Halo, Selamat ${base}`, `Halo Kak, Selamat ${base}`, `Permisi, Selamat ${base}`, `Halo`, base];
-      return vars[Math.floor(Math.random() * vars.length)];
+      const variations = [
+        `Selamat ${base}`,
+        `${base} Kak`,
+        `Halo, Selamat ${base}`,
+        `Halo Kak, Selamat ${base}`,
+        `Permisi, Selamat ${base}`,
+        `Halo`,
+        base
+      ];
+      return variations[Math.floor(Math.random() * variations.length)];
     }
+
     return `Selamat ${base}`;
   };
 
   const generateMessage = (entry: BlastEntry, templateText?: string) => {
     let text = templateText || activeTemplate.text;
-    text = !entry.cod ? text.replace(/{if_cod}[\s\S]*?{\/if_cod}/gi, '') : text.replace(/{if_cod}/gi, '').replace(/{\/if_cod}/gi, '');
-    text = !entry.dfod ? text.replace(/{if_dfod}[\s\S]*?{\/if_dfod}/gi, '') : text.replace(/{if_dfod}/gi, '').replace(/{\/if_dfod}/gi, '');
+
+    // Handle conditional blocks {if_cod}...{/if_cod}
+    if (!entry.cod) {
+      text = text.replace(/{if_cod}[\s\S]*?{\/if_cod}/gi, '');
+    } else {
+      text = text.replace(/{if_cod}/gi, '').replace(/{\/if_cod}/gi, '');
+    }
+
+    if (!entry.dfod) {
+      text = text.replace(/{if_dfod}[\s\S]*?{\/if_dfod}/gi, '');
+    } else {
+      text = text.replace(/{if_dfod}/gi, '').replace(/{\/if_dfod}/gi, '');
+    }
 
     let finalMessage = text
       .replace(/{salam}/gi, getGreeting())
@@ -231,7 +315,8 @@ export default function App() {
     if (settings.useGlobalSpintax) {
       finalMessage = finalMessage.replace(/{([^{}]+)}/g, (match, p1) => {
         if (p1.includes('|')) {
-          const choices = p1.split('|'); return choices[Math.floor(Math.random() * choices.length)];
+          const choices = p1.split('|');
+          return choices[Math.floor(Math.random() * choices.length)];
         }
         return match;
       });
@@ -239,20 +324,37 @@ export default function App() {
 
     if (settings.randomizeEmojis) {
       const emojis = ['😊', '🙏', '📦', '🚚', '✨', '✅', '📍', '🚚', '📦', '🚛'];
-      finalMessage = finalMessage.split(' ').map(word => Math.random() > 0.9 ? word + ' ' + emojis[Math.floor(Math.random() * emojis.length)] : word).join(' ');
+      const words = finalMessage.split(' ');
+      finalMessage = words.map(word => {
+        if (Math.random() > 0.9) return word + ' ' + emojis[Math.floor(Math.random() * emojis.length)];
+        return word;
+      }).join(' ');
     }
 
-    if (settings.addRandomSuffix) finalMessage += `\n\n_Ref: ${Math.random().toString(36).substring(7).toUpperCase()}_`;
-    if (settings.useInvisibleChars) finalMessage = finalMessage.split(' ').map(word => Math.random() > 0.7 ? word + '\u200B' : word).join(' ');
-    
+    if (settings.addRandomSuffix) {
+      finalMessage += `\n\n_Ref: ${Math.random().toString(36).substring(7).toUpperCase()}_`;
+    }
+
+    if (settings.useInvisibleChars) {
+      const zwsp = '\u200B';
+      const words = finalMessage.split(' ');
+      finalMessage = words.map(word => {
+        if (Math.random() > 0.7) return word + zwsp;
+        return word;
+      }).join(' ');
+    }
+
     if (settings.randomizeFormatting) {
       const paragraphs = finalMessage.split('\n\n');
       finalMessage = paragraphs.map((p, i) => {
         if (i === paragraphs.length - 1) return p;
         const rand = Math.random();
-        return rand > 0.8 ? p + '\n\n\n' : rand > 0.6 ? p + '\n' : p + '\n\n';
+        if (rand > 0.8) return p + '\n\n\n';
+        if (rand > 0.6) return p + '\n';
+        return p + '\n\n';
       }).join('');
     }
+
     return finalMessage;
   };
 
@@ -260,14 +362,16 @@ export default function App() {
     let phone = entry.phone.replace(/\D/g, '');
     if (phone.startsWith('0')) phone = '62' + phone.slice(1);
     if (!phone.startsWith('62')) phone = '62' + phone;
-    
+
     let templateText = activeTemplate.text;
     if (settings.rotateTemplates) {
       const count = sentCountOverride !== undefined ? sentCountOverride : entries.filter(e => e.status === 'sent').length;
-      const variations = activeTemplate.variations && activeTemplate.variations.length > 0 ? activeTemplate.variations : [activeTemplate.text];
+      const variations = activeTemplate.variations && activeTemplate.variations.length > 0
+        ? activeTemplate.variations
+        : [activeTemplate.text];
       templateText = variations[count % variations.length];
     }
-    
+
     const message = encodeURIComponent(generateMessage(entry, templateText));
     let link = `https://web.whatsapp.com/send?phone=${phone}&text=${message}`;
     if (settings.autoSend) link += '&autosend=true';
@@ -276,7 +380,7 @@ export default function App() {
   };
 
   const handleSendManual = (entry: BlastEntry) => {
-    const newWindow = openInSameTab(getWALink(entry));
+    const newWindow = window.open(getWALink(entry), 'WAsenderTab');
     if (newWindow) window.focus();
     addLog(`🚀 Mengirim manual ke ${entry.recipientName} (${entry.receiptNumber})`, 'info');
     updateStatus(entry.id, 'sent');
@@ -287,27 +391,46 @@ export default function App() {
     setLogs(prev => [newLog, ...prev].slice(0, 100));
   };
 
-  const updateStatus = (id: string, status: BlastEntry['status']) => setEntries(prev => prev.map(e => e.id === id ? { ...e, status } : e));
-  const toggleReceived = (id: string) => setEntries(prev => prev.map(e => e.id === id ? { ...e, isReceived: !e.isReceived } : e));
+  const updateStatus = (id: string, status: BlastEntry['status']) => {
+    setEntries(prev => prev.map(e => e.id === id ? { ...e, status } : e));
+  };
+
+  const toggleReceived = (id: string) => {
+    setEntries(prev => prev.map(e => e.id === id ? { ...e, isReceived: !e.isReceived } : e));
+  };
 
   const calculateNextDelay = (sentCount: number, entry: BlastEntry) => {
-    let minDelay = settings.delay, maxDelay = settings.maxDelay, useTyping = settings.simulateTyping, useAdaptive = settings.adaptiveDelay;
+    let minDelay = settings.delay;
+    let maxDelay = settings.maxDelay;
+    let useTyping = settings.simulateTyping;
+    let useAdaptive = settings.adaptiveDelay;
 
-    if (settings.speedMode === 'safe') { minDelay = 15000; maxDelay = 30000; useTyping = true; useAdaptive = true; } 
-    else if (settings.speedMode === 'normal') { minDelay = 8000; maxDelay = 15000; useTyping = true; useAdaptive = true; } 
-    else if (settings.speedMode === 'fast') { minDelay = 3000; maxDelay = 7000; useTyping = false; useAdaptive = false; } 
-    else if (settings.speedMode === 'turbo') { minDelay = 1000; maxDelay = 2000; useTyping = false; useAdaptive = false; }
+    if (settings.speedMode === 'safe') {
+      minDelay = 15000; maxDelay = 30000; useTyping = true; useAdaptive = true;
+    } else if (settings.speedMode === 'normal') {
+      minDelay = 8000; maxDelay = 15000; useTyping = true; useAdaptive = true;
+    } else if (settings.speedMode === 'fast') {
+      minDelay = 3000; maxDelay = 7000; useTyping = false; useAdaptive = false;
+    } else if (settings.speedMode === 'turbo') {
+      minDelay = 1000; maxDelay = 2000; useTyping = false; useAdaptive = false;
+    }
 
-    let currentDelay = settings.randomizeDelay || settings.speedMode !== 'custom' ? Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay : minDelay;
+    let currentDelay = settings.randomizeDelay || settings.speedMode !== 'custom'
+      ? Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay
+      : minDelay;
+
     if (useAdaptive) currentDelay += Math.floor(sentCount / 10) * 500;
 
     if (useTyping) {
       let templateText = activeTemplate.text;
       if (settings.rotateTemplates) {
-        const vars = activeTemplate.variations && activeTemplate.variations.length > 0 ? activeTemplate.variations : [activeTemplate.text];
-        templateText = vars[sentCount % vars.length];
+        const variations = activeTemplate.variations && activeTemplate.variations.length > 0
+          ? activeTemplate.variations
+          : [activeTemplate.text];
+        templateText = variations[sentCount % variations.length];
       }
-      currentDelay += Math.min(generateMessage(entry, templateText).length * 50, 5000);
+      const message = generateMessage(entry, templateText);
+      currentDelay += Math.min(message.length * 50, 5000);
     }
 
     if (settings.batchSize > 0 && sentCount >= nextBatchPauseAt && nextBatchPauseAt > 0) {
@@ -317,17 +440,27 @@ export default function App() {
     }
 
     if (settings.longBreakAfter > 0 && sentCount > 0 && sentCount % settings.longBreakAfter === 0) {
-      currentDelay = settings.longBreakDuration * 60 * 1000; setIsLongBreak(true);
+      currentDelay = settings.longBreakDuration * 60 * 1000;
+      setIsLongBreak(true);
       addLog(`😴 Mengambil istirahat panjang selama ${settings.longBreakDuration} menit...`, 'warning');
-    } else setIsLongBreak(false);
+    } else {
+      setIsLongBreak(false);
+    }
 
     return currentDelay;
   };
 
   const startBlast = () => {
-    if (!isExtensionDetected && !settings.manualMode) return toast.error('Extension tidak terdeteksi! Gunakan Mode Manual.', { icon: '🔌' });
+    if (!isExtensionDetected && !settings.manualMode) {
+      toast.error('Extension tidak terdeteksi! Gunakan Mode Manual atau hubungkan extension.', { icon: '🔌' });
+      return;
+    }
+
     const pending = entries.filter(e => e.status === 'pending');
-    if (pending.length === 0) return toast.error('Tidak ada pesan pending');
+    if (pending.length === 0) {
+      toast.error('Tidak ada pesan pending');
+      return;
+    }
 
     let entriesToProcess = [...pending];
     if (settings.shuffleQueue) {
@@ -336,45 +469,56 @@ export default function App() {
     }
 
     const firstEntry = entriesToProcess[0];
-    addLog(`🎬 Memulai proses blast...${settings.shuffleQueue ? ' (Diacak)' : ''}`, 'info');
-    
-    const newWindow = openInSameTab(getWALink(firstEntry));
-    if (!newWindow) return toast.error('Popup terblokir! Izinkan popup di browser Anda.', { duration: 8000, icon: '🚫' });
+    addLog(`🎬 Memulai proses blast...${settings.shuffleQueue ? ' (Urutan Diacak)' : ''}`, 'info');
+
+    const newWindow = window.open(getWALink(firstEntry), 'WAsenderTab');
+    if (!newWindow) {
+      toast.error('Popup terblokir! Harap izinkan popup di browser Anda.', { duration: 8000, icon: '🚫' });
+      return;
+    }
     window.focus();
-    
-    if (settings.autoSend) updateStatus(firstEntry.id, 'sending');
-    else {
+
+    if (settings.autoSend) {
+      updateStatus(firstEntry.id, 'sending');
+    } else {
       updateStatus(firstEntry.id, 'sent');
       setNextActionTime(Date.now() + calculateNextDelay(entries.filter(e => e.status === 'sent').length + 1, entriesToProcess[1] || firstEntry));
     }
 
-    setIsBlasting(true); setCurrentIndex(0);
-    if (settings.batchSize > 0) setNextBatchPauseAt(entries.filter(e => e.status === 'sent').length + settings.batchSize + (Math.floor(Math.random() * 5) - 2));
+    setIsBlasting(true);
+    setCurrentIndex(0);
+
+    if (settings.batchSize > 0) {
+      setNextBatchPauseAt(entries.filter(e => e.status === 'sent').length + settings.batchSize + (Math.floor(Math.random() * 5) - 2));
+    }
   };
 
   const stopBlast = () => {
-    setIsBlasting(false); setCurrentIndex(-1); setNextActionTime(0);
+    setIsBlasting(false);
+    setCurrentIndex(-1);
+    setNextActionTime(0);
     addLog(`🛑 Proses blast dihentikan oleh pengguna`, 'warning');
-    if (waWindowRef.current && !waWindowRef.current.closed) {
-      waWindowRef.current.close();
-      waWindowRef.current = null;
-    }
   };
 
   useEffect(() => {
     if (isBlasting && !settings.manualMode) {
       const sendingEntry = entries.find(e => e.status === 'sending');
       if (sendingEntry) {
-        let t = 25000;
-        if (settings.speedMode === 'turbo') t = 5000; else if (settings.speedMode === 'fast') t = 10000; else if (settings.speedMode === 'normal') t = 15000;
+        let timeoutDuration = 25000;
+        if (settings.speedMode === 'turbo') timeoutDuration = 5000;
+        else if (settings.speedMode === 'fast') timeoutDuration = 10000;
+        else if (settings.speedMode === 'normal') timeoutDuration = 15000;
 
         const timer = setTimeout(() => {
-          addLog(`⏭️ Auto-Next: Melanjutkan otomatis...`, 'info');
+          addLog(`⏭️ Auto-Next: Melanjutkan otomatis untuk ${sendingEntry.recipientName}...`, 'info');
           updateStatus(sendingEntry.id, 'sent');
+
           const sentCount = entries.filter(e => e.status === 'sent').length + 1;
           const pending = entries.filter(e => e.status === 'pending' && e.id !== sendingEntry.id);
-          if (pending.length > 0) setNextActionTime(Date.now() + calculateNextDelay(sentCount, pending[0]));
-        }, t);
+          if (pending.length > 0) {
+            setNextActionTime(Date.now() + calculateNextDelay(sentCount, pending[0]));
+          }
+        }, timeoutDuration);
         return () => clearTimeout(timer);
       }
     }
@@ -384,31 +528,41 @@ export default function App() {
     const handleExtensionMessage = (event: MessageEvent) => {
       if (event.data && event.data.source === 'wasender-extension') {
         const { type, entryId, status: waStatus } = event.data;
+
         if (type === 'WA_STATUS_UPDATE') {
           setEntries(currentEntries => {
             const entry = currentEntries.find(e => e.id === entryId);
             if (!entry || entry.status === 'sent') return currentEntries;
 
             if (waStatus === 'sent') {
-              setConsecutiveErrors(0); setSentThisHour(prev => prev + 1);
-              addLog(`✅ Terkirim ke ${entry.recipientName}`, 'success');
+              setConsecutiveErrors(0);
+              setSentThisHour(prev => prev + 1);
+              addLog(`✅ Pesan terkirim ke ${entry.recipientName} (${entry.receiptNumber})`, 'success');
+
+              const sentCount = currentEntries.filter(e => e.status === 'sent').length + 1;
               const pending = currentEntries.filter(e => e.status === 'pending' && e.id !== entryId);
-              if (pending.length > 0) setNextActionTime(Date.now() + calculateNextDelay(currentEntries.filter(e => e.status === 'sent').length + 1, pending[0]));
+              if (pending.length > 0) {
+                setNextActionTime(Date.now() + calculateNextDelay(sentCount, pending[0]));
+              }
+
               return currentEntries.map(e => e.id === entryId ? { ...e, status: 'sent' } : e);
             } else if (waStatus === 'invalid') {
               const currentRetries = entry.retryCount || 0;
               if (settings.autoRetry && currentRetries < settings.maxRetries) {
-                addLog(`🔄 Gagal, mencoba ulang (${currentRetries + 1}/${settings.maxRetries})...`, 'warning');
+                addLog(`🔄 Nomor ${entry.recipientName} gagal, mencoba ulang (${currentRetries + 1}/${settings.maxRetries})...`, 'warning');
                 return currentEntries.map(e => e.id === entryId ? { ...e, status: 'pending', retryCount: currentRetries + 1 } : e);
               } else {
-                setConsecutiveErrors(prev => prev + 1); addLog(`❌ Nomor tidak valid: ${entry.recipientName}`, 'error');
+                setConsecutiveErrors(prev => prev + 1);
+                addLog(`❌ Nomor tidak valid: ${entry.recipientName} (${entry.receiptNumber})`, 'error');
                 return currentEntries.map(e => e.id === entryId ? { ...e, status: 'failed' } : e);
               }
             }
             return currentEntries;
           });
         } else if (type === 'WA_WARNING_DETECTED') {
-          stopBlast(); addLog(`🚨 PERINGATAN SPAM OLEH WHATSAPP!`, 'error'); toast.error('PERINGATAN SPAM!', { icon: '🚨' });
+          stopBlast();
+          addLog(`🚨 PERINGATAN SPAM TERDETEKSI OLEH WHATSAPP! Blast dihentikan demi keamanan.`, 'error');
+          toast.error('PERINGATAN SPAM! Blast dihentikan.', { duration: 10000, icon: '🚨' });
         }
       }
     };
@@ -416,70 +570,112 @@ export default function App() {
     window.addEventListener('message', handleExtensionMessage);
     const heartbeatInterval = setInterval(() => {
       if (lastHeartbeat > 0 && Date.now() - lastHeartbeat > 20000 && isExtensionDetected) {
-        setIsExtensionDetected(false); addLog(`🔌 Extension terputus`, 'warning');
+        setIsExtensionDetected(false);
+        addLog(`🔌 Extension terputus atau tidak terdeteksi`, 'warning');
       }
     }, 5000);
-    return () => { window.removeEventListener('message', handleExtensionMessage); clearInterval(heartbeatInterval); };
+
+    return () => {
+      window.removeEventListener('message', handleExtensionMessage);
+      clearInterval(heartbeatInterval);
+    };
   }, [lastHeartbeat, isExtensionDetected, settings.autoRetry, settings.maxRetries, settings.speedMode]);
 
   useEffect(() => {
     const handlePing = (event: MessageEvent) => {
       if (event.data && event.data.source === 'wasender-extension' && event.data.type === 'EXTENSION_PONG') {
-        if (!isExtensionDetected) { setIsExtensionDetected(true); addLog(`🔌 Extension aktif`, 'success'); }
+        if (!isExtensionDetected) {
+          setIsExtensionDetected(true);
+          addLog(`🔌 Extension terdeteksi dan aktif`, 'success');
+        }
         setLastHeartbeat(Date.now());
       }
     };
     window.addEventListener('message', handlePing);
+
     const checkAttr = () => {
       if (document.documentElement.getAttribute('data-wasender-extension') === 'active') {
-        if (!isExtensionDetected) { setIsExtensionDetected(true); addLog(`🔌 Extension aktif (DOM)`, 'success'); }
+        if (!isExtensionDetected) {
+          setIsExtensionDetected(true);
+          addLog(`🔌 Extension terdeteksi via DOM`, 'success');
+        }
         setLastHeartbeat(Date.now());
       }
       window.postMessage({ type: 'EXTENSION_PING' }, '*');
     };
-    const attrInterval = setInterval(checkAttr, 2000); checkAttr();
-    return () => { window.removeEventListener('message', handlePing); clearInterval(attrInterval); };
+
+    const attrInterval = setInterval(checkAttr, 2000);
+    checkAttr();
+
+    return () => {
+      window.removeEventListener('message', handlePing);
+      clearInterval(attrInterval);
+    };
   }, [isExtensionDetected]);
 
   useEffect(() => {
-    if (!isBlasting || settings.manualMode) { setCountdown(0); return; }
+    if (!isBlasting || settings.manualMode) {
+      setCountdown(0);
+      return;
+    }
 
     const engineTick = () => {
       const now = Date.now();
-      if (now - lastHourReset > 3600000) { setSentThisHour(0); setLastHourReset(now); }
-      if (sentThisHour >= settings.hourlyLimit) { setIsBlasting(false); addLog(`⏳ Limit per jam tercapai.`, 'warning'); return; }
+
+      if (now - lastHourReset > 3600000) {
+        setSentThisHour(0);
+        setLastHourReset(now);
+      }
+
+      if (sentThisHour >= settings.hourlyLimit) {
+        setIsBlasting(false);
+        addLog(`⏳ Limit per jam tercapai.`, 'warning');
+        return;
+      }
 
       const pendingEntries = entries.filter(e => e.status === 'pending');
       const sendingEntries = entries.filter(e => e.status === 'sending');
-      
-      if (sendingEntries.length > 0) { setCountdown(0); return; }
+
+      if (sendingEntries.length > 0) {
+        setCountdown(0);
+        return;
+      }
 
       if (pendingEntries.length > 0) {
         const entry = pendingEntries[0];
+
         if (now >= nextActionTime) {
           addLog(`🚀 Mengirim ke ${entry.recipientName}...`, 'info');
-          const newWindow = openInSameTab(getWALink(entry, entries.filter(e => e.status === 'sent').length));
-          if (!newWindow) { addLog(`⚠️ Browser memblokir popup.`, 'warning'); setNextActionTime(Date.now() + 3000); return; }
+
+          const waLink = getWALink(entry, entries.filter(e => e.status === 'sent').length);
+          const newWindow = window.open(waLink, 'WAsenderTab');
+
+          if (!newWindow) {
+            addLog(`⚠️ Browser memblokir pembukaan tab otomatis.`, 'warning');
+            setNextActionTime(Date.now() + 3000);
+            return;
+          }
+
           window.focus();
 
-          if (settings.autoSend) updateStatus(entry.id, 'sending');
-          else {
+          if (settings.autoSend) {
+            updateStatus(entry.id, 'sending');
+          } else {
             updateStatus(entry.id, 'sent');
             setNextActionTime(Date.now() + calculateNextDelay(entries.filter(e => e.status === 'sent').length + 1, pendingEntries[1] || entry));
           }
-        } else setCountdown(Math.max(0, Math.ceil((nextActionTime - now) / 1000)));
-      } else { 
-        setIsBlasting(false); 
-        addLog(`🏁 Blast selesai!`, 'success'); 
-        if (waWindowRef.current && !waWindowRef.current.closed) {
-          waWindowRef.current.close();
-          waWindowRef.current = null;
-          addLog(`🧹 Menutup tab WhatsApp otomatis.`, 'info');
+        } else {
+          setCountdown(Math.max(0, Math.ceil((nextActionTime - now) / 1000)));
         }
+      } else {
+        setIsBlasting(false);
+        addLog(`🏁 Blast selesai!`, 'success');
       }
     };
 
-    engineTick(); const interval = setInterval(engineTick, 1000);
+    engineTick();
+    const interval = setInterval(engineTick, 1000);
+
     return () => clearInterval(interval);
   }, [isBlasting, entries, nextActionTime, settings.manualMode, settings.hourlyLimit, isExtensionDetected, sentThisHour, lastHourReset]);
 
@@ -489,586 +685,1331 @@ export default function App() {
         e.preventDefault();
         const pending = entries.filter(ent => ent.status === 'pending');
         if (pending.length > 0) {
-          openInSameTab(getWALink(pending[0])); 
-          updateStatus(pending[0].id, 'sent');
+          const entry = pending[0];
+          window.open(getWALink(entry), 'WAsenderTab');
+          updateStatus(entry.id, 'sent');
         }
       }
     };
-    window.addEventListener('keydown', handleKeyDown); return () => window.removeEventListener('keydown', handleKeyDown);
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isBlasting, settings.manualMode, entries]);
 
   const filteredEntries = useMemo(() => {
-    return entries.filter(e => e.recipientName.toLowerCase().includes(searchQuery.toLowerCase()) || e.phone.includes(searchQuery) || e.receiptNumber.toLowerCase().includes(searchQuery.toLowerCase()));
+    return entries.filter(e =>
+      e.recipientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      e.phone.includes(searchQuery) ||
+      e.receiptNumber.toLowerCase().includes(searchQuery.toLowerCase())
+    );
   }, [entries, searchQuery]);
 
   const statsData = useMemo(() => {
-    const sent = entries.filter(e => e.status === 'sent').length, pending = entries.filter(e => e.status === 'pending').length, received = entries.filter(e => e.isReceived).length;
-    return [{ name: 'Sent', value: sent, color: '#10b981' }, { name: 'Pending', value: pending, color: '#f59e0b' }, { name: 'Received', value: received, color: '#0ea5e9' }];
+    const sent = entries.filter(e => e.status === 'sent').length;
+    const pending = entries.filter(e => e.status === 'pending').length;
+    const received = entries.filter(e => e.isReceived).length;
+    return [
+      { name: 'Sent', value: sent, color: '#10b981' },
+      { name: 'Pending', value: pending, color: '#f59e0b' },
+      { name: 'Received', value: received, color: '#3b82f6' }
+    ];
   }, [entries]);
 
   const safetyScore = useMemo(() => {
     let score = 0;
-    if (settings.delay >= 5000) score += 20; if (settings.randomizeDelay) score += 15; if (settings.batchSize > 0 && settings.batchSize <= 15) score += 10;
-    if (settings.useRandomGreetings) score += 5; if (settings.useInvisibleChars) score += 5; if (settings.simulateTyping) score += 10;
-    if (settings.adaptiveDelay) score += 5; if (settings.rotateTemplates) score += 10; if (settings.hourlyLimit <= 50) score += 10; if (settings.shuffleQueue) score += 10;
+    if (settings.delay >= 5000) score += 20;
+    if (settings.randomizeDelay) score += 15;
+    if (settings.batchSize > 0 && settings.batchSize <= 15) score += 10;
+    if (settings.useRandomGreetings) score += 5;
+    if (settings.useInvisibleChars) score += 5;
+    if (settings.simulateTyping) score += 10;
+    if (settings.adaptiveDelay) score += 5;
+    if (settings.rotateTemplates) score += 10;
+    if (settings.hourlyLimit <= 50) score += 10;
+    if (settings.shuffleQueue) score += 10;
     return Math.min(100, score);
   }, [settings]);
 
   const exportToCSV = () => {
     if (entries.length === 0) return;
     const headers = ['Phone', 'Name', 'Item', 'Receipt', 'Status', 'Received', 'Created At'];
-    const rows = entries.map(e => [e.phone, e.recipientName, e.itemName, e.receiptNumber, e.status, e.isReceived ? 'YES' : 'NO', new Date(e.createdAt).toLocaleString()]);
-    const csvContent = [headers, ...rows].map(r => r.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const rows = entries.map(e => [
+      e.phone,
+      e.recipientName,
+      e.itemName,
+      e.receiptNumber,
+      e.status,
+      e.isReceived ? 'YES' : 'NO',
+      new Date(e.createdAt).toLocaleString()
+    ]);
+    const csvContent = [headers, ...rows]
+      .map(r => r.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `wasender_${new Date().toISOString().split('T')[0]}.csv`; link.click();
-    toast.success('Laporan diunduh');
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `wasender_report_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    toast.success('Laporan berhasil diunduh');
   };
 
+  // ========== RENDER (completely redesigned UI) ==========
   return (
     <div className={cn(
-      "min-h-screen lg:h-screen w-full flex flex-col lg:flex-row lg:overflow-hidden font-sans selection:bg-emerald-500/30 transition-colors duration-300",
-      isDarkMode ? "dark bg-[#09090b] text-zinc-200" : "bg-[#f4f4f5] text-zinc-900"
+      "min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-[#0B0F17] dark:via-[#121724] dark:to-[#0B0F17] text-slate-900 dark:text-slate-100 font-sans antialiased selection:bg-indigo-100 dark:selection:bg-indigo-900/30 transition-colors duration-300",
+      isDarkMode && "dark"
     )}>
-      <Toaster position="top-center" toastOptions={{ className: 'dark:bg-zinc-800 dark:text-white border dark:border-zinc-700 mt-4 shadow-xl' }} />
+      <Toaster position="top-right" toastOptions={{ className: 'rounded-2xl text-sm font-medium shadow-xl' }} />
 
-      {/* FLOATING HUD WIDGET */}
+      {/* Blast Overlay (unchanged logic, improved design) */}
       <AnimatePresence>
         {isBlasting && (
-          <motion.div 
-            initial={{ opacity: 0, y: 50, scale: 0.9 }} 
-            animate={{ opacity: 1, y: 0, scale: 1 }} 
-            exit={{ opacity: 0, y: 20, scale: 0.9 }}
-            transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:bottom-6 md:bottom-8 md:right-8 z-[100] w-auto sm:w-[340px] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.5)]"
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-xl flex items-center justify-center p-6"
           >
-            <div className="bg-zinc-900/95 backdrop-blur-xl border border-zinc-700/50 p-5 sm:p-6 rounded-[2rem] flex flex-col relative overflow-hidden">
-              <div className="absolute top-0 left-0 w-full h-1 bg-zinc-800">
-                <motion.div 
-                  className="h-full bg-gradient-to-r from-emerald-500 to-teal-400" 
-                  initial={{ width: "0%" }}
-                  animate={{ width: `${entries.length > 0 ? (entries.filter(e => e.status === 'sent').length / entries.length) * 100 : 0}%` }}
-                />
-              </div>
-              
-              <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-5 mt-1 sm:mt-2">
-                <div className="relative w-10 h-10 sm:w-12 sm:h-12 shrink-0">
-                  <div className="absolute inset-0 border-[3px] sm:border-4 border-zinc-800 rounded-full" />
-                  <div className="absolute inset-0 border-[3px] sm:border-4 border-emerald-500 rounded-full border-t-transparent animate-spin" />
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <Play className="w-3 h-3 sm:w-4 sm:h-4 text-emerald-500 fill-current translate-x-[1px]" />
-                  </div>
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-white leading-tight">
-                    {isLongBreak ? 'Sleeping 😴' : entries.some(e => e.status === 'sending') ? 'Waiting WA ⏳' : 'Engine Running 🚀'}
-                  </h3>
-                  <div className="text-[10px] sm:text-[11px] text-zinc-400 mt-1 font-medium">
-                    Sent: <span className="text-emerald-400 font-bold">{entries.filter(e => e.status === 'sent').length}</span> / {entries.length} items
-                  </div>
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="bg-white/90 dark:bg-[#1A1F2C]/90 backdrop-blur-xl rounded-3xl p-8 max-w-md w-full shadow-2xl border border-white/20 dark:border-white/10 text-center space-y-6"
+            >
+              <div className="relative w-24 h-24 mx-auto">
+                <div className="absolute inset-0 border-4 border-indigo-500/20 rounded-full" />
+                <div className="absolute inset-0 border-4 border-indigo-500 rounded-full border-t-transparent animate-spin" />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <Play size={32} className="text-indigo-500 fill-current" />
                 </div>
               </div>
+              <div className="space-y-2">
+                <h3 className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                  {isLongBreak ? '😴 Long Break Active' :
+                    entries.some(e => e.status === 'sending') ? '⏳ Menunggu WA Web...' :
+                      'Blasting in Progress...'}
+                </h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  Pesan terkirim: <span className="font-bold text-indigo-600 dark:text-indigo-400">{entries.filter(e => e.status === 'sent').length}</span> / <span className="font-bold">{entries.length}</span>
+                </p>
 
-              {!settings.manualMode ? (
-                <div className="mb-4 sm:mb-5 bg-zinc-950 rounded-2xl p-3 sm:p-4 border border-zinc-800/80 flex items-center justify-between shadow-inner">
-                  <span className="text-[9px] sm:text-[10px] uppercase tracking-widest text-zinc-500 font-bold">
-                    {entries.some(e => e.status === 'sending') ? 'Processing' : isLongBreak ? 'Break Left' : 'Next In'}
-                  </span>
-                  <div className={cn("text-xl sm:text-2xl font-black tabular-nums tracking-tighter", isLongBreak ? "text-amber-500" : entries.some(e => e.status === 'sending') ? "text-blue-500 animate-pulse" : "text-white")}>
-                    {entries.some(e => e.status === 'sending') ? '--:--' : `${Math.floor(countdown / 60)}:${(countdown % 60).toString().padStart(2, '0')}`}
+                {!settings.manualMode ? (
+                  <div className="py-4">
+                    <div className={cn(
+                      "text-4xl font-black tabular-nums",
+                      isLongBreak ? "text-amber-500" :
+                        entries.some(e => e.status === 'sending') ? "text-blue-500 animate-pulse" :
+                          "text-indigo-600 dark:text-indigo-400"
+                    )}>
+                      {entries.some(e => e.status === 'sending') ? '--:--' : `${Math.floor(countdown / 60)}:${(countdown % 60).toString().padStart(2, '0')}`}
+                    </div>
+                    <p className="text-[10px] text-slate-400 uppercase tracking-widest mt-1">
+                      {entries.some(e => e.status === 'sending') ? 'Memproses di WA Web' : isLongBreak ? 'Break ends in' : 'Next message in'}
+                    </p>
+
+                    {Date.now() >= nextActionTime && entries.filter(e => e.status === 'pending').length > 0 && !entries.some(e => e.status === 'sending') && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="mt-4"
+                      >
+                        <button
+                          onClick={() => {
+                            const pending = entries.filter(e => e.status === 'pending');
+                            if (pending.length > 0) {
+                              const entry = pending[0];
+                              const sentCount = entries.filter(e => e.status === 'sent').length;
+                              const newWindow = window.open(getWALink(entry, sentCount), 'WAsenderTab');
+                              if (newWindow) {
+                                window.focus();
+                                if (settings.autoSend) {
+                                  updateStatus(entry.id, 'sending');
+                                } else {
+                                  updateStatus(entry.id, 'sent');
+                                  setNextActionTime(Date.now() + calculateNextDelay(sentCount + 1, entries.filter(e => e.status === 'pending')[1] || entry));
+                                }
+                              }
+                            }
+                          }}
+                          className="w-full py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold text-sm shadow-lg flex items-center justify-center gap-2 transition-all"
+                        >
+                          <Play size={14} fill="white" /> Klik jika tab tidak terbuka otomatis
+                        </button>
+                      </motion.div>
+                    )}
                   </div>
-                </div>
-              ) : (
-                <div className="mb-4 sm:mb-5 bg-zinc-950 rounded-2xl p-3 sm:p-4 border border-zinc-800/80 text-center shadow-inner">
-                  <div className="text-emerald-400 font-bold text-[10px] uppercase tracking-widest mb-1">Manual Mode</div>
-                  <div className="text-[10px] sm:text-[11px] text-zinc-400">Tekan [ENTER] di WA atau klik lanjut.</div>
-                </div>
-              )}
+                ) : (
+                  <div className="py-6 space-y-2">
+                    <div className="px-4 py-2 bg-indigo-50 dark:bg-indigo-900/10 text-indigo-700 dark:text-indigo-400 rounded-xl text-xs font-bold border border-indigo-100 dark:border-indigo-900/20">
+                      MODE MANUAL AKTIF
+                    </div>
+                    <p className="text-[10px] text-slate-400">Tekan [SPASI] atau klik tombol di bawah untuk lanjut.</p>
+                  </div>
+                )}
 
-              <div className="w-full flex flex-col gap-2">
+                <div className="pt-2 flex flex-col gap-2">
+                  <p className="text-[10px] text-amber-600 dark:text-amber-400 font-bold uppercase tracking-widest animate-pulse">
+                    PENTING: Tekan [ENTER] pada tab WhatsApp untuk mengirim!
+                  </p>
+                  <p className="text-[9px] text-slate-400 italic">
+                    Browser tidak mengizinkan klik otomatis di dalam WhatsApp. Tekan Enter setiap kali pesan muncul.
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-col gap-3">
                 {entries.some(e => e.status === 'sending') && (
-                  <button onClick={() => { const s = entries.find(e => e.status === 'sending'); if(s) updateStatus(s.id, 'sent'); }} className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-xs sm:text-[13px] transition-all active:scale-95 shadow-sm">Force Skip</button>
+                  <button
+                    onClick={() => {
+                      const sending = entries.find(e => e.status === 'sending');
+                      if (sending) {
+                        addLog(`⏭️ Paksa lanjut: Melewati konfirmasi untuk ${sending.recipientName}`, 'warning');
+                        updateStatus(sending.id, 'sent');
+                      }
+                    }}
+                    className="w-full py-3 bg-blue-600 text-white rounded-2xl font-bold shadow-lg shadow-blue-600/20 text-sm hover:bg-blue-700 transition-all"
+                  >
+                    Paksa Lanjut ke Nomor Berikutnya
+                  </button>
                 )}
-                {Date.now() >= nextActionTime && entries.filter(e => e.status === 'pending').length > 0 && !entries.some(e => e.status === 'sending') && !settings.manualMode && (
-                  <button onClick={() => {
-                    const entry = entries.find(e => e.status === 'pending');
-                    if(entry) {
-                      openInSameTab(getWALink(entry, entries.filter(e => e.status === 'sent').length));
-                      if(settings.autoSend) updateStatus(entry.id, 'sending'); else updateStatus(entry.id, 'sent');
-                    }
-                  }} className="w-full py-3 bg-amber-600 hover:bg-amber-500 text-white rounded-xl font-bold text-xs sm:text-[13px] transition-all active:scale-95 shadow-sm">Trigger Manual</button>
-                )}
-                {settings.manualMode && (
-                  <button onClick={() => {
+                <button
+                  onClick={() => {
                     const pending = entries.filter(e => e.status === 'pending');
-                    if (pending.length > 0) { openInSameTab(getWALink(pending[0])); updateStatus(pending[0].id, 'sent'); }
-                  }} className="w-full py-3 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white rounded-xl font-bold text-xs sm:text-[13px] transition-all active:scale-95 shadow-sm">Kirim Berikutnya</button>
-                )}
-                <button onClick={stopBlast} className="w-full py-3 border border-red-500/20 text-red-400 hover:bg-red-500 hover:text-white rounded-xl font-bold text-xs sm:text-[13px] transition-all active:scale-95">Stop Engine</button>
+                    if (pending.length > 0) {
+                      const entry = pending[0];
+                      const newWindow = window.open(getWALink(entry), 'WAsenderTab');
+                      if (newWindow) window.focus();
+                      updateStatus(entry.id, 'sent');
+                    }
+                  }}
+                  className="w-full py-3 bg-indigo-100 dark:bg-indigo-900/10 text-indigo-700 dark:text-indigo-400 rounded-2xl font-bold text-sm hover:bg-indigo-200 dark:hover:bg-indigo-900/20 transition-all border border-indigo-200 dark:border-indigo-900/30"
+                >
+                  Kirim Berikutnya (Manual)
+                </button>
+                <button
+                  onClick={stopBlast}
+                  className="w-full py-3 bg-red-500 hover:bg-red-600 text-white rounded-2xl font-bold transition-all shadow-lg shadow-red-500/20 text-sm"
+                >
+                  Berhenti
+                </button>
               </div>
-            </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* SIDEBAR (Command Center) */}
-      <aside className="w-full lg:w-[320px] xl:w-[360px] lg:h-full p-4 md:p-6 flex flex-col gap-4 md:gap-6 border-b lg:border-b-0 lg:border-r border-zinc-200 dark:border-zinc-800/80 bg-white/50 dark:bg-zinc-950/50 backdrop-blur-xl shrink-0 z-20 lg:overflow-y-auto custom-scrollbar">
-        
-        {/* Brand */}
-        <div className="flex items-center gap-3 md:gap-4 px-2 pt-2">
-          <div className="w-10 h-10 md:w-12 md:h-12 bg-zinc-900 dark:bg-white rounded-xl md:rounded-2xl flex items-center justify-center shadow-lg shrink-0">
-            <Send className="w-5 h-5 md:w-6 md:h-6 text-white dark:text-zinc-900 translate-x-[1px]" />
-          </div>
-          <div>
-            <h1 className="text-xl md:text-2xl font-black tracking-tight dark:text-white leading-none">WAsender</h1>
-            <p className="text-[9px] md:text-[10px] font-bold text-emerald-500 uppercase tracking-widest mt-1 md:mt-1.5">PRO Engine v2</p>
-          </div>
-        </div>
-
-        {/* Master Control */}
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl md:rounded-[2rem] p-5 md:p-6 flex flex-col gap-4 md:gap-5 shadow-sm">
-          <div className="flex justify-between items-center">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">System Status</span>
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-lg">
-              <div className={cn("w-2 h-2 rounded-full", isBlasting ? "bg-emerald-500 animate-pulse" : "bg-zinc-400")} />
-              <span className="text-[10px] font-bold dark:text-zinc-300 uppercase">{isBlasting ? 'Running' : 'Standby'}</span>
+      {/* Header */}
+      <header className="sticky top-0 z-30 bg-white/70 dark:bg-[#121724]/70 backdrop-blur-xl border-b border-slate-200/50 dark:border-slate-800/50">
+        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-600/20">
+              <Send size={20} />
             </div>
-          </div>
-          
-          <button
-            onClick={isBlasting ? stopBlast : startBlast}
-            disabled={entries.length === 0}
-            className={cn(
-              "w-full h-14 md:h-16 rounded-2xl md:rounded-[1.25rem] font-black text-base md:text-lg transition-all flex items-center justify-center gap-3 shadow-xl active:scale-95 disabled:opacity-50 disabled:active:scale-100",
-              isBlasting 
-                ? "bg-red-500 hover:bg-red-600 text-white shadow-red-500/20" 
-                : "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 shadow-zinc-900/10 hover:scale-[1.02]"
-            )}
-          >
-            {isBlasting ? <Square size={18} className="md:w-5 md:h-5" fill="currentColor" /> : <Play size={18} className="md:w-5 md:h-5" fill="currentColor" />}
-            {isBlasting ? 'STOP ENGINE' : 'START BLAST'}
-          </button>
-
-          <div className={cn(
-            "flex items-center justify-between px-3 md:px-4 py-3 md:py-3.5 rounded-xl md:rounded-2xl border text-[10px] md:text-[11px] font-bold transition-all",
-            isExtensionDetected 
-              ? "bg-emerald-50/50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/20 text-emerald-600 dark:text-emerald-400" 
-              : "bg-zinc-50 dark:bg-zinc-800/50 border-zinc-200 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400"
-          )}>
-            <div className="flex items-center gap-2 md:gap-2.5"><Puzzle size={14} className={isExtensionDetected ? "animate-pulse" : ""} /> Extension</div>
-            <span className="uppercase">{isExtensionDetected ? 'Connected' : 'Offline'}</span>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4 md:gap-6 lg:flex-1 lg:flex lg:flex-col">
-          {/* Quick Settings */}
-          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl md:rounded-[2rem] p-5 md:p-6 shadow-sm flex flex-col gap-4 md:gap-5">
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 ml-1">Pengirim / CS</label>
-              <input 
-                type="text" 
-                value={settings.senderName}
-                onChange={(e) => setSettings(prev => ({ ...prev, senderName: e.target.value }))}
-                className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-950 border-none rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all dark:text-white"
-                placeholder="Admin JNT"
-              />
-            </div>
-            <div className="space-y-3 pt-1">
-              <div className="flex justify-between items-center">
-                <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 ml-1">Delay Waktu</label>
-                <span className="text-[10px] font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 px-2 py-0.5 rounded-md">{settings.delay / 1000}s</span>
-              </div>
-              <input 
-                type="range" 
-                min="1000" 
-                max="10000" 
-                step="500"
-                value={settings.delay}
-                onChange={(e) => setSettings(prev => ({ ...prev, delay: parseInt(e.target.value) }))}
-                className="w-full h-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-emerald-500"
-              />
-              <div className="flex justify-between text-[9px] font-bold tracking-widest text-zinc-400 uppercase">
-                <span>Fast</span>
-                <span>Safe</span>
-              </div>
+            <div>
+              <h1 className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">WAsender PRO</h1>
+              <p className="text-[10px] text-slate-400 font-mono uppercase tracking-widest">Advanced WhatsApp Blast Engine</p>
             </div>
           </div>
 
-          {/* Stats */}
-          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl md:rounded-[2rem] p-5 md:p-6 shadow-sm">
-            <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-4 md:mb-5">Analytics</div>
-            <div className="flex items-center gap-4 md:gap-6">
-              <div className="w-16 h-16 md:w-20 md:h-20 shrink-0">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie data={statsData} innerRadius={22} outerRadius={32} paddingAngle={5} dataKey="value" stroke="none">
-                      {statsData.map((e, i) => <Cell key={i} fill={e.color} />)}
-                    </Pie>
-                    <RechartsTooltip cursor={false} contentStyle={{ backgroundColor: isDarkMode ? '#18181b' : '#fff', borderColor: isDarkMode ? '#27272a' : '#e2e8f0', borderRadius: '12px', padding: '8px', fontSize: '10px', fontWeight: 'bold' }} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="flex-1 flex flex-col gap-2 md:gap-3">
-                {statsData.map(s => (
-                  <div key={s.name} className="flex justify-between items-center text-[11px] md:text-xs font-bold">
-                    <div className="flex items-center gap-2"><div className="w-2 h-2 md:w-2.5 md:h-2.5 rounded-full" style={{ backgroundColor: s.color }} /> <span className="text-zinc-500 dark:text-zinc-400">{s.name}</span></div>
-                    <span className="text-xs md:text-sm dark:text-white">{s.value}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Terminal Logging */}
-        <div className="lg:flex-1 bg-zinc-950 dark:bg-[#0a0a0a] rounded-3xl md:rounded-[2rem] border border-zinc-800 p-5 md:p-6 flex flex-col overflow-hidden shadow-inner relative group min-h-[140px] md:min-h-[160px] lg:h-auto">
-          <div className="flex justify-between items-center mb-3 md:mb-4 shrink-0">
-            <div className="flex gap-2">
-              <div className="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-zinc-700" />
-              <div className="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-zinc-700" />
-            </div>
-            <span className="text-[9px] md:text-[10px] font-mono text-zinc-500 uppercase tracking-widest">sys.log</span>
-            <button onClick={() => setLogs([])} className="text-[9px] md:text-[10px] font-mono text-zinc-600 hover:text-white uppercase transition-colors lg:opacity-0 group-hover:opacity-100">Clear</button>
-          </div>
-          <div className="flex-1 overflow-y-auto custom-scrollbar font-mono text-[10px] md:text-[11px] space-y-1.5 md:space-y-2 pr-2">
-            {logs.length === 0 ? <div className="text-zinc-600 italic">Waiting for events...</div> : logs.map(log => (
-              <div key={log.id} className="flex gap-2 md:gap-3 leading-relaxed">
-                <span className="text-zinc-600 shrink-0">[{new Date(log.timestamp).toLocaleTimeString([], { hour12: false })}]</span>
-                <span className={cn("break-all", log.type === 'success' ? "text-emerald-400" : log.type === 'error' ? "text-red-400" : log.type === 'warning' ? "text-amber-400" : "text-blue-400")}>{log.message}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-      </aside>
-
-      {/* MAIN CONTENT AREA */}
-      <main className="flex-1 flex flex-col lg:h-full lg:overflow-hidden relative">
-        
-        {/* Top Navbar */}
-        <header className="p-4 md:p-6 lg:h-24 lg:px-8 flex flex-col-reverse sm:flex-row items-center justify-between shrink-0 border-b border-zinc-200 dark:border-zinc-800/80 bg-white/50 dark:bg-zinc-950/50 backdrop-blur-xl z-10 gap-4">
-          <div className="relative w-full sm:max-w-xs md:max-w-sm lg:max-w-md">
-            <Search className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 text-zinc-400 w-4 h-4 md:w-5 md:h-5" />
-            <input 
-              type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Cari antrean..."
-              className="w-full pl-10 md:pl-12 pr-4 md:pr-5 py-2.5 md:py-3.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-full text-xs md:text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all dark:text-white"
-            />
-          </div>
-          <div className="flex flex-wrap items-center justify-center sm:justify-end gap-2 md:gap-3 w-full sm:w-auto">
+          <div className="flex items-center gap-2 md:gap-3">
             {!isExtensionDetected && (
-              <button onClick={downloadExtensionZip} className="px-4 py-2 md:px-5 md:py-2.5 bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-full text-[10px] md:text-xs font-bold flex items-center gap-2 border border-amber-200 dark:border-amber-500/20 hover:bg-amber-100 transition-colors">
-                <Puzzle size={14} className="md:w-4 md:h-4" /> Install Ext
+              <button
+                onClick={downloadExtensionZip}
+                className="hidden sm:flex items-center gap-2 px-4 py-2 bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20 rounded-xl text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/20 transition-all"
+                title="Download Extension Helper"
+              >
+                <Puzzle size={18} />
+                <span className="text-xs font-bold uppercase tracking-wider">Setup Extension</span>
               </button>
             )}
-            <button onClick={() => setShowBulkModal(true)} className="flex-1 sm:flex-none justify-center px-4 py-2 md:px-5 md:py-2.5 bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-full text-[10px] md:text-xs font-bold hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors flex items-center gap-2">
-              <FileSpreadsheet size={14} className="md:w-4 md:h-4" /> Bulk Import
+            <button
+              onClick={handleResetDefault}
+              className="p-2.5 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/20 rounded-xl text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/20 transition-all flex items-center gap-2"
+              title="Reset ke Pengaturan Awal"
+            >
+              <RotateCcw size={18} />
+              <span className="hidden lg:inline text-xs font-bold uppercase tracking-wider">Reset</span>
             </button>
-            <div className="hidden sm:block h-5 md:h-6 w-px bg-zinc-200 dark:bg-zinc-800 mx-0.5 md:mx-1" />
-            <button onClick={exportToCSV} className="p-2 md:p-3 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors" title="Export CSV"><Download size={14} className="md:w-4 md:h-4" /></button>
-            <button onClick={handleResetDefault} className="p-2 md:p-3 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 rounded-full hover:text-red-500 transition-colors" title="Reset All"><RotateCcw size={14} className="md:w-4 md:h-4" /></button>
-            <button onClick={() => setIsDarkMode(!isDarkMode)} className="p-2 md:p-3 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 rounded-full hover:text-emerald-500 transition-colors">{isDarkMode ? <Sun size={14} className="md:w-4 md:h-4" /> : <Moon size={14} className="md:w-4 md:h-4" />}</button>
-            <button onClick={() => setShowSettingsModal(true)} className="p-2 md:p-3 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 rounded-full hover:text-emerald-500 transition-colors"><Settings2 size={14} className="md:w-4 md:h-4" /></button>
+            <button
+              onClick={() => setIsDarkMode(!isDarkMode)}
+              className="p-2.5 bg-slate-100 dark:bg-[#1E2533] border border-slate-200 dark:border-slate-800 rounded-xl text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all"
+              title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            >
+              {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
+            <button
+              onClick={() => setShowSettingsModal(true)}
+              className="p-2.5 bg-slate-100 dark:bg-[#1E2533] border border-slate-200 dark:border-slate-800 rounded-xl text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all"
+              title="Settings"
+            >
+              <Settings2 size={18} />
+            </button>
+            <div className="hidden md:flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-[#1E2533] rounded-full border border-slate-200 dark:border-slate-800">
+              <div className={cn("w-2 h-2 rounded-full animate-pulse", isBlasting ? "bg-indigo-500" : "bg-slate-300 dark:bg-slate-700")} />
+              <span className="text-xs font-medium text-slate-500 dark:text-slate-400">{isBlasting ? 'System Active' : 'System Idle'}</span>
+            </div>
+            <button
+              onClick={exportToCSV}
+              className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+            >
+              <Download size={14} /> Export
+            </button>
           </div>
-        </header>
+        </div>
+      </header>
 
-        {/* Scrollable Content */}
-        <div className="flex-1 lg:overflow-y-auto custom-scrollbar p-4 sm:p-6 lg:p-8">
-          <div className="max-w-6xl mx-auto flex flex-col gap-6 lg:gap-8">
+      <main className="max-w-7xl mx-auto px-6 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
 
-            {/* Top Row: Form & Templates */}
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 lg:gap-8 shrink-0">
-              
-              {/* Form Card */}
-              <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl lg:rounded-[2rem] p-5 sm:p-6 lg:p-8 shadow-sm">
-                <div className="flex items-center gap-3 mb-6 lg:mb-8">
-                  <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500 flex items-center justify-center"><User className="w-4 h-4 lg:w-5 lg:h-5" /></div>
-                  <h2 className="font-bold text-xs lg:text-sm dark:text-white uppercase tracking-widest">Input Data Baru</h2>
-                </div>
-                <form onSubmit={handleAddEntry} className="space-y-4 lg:space-y-5">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-5">
-                    <div className="space-y-1.5 lg:space-y-2">
-                      <label className="text-[9px] lg:text-[10px] font-bold text-zinc-400 uppercase tracking-wider ml-1">No. HP / WA</label>
-                      <input type="text" value={formData.phone} onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))} className="w-full px-4 py-3 lg:px-5 lg:py-3.5 bg-zinc-50 dark:bg-zinc-950 border-none rounded-xl lg:rounded-2xl text-xs lg:text-sm focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all dark:text-white" placeholder="0812..." />
-                    </div>
-                    <div className="space-y-1.5 lg:space-y-2">
-                      <label className="text-[9px] lg:text-[10px] font-bold text-zinc-400 uppercase tracking-wider ml-1">Nama Penerima</label>
-                      <input type="text" value={formData.recipientName} onChange={(e) => setFormData(prev => ({ ...prev, recipientName: e.target.value }))} className="w-full px-4 py-3 lg:px-5 lg:py-3.5 bg-zinc-50 dark:bg-zinc-950 border-none rounded-xl lg:rounded-2xl text-xs lg:text-sm focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all dark:text-white" placeholder="Budi Santoso" />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-5">
-                    <div className="space-y-1.5 lg:space-y-2">
-                      <label className="text-[9px] lg:text-[10px] font-bold text-zinc-400 uppercase tracking-wider ml-1">Resi / AWB</label>
-                      <input type="text" value={formData.receiptNumber} onChange={(e) => setFormData(prev => ({ ...prev, receiptNumber: e.target.value }))} className="w-full px-4 py-3 lg:px-5 lg:py-3.5 bg-zinc-50 dark:bg-zinc-950 border-none rounded-xl lg:rounded-2xl text-xs lg:text-sm focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all dark:text-white" placeholder="JX123..." />
-                    </div>
-                    <div className="space-y-1.5 lg:space-y-2">
-                      <label className="text-[9px] lg:text-[10px] font-bold text-zinc-400 uppercase tracking-wider ml-1">Barang</label>
-                      <input type="text" value={formData.itemName} onChange={(e) => setFormData(prev => ({ ...prev, itemName: e.target.value }))} className="w-full px-4 py-3 lg:px-5 lg:py-3.5 bg-zinc-50 dark:bg-zinc-950 border-none rounded-xl lg:rounded-2xl text-xs lg:text-sm focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all dark:text-white" placeholder="Sepatu" />
-                    </div>
-                  </div>
-                  <div className="space-y-1.5 lg:space-y-2">
-                    <label className="text-[9px] lg:text-[10px] font-bold text-zinc-400 uppercase tracking-wider ml-1">Alamat Tujuan</label>
-                    <input type="text" value={formData.address} onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))} className="w-full px-4 py-3 lg:px-5 lg:py-3.5 bg-zinc-50 dark:bg-zinc-950 border-none rounded-xl lg:rounded-2xl text-xs lg:text-sm focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all dark:text-white" placeholder="Jl. Sudirman No 1" />
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 lg:gap-5 items-end pt-1 lg:pt-2">
-                    <div className="space-y-1.5 lg:space-y-2">
-                      <label className="text-[9px] lg:text-[10px] font-bold text-amber-500 uppercase tracking-wider ml-1">Val COD</label>
-                      <input type="text" value={formData.cod} onChange={(e) => setFormData(prev => ({ ...prev, cod: e.target.value.replace(/[^0-9.,]/g, '') }))} className="w-full px-4 py-3 lg:px-5 lg:py-3.5 bg-amber-50/50 dark:bg-amber-500/10 border-none rounded-xl lg:rounded-2xl text-xs lg:text-sm focus:ring-2 focus:ring-amber-500/20 outline-none transition-all dark:text-white" placeholder="0" />
-                    </div>
-                    <div className="space-y-1.5 lg:space-y-2">
-                      <label className="text-[9px] lg:text-[10px] font-bold text-blue-500 uppercase tracking-wider ml-1">Val DFOD</label>
-                      <input type="text" value={formData.dfod} onChange={(e) => setFormData(prev => ({ ...prev, dfod: e.target.value.replace(/[^0-9.,]/g, '') }))} className="w-full px-4 py-3 lg:px-5 lg:py-3.5 bg-blue-50/50 dark:bg-blue-500/10 border-none rounded-xl lg:rounded-2xl text-xs lg:text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all dark:text-white" placeholder="0" />
-                    </div>
-                    <button type="submit" className="w-full py-3.5 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-xl lg:rounded-2xl font-bold text-xs lg:text-sm hover:scale-[0.98] transition-transform flex items-center justify-center gap-2 shadow-md mt-2 sm:mt-0">
-                      <Plus size={16} className="lg:w-[18px] lg:h-[18px]" /> Tambah
-                    </button>
-                  </div>
-                </form>
+        {/* Left Column */}
+        <div className="lg:col-span-4 space-y-6">
+          {/* Stats Card */}
+          <section className="bg-white dark:bg-[#1A1F2C] rounded-3xl p-6 shadow-xl border border-slate-200/50 dark:border-slate-800/50">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-2">
+                <BarChart3 size={18} className="text-indigo-500" />
+                <h2 className="font-bold">Overview</h2>
               </div>
-
-              {/* Templates Card */}
-              <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl lg:rounded-[2rem] p-5 sm:p-6 lg:p-8 shadow-sm flex flex-col">
-                <div className="flex items-center justify-between mb-4 lg:mb-6">
-                  <div className="flex items-center gap-2 lg:gap-3">
-                    <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-500 flex items-center justify-center"><MessageSquare className="w-4 h-4 lg:w-5 lg:h-5" /></div>
-                    <h2 className="font-bold text-xs lg:text-sm dark:text-white uppercase tracking-widest">Pesan Template</h2>
-                  </div>
-                  <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 lg:p-1.5 rounded-lg lg:rounded-xl">
-                    {[0,1,2].map(idx => (
-                      <button key={idx} onClick={() => setActiveVariationIndex(idx)} className={cn("px-3 py-1 lg:px-4 lg:py-1.5 text-[10px] lg:text-[11px] font-bold rounded-md lg:rounded-lg transition-all", activeVariationIndex === idx ? "bg-white dark:bg-zinc-600 text-zinc-900 dark:text-white shadow-sm" : "text-zinc-500")}>V{idx+1}</button>
+              <History size={16} className="text-slate-300 dark:text-slate-600" />
+            </div>
+            <div className="h-48 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={statsData}
+                    innerRadius={60}
+                    outerRadius={80}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {statsData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
-                  </div>
+                  </Pie>
+                  <RechartsTooltip
+                    contentStyle={{
+                      backgroundColor: isDarkMode ? '#1A1F2C' : '#FFFFFF',
+                      borderColor: isDarkMode ? '#2D3748' : '#E2E8F0',
+                      color: isDarkMode ? '#E2E8F0' : '#1E293B',
+                      borderRadius: '1rem',
+                      boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)',
+                      border: 'none'
+                    }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="grid grid-cols-3 gap-3 mt-4">
+              {statsData.map(s => (
+                <div key={s.name} className="p-3 rounded-2xl bg-slate-50 dark:bg-[#232A3A] border border-slate-200 dark:border-slate-800">
+                  <div className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider truncate">{s.name}</div>
+                  <div className="text-lg font-bold" style={{ color: s.color }}>{s.value}</div>
                 </div>
-                
-                <div className="flex gap-2 lg:gap-2.5 mb-3 lg:mb-4 overflow-x-auto custom-scrollbar pb-1 lg:pb-1.5">
-                  {templates.map(t => (
-                    <button key={t.id} onClick={() => { setActiveTemplateId(t.id); setActiveVariationIndex(0); }} className={cn("px-4 py-1.5 lg:px-5 lg:py-2 rounded-full text-[10px] lg:text-[11px] font-bold transition-all whitespace-nowrap", activeTemplateId === t.id ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900" : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-700")}>{t.name}</button>
-                  ))}
-                </div>
+              ))}
+            </div>
+          </section>
 
-                <textarea value={currentTemplateText} onChange={(e) => updateActiveTemplateText(e.target.value)} className="w-full flex-1 min-h-[140px] lg:min-h-[160px] p-4 lg:p-5 text-xs lg:text-sm bg-zinc-50 dark:bg-zinc-950 border-none rounded-xl lg:rounded-2xl focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all resize-none dark:text-zinc-200 custom-scrollbar leading-relaxed" placeholder="Tulis template..." />
-                
-                <div className="mt-3 lg:mt-4 flex flex-wrap gap-1.5 lg:gap-2">
-                  {['{salam}', '{pengirim}', '{nama}', '{barang}', '{resi}', '{cod}', '{dfod}', '{if_cod}...{/if_cod}'].map(tag => (
-                    <button key={tag} onClick={() => updateActiveTemplateText(currentTemplateText + ' ' + (tag.includes('...') ? '{if_cod}{/if_cod}' : tag))} className="text-[9px] lg:text-[10px] font-mono font-bold px-2.5 py-1 lg:px-3 lg:py-1.5 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md lg:rounded-lg text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 active:scale-95 transition-all">{tag}</button>
-                  ))}
+          {/* Engine Settings Card */}
+          <section className="bg-white dark:bg-[#1A1F2C] rounded-3xl p-6 shadow-xl border border-slate-200/50 dark:border-slate-800/50">
+            <div className="flex items-center gap-2 mb-6">
+              <Timer size={18} className="text-indigo-500" />
+              <h2 className="font-bold">Engine Settings</h2>
+            </div>
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Nama Pengirim</label>
+                <input
+                  type="text"
+                  value={settings.senderName}
+                  onChange={(e) => setSettings(prev => ({ ...prev, senderName: e.target.value }))}
+                  placeholder="Contoh: Admin JNT"
+                  className="w-full p-3 text-sm bg-slate-50 dark:bg-[#232A3A] border border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 outline-none transition-all dark:text-white"
+                />
+              </div>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Blast Delay</label>
+                  <span className="text-xs font-mono font-bold text-indigo-600 dark:text-indigo-400">{settings.delay / 1000}s</span>
+                </div>
+                <input
+                  type="range"
+                  min="1000"
+                  max="10000"
+                  step="500"
+                  value={settings.delay}
+                  onChange={(e) => setSettings(prev => ({ ...prev, delay: parseInt(e.target.value) }))}
+                  className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+                />
+                <div className="flex justify-between text-[10px] text-slate-400 dark:text-slate-600 font-mono">
+                  <span>FAST</span>
+                  <span>SAFE</span>
                 </div>
               </div>
+            </div>
+          </section>
 
+          {/* Templates Card */}
+          <section className="bg-white dark:bg-[#1A1F2C] rounded-3xl p-6 shadow-xl border border-slate-200/50 dark:border-slate-800/50">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Settings2 size={18} className="text-indigo-500" />
+                <h2 className="font-bold">Templates</h2>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="text-[9px] font-bold text-indigo-500 uppercase tracking-tighter mr-2 animate-pulse">Auto-saved</span>
+                <button
+                  onClick={() => {
+                    const def = DEFAULT_TEMPLATES.find(t => t.id === activeTemplateId);
+                    if (def && confirm('Reset template ini ke pengaturan awal?')) {
+                      setTemplates(prev => prev.map(t => t.id === activeTemplateId ? { ...def } : t));
+                      setActiveVariationIndex(0);
+                      toast.success('Template direset ke default');
+                    }
+                  }}
+                  className="p-2 text-slate-400 dark:text-slate-500 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/10 rounded-xl transition-all"
+                  title="Reset to Default"
+                >
+                  <History size={18} />
+                </button>
+              </div>
             </div>
 
-            {/* Bottom Row: Responsive Queue Data List/Table */}
-            <div className="flex-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl lg:rounded-[2rem] shadow-sm flex flex-col overflow-hidden lg:min-h-[450px]">
-              
-              {/* Header Container */}
-              <div className="px-5 py-4 lg:px-8 lg:py-5 border-b border-zinc-100 dark:border-zinc-800/80 flex flex-col sm:flex-row sm:items-center justify-between bg-zinc-50/50 dark:bg-zinc-900/50 gap-4 sm:gap-0 shrink-0">
-                <div className="flex items-center justify-between sm:justify-start gap-4 w-full sm:w-auto">
-                  <h2 className="font-bold text-xs lg:text-sm dark:text-white uppercase tracking-widest">Queue Data</h2>
-                  <span className="px-2 py-0.5 lg:px-3 lg:py-1 bg-zinc-200 dark:bg-zinc-800 text-[10px] lg:text-[11px] font-bold text-zinc-600 dark:text-zinc-400 rounded-md lg:rounded-lg">{filteredEntries.length} items</span>
-                </div>
-                <div className="flex gap-2 lg:gap-3 justify-end w-full sm:w-auto">
-                  <button onClick={() => setShowPreviewModal(true)} disabled={entries.filter(e => e.status === 'pending').length === 0} className="flex-1 sm:flex-none px-3 py-2 lg:px-5 lg:py-2.5 text-[9px] lg:text-[11px] font-bold uppercase tracking-wider bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 rounded-lg lg:rounded-xl hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all disabled:opacity-50">Preview</button>
-                  {isConfirmingClear ? (
-                    <div className="flex flex-1 sm:flex-none items-center gap-1 lg:gap-2">
-                      <button onClick={clearAll} className="flex-1 sm:flex-none px-3 py-2 lg:px-4 lg:py-2.5 text-[9px] lg:text-[11px] font-bold uppercase bg-red-500 text-white rounded-lg lg:rounded-xl">Yes</button>
-                      <button onClick={() => setIsConfirmingClear(false)} className="flex-1 sm:flex-none px-3 py-2 lg:px-4 lg:py-2.5 text-[9px] lg:text-[11px] font-bold uppercase bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300 rounded-lg lg:rounded-xl">Cancel</button>
-                    </div>
-                  ) : (
-                    <button onClick={() => setIsConfirmingClear(true)} className="flex-1 sm:flex-none px-3 py-2 lg:px-4 lg:py-2.5 text-[9px] lg:text-[11px] font-bold uppercase bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 rounded-lg lg:rounded-xl hover:bg-red-100 transition-all">Clear All</button>
+            <div className="flex gap-2 mb-4 overflow-x-auto pb-2 custom-scrollbar">
+              {templates.map(t => (
+                <button
+                  key={t.id}
+                  onClick={() => {
+                    setActiveTemplateId(t.id);
+                    setActiveVariationIndex(0);
+                  }}
+                  className={cn(
+                    "whitespace-nowrap px-4 py-2 rounded-xl text-xs font-bold transition-all border",
+                    activeTemplateId === t.id
+                      ? "bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-600/20"
+                      : "bg-slate-50 dark:bg-[#232A3A] text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800"
                   )}
+                >
+                  {t.name}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mr-2">Variasi:</span>
+              {[0, 1, 2].map(idx => (
+                <button
+                  key={idx}
+                  onClick={() => setActiveVariationIndex(idx)}
+                  className={cn(
+                    "w-8 h-8 rounded-lg text-xs font-bold transition-all border flex items-center justify-center",
+                    activeVariationIndex === idx
+                      ? "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800"
+                      : "bg-slate-50 dark:bg-[#232A3A] text-slate-400 border-slate-200 dark:border-slate-800"
+                  )}
+                >
+                  {idx + 1}
+                </button>
+              ))}
+              <div className="ml-auto text-[9px] text-slate-400 italic">
+                {settings.rotateTemplates ? "Rotasi Aktif" : "Rotasi Mati"}
+              </div>
+            </div>
+
+            <textarea
+              value={currentTemplateText}
+              onChange={(e) => updateActiveTemplateText(e.target.value)}
+              className="w-full h-40 p-4 text-sm bg-slate-50 dark:bg-[#232A3A] border border-slate-200 dark:border-slate-800 rounded-2xl focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 outline-none transition-all resize-none leading-relaxed dark:text-white custom-scrollbar"
+              placeholder="Tulis template pesan..."
+            />
+            <div className="mt-3 flex flex-wrap gap-2">
+              {['{salam}', '{pengirim}', '{nama}', '{barang}', '{resi}', '{alamat}', '{cod}', '{dfod}', '{if_cod}', '{/if_cod}', '{if_dfod}', '{/if_dfod}'].map(tag => (
+                <button
+                  key={tag}
+                  onClick={() => updateActiveTemplateText(currentTemplateText + ' ' + tag)}
+                  className="text-[10px] font-bold tracking-wider px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg text-slate-600 dark:text-slate-400 transition-colors"
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
+            <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/20 rounded-xl">
+              <div className="flex items-center gap-2 mb-1">
+                <Sparkles size={12} className="text-blue-600 dark:text-blue-400" />
+                <span className="text-[10px] font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wider">Anti-Ban Tip: Spintax</span>
+              </div>
+              <p className="text-[10px] text-blue-600 dark:text-blue-300 leading-relaxed">
+                Gunakan format <span className="font-mono font-bold bg-blue-100 dark:bg-blue-900/30 px-1 rounded">{"{Halo|Hai|Pagi}"}</span> agar pesan diacak otomatis.
+              </p>
+            </div>
+          </section>
+        </div>
+
+        {/* Right Column */}
+        <div className="lg:col-span-8 space-y-6">
+          {/* Control Bar */}
+          <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between bg-white dark:bg-[#1A1F2C] p-4 rounded-3xl border border-slate-200/50 dark:border-slate-800/50 shadow-xl">
+            <div className="relative flex-1">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={18} />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Cari nama, nomor, atau resi..."
+                className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-[#232A3A] border border-slate-200 dark:border-slate-800 rounded-2xl focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 outline-none transition-all text-sm dark:text-white"
+              />
+            </div>
+            <div className="flex gap-3 items-center">
+              <div className={cn(
+                "flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold border transition-all",
+                isExtensionDetected
+                  ? "bg-indigo-50 dark:bg-indigo-900/10 text-indigo-600 dark:text-indigo-400 border-indigo-100 dark:border-indigo-900/20"
+                  : "bg-slate-50 dark:bg-slate-900/10 text-slate-400 dark:text-slate-500 border-slate-100 dark:border-slate-900/20"
+              )}>
+                <Puzzle size={12} className={isExtensionDetected ? "animate-pulse" : ""} />
+                {isExtensionDetected ? "Extension Connected" : "Extension Disconnected"}
+              </div>
+              <button
+                onClick={() => setShowBulkModal(true)}
+                className="px-6 py-3 bg-indigo-50 dark:bg-indigo-900/10 text-indigo-700 dark:text-indigo-400 rounded-2xl font-bold text-sm hover:bg-indigo-100 dark:hover:bg-indigo-900/20 transition-all flex items-center gap-2"
+              >
+                <FileSpreadsheet size={18} /> Bulk Import
+              </button>
+              <button
+                onClick={() => setShowPreviewModal(true)}
+                disabled={entries.filter(e => e.status === 'pending').length === 0}
+                className="px-6 py-3 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-2xl font-bold text-sm hover:bg-slate-200 dark:hover:bg-slate-700 transition-all flex items-center gap-2 disabled:opacity-50"
+              >
+                <Search size={18} /> Preview
+              </button>
+              <button
+                onClick={isBlasting ? stopBlast : startBlast}
+                disabled={entries.length === 0}
+                className={cn(
+                  "px-8 py-3 rounded-2xl font-bold text-sm transition-all flex items-center gap-2 shadow-lg",
+                  isBlasting
+                    ? "bg-red-500 text-white shadow-red-500/20 hover:bg-red-600"
+                    : "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-indigo-600/20 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
+                )}
+              >
+                {isBlasting ? <Square size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" />}
+                {isBlasting ? 'Stop Blast' : 'Start Engine'}
+              </button>
+            </div>
+          </div>
+
+          {/* Important Notice */}
+          {!isBlasting && entries.length > 0 && (
+            <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20 rounded-2xl p-4 flex items-start gap-3">
+              <AlertCircle className="text-amber-600 dark:text-amber-400 shrink-0" size={18} />
+              <div className="text-xs text-amber-800 dark:text-amber-300 leading-relaxed">
+                <span className="font-bold">PENTING:</span> Mesin akan membuka <span className="font-bold">WhatsApp Web</span> di tab yang sama secara bergantian. Pastikan Anda telah <span className="font-bold">MENGIZINKAN POPUP</span> di browser Anda.
+              </div>
+            </div>
+          )}
+
+          {/* Add Entry Form */}
+          <section className="bg-white dark:bg-[#1A1F2C] rounded-3xl p-6 shadow-xl border border-slate-200/50 dark:border-slate-800/50">
+            <form onSubmit={handleAddEntry} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Phone</label>
+                  <input
+                    type="text"
+                    value={formData.phone}
+                    onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                    placeholder="0812..."
+                    className="w-full p-3 text-sm bg-slate-50 dark:bg-[#232A3A] border border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 outline-none transition-all dark:text-white"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Name</label>
+                  <input
+                    type="text"
+                    value={formData.recipientName}
+                    onChange={(e) => setFormData(prev => ({ ...prev, recipientName: e.target.value }))}
+                    placeholder="Recipient Name"
+                    className="w-full p-3 text-sm bg-slate-50 dark:bg-[#232A3A] border border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 outline-none transition-all dark:text-white"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Item Name</label>
+                  <input
+                    type="text"
+                    value={formData.itemName}
+                    onChange={(e) => setFormData(prev => ({ ...prev, itemName: e.target.value }))}
+                    placeholder="Nama Barang"
+                    className="w-full p-3 text-sm bg-slate-50 dark:bg-[#232A3A] border border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 outline-none transition-all dark:text-white"
+                  />
                 </div>
               </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Resi</label>
+                  <input
+                    type="text"
+                    value={formData.receiptNumber}
+                    onChange={(e) => setFormData(prev => ({ ...prev, receiptNumber: e.target.value }))}
+                    placeholder="Resi Number"
+                    className="w-full p-3 text-sm bg-slate-50 dark:bg-[#232A3A] border border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 outline-none transition-all dark:text-white"
+                  />
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Address</label>
+                  <input
+                    type="text"
+                    value={formData.address}
+                    onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
+                    placeholder="Alamat Lengkap"
+                    className="w-full p-3 text-sm bg-slate-50 dark:bg-[#232A3A] border border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 outline-none transition-all dark:text-white"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">COD</label>
+                  <input
+                    type="text"
+                    value={formData.cod}
+                    onChange={(e) => setFormData(prev => ({ ...prev, cod: e.target.value.replace(/[^0-9.,]/g, '') }))}
+                    placeholder="274,398"
+                    className="w-full p-3 text-sm bg-slate-50 dark:bg-[#232A3A] border border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 outline-none transition-all dark:text-white"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">DFOD</label>
+                  <input
+                    type="text"
+                    value={formData.dfod}
+                    onChange={(e) => setFormData(prev => ({ ...prev, dfod: e.target.value.replace(/[^0-9.,]/g, '') }))}
+                    placeholder="10,000"
+                    className="w-full p-3 text-sm bg-slate-50 dark:bg-[#232A3A] border border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 outline-none transition-all dark:text-white"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="py-3 bg-indigo-600 text-white rounded-xl font-bold text-sm hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/20"
+                >
+                  <Plus size={18} /> Add to Queue
+                </button>
+              </div>
+            </form>
+          </section>
 
-              {/* Grid Headers (Desktop Only) */}
-              <div className="hidden lg:grid grid-cols-12 gap-6 px-8 py-4 border-b border-zinc-100 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 z-10 shrink-0">
-                <div className="col-span-3 text-[11px] font-black text-zinc-400 uppercase tracking-widest">Penerima</div>
-                <div className="col-span-4 text-[11px] font-black text-zinc-400 uppercase tracking-widest">Detail Paket</div>
-                <div className="col-span-3 text-[11px] font-black text-zinc-400 uppercase tracking-widest">Status</div>
-                <div className="col-span-2 text-[11px] font-black text-zinc-400 uppercase tracking-widest text-right">Aksi</div>
+          {/* System Console */}
+          <section className="bg-slate-100 dark:bg-black/30 rounded-3xl p-4 shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+            <div className="flex items-center justify-between mb-3 px-2">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
+                <h2 className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em]">System Console</h2>
+              </div>
+              <button
+                onClick={() => setLogs([])}
+                className="text-[9px] font-bold text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-white uppercase tracking-widest transition-colors"
+              >
+                Clear Logs
+              </button>
+            </div>
+            <div className="h-32 overflow-y-auto custom-scrollbar font-mono text-[11px] space-y-1 px-2">
+              {logs.length === 0 ? (
+                <div className="text-slate-400 dark:text-slate-600 italic">Waiting for system actions...</div>
+              ) : (
+                logs.map(log => (
+                  <div key={log.id} className="flex gap-3 leading-relaxed group">
+                    <span className="text-slate-400 dark:text-slate-600 shrink-0">[{new Date(log.timestamp).toLocaleTimeString([], { hour12: false })}]</span>
+                    <span className={cn(
+                      "break-all",
+                      log.type === 'success' ? "text-indigo-600 dark:text-indigo-400" :
+                        log.type === 'error' ? "text-red-600 dark:text-red-400" :
+                          log.type === 'warning' ? "text-amber-600 dark:text-amber-400" :
+                            "text-blue-600 dark:text-blue-400"
+                    )}>
+                      {log.message}
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
+          </section>
+
+          {/* Queue Table */}
+          <div className="bg-white dark:bg-[#1A1F2C] rounded-3xl shadow-xl border border-slate-200/50 dark:border-slate-800/50 overflow-hidden">
+            <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <FileText size={18} className="text-indigo-500" />
+                <h2 className="font-bold">Queue Management</h2>
+                <span className="ml-2 px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-[10px] font-bold text-slate-500 dark:text-slate-400 rounded-md">{filteredEntries.length} items</span>
               </div>
 
-              {/* Data List / Cards */}
-              <div className="flex-1 overflow-y-auto custom-scrollbar p-4 lg:p-0 bg-zinc-50/30 dark:bg-zinc-950/30 lg:bg-transparent">
-                <div className="flex flex-col gap-4 lg:gap-0 lg:divide-y lg:divide-zinc-50 lg:dark:divide-zinc-800/50">
+              {isConfirmingClear ? (
+                <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-2">
+                  <span className="text-[10px] font-bold text-red-600 dark:text-red-400 uppercase">Confirm?</span>
+                  <button onClick={clearAll} className="px-3 py-1.5 text-[10px] font-bold uppercase bg-red-500 text-white rounded-lg">Yes</button>
+                  <button onClick={() => setIsConfirmingClear(false)} className="px-3 py-1.5 text-[10px] font-bold uppercase bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-lg">No</button>
+                </div>
+              ) : (
+                <button onClick={() => setIsConfirmingClear(true)} className="p-2 text-slate-300 dark:text-slate-600 hover:text-red-500 dark:hover:text-red-400 transition-colors">
+                  <Trash2 size={18} />
+                </button>
+              )}
+            </div>
+
+            <div className="overflow-x-auto custom-scrollbar">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="bg-slate-50/50 dark:bg-slate-900/20">
+                    <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Recipient</th>
+                    <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Details</th>
+                    <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Status</th>
+                    <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Received</th>
+                    <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
                   <AnimatePresence mode="popLayout">
                     {filteredEntries.length === 0 ? (
-                      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center px-5 py-16 lg:py-24">
-                        <div className="text-zinc-400 dark:text-zinc-600 text-xs lg:text-sm font-medium">Antrean kosong.</div>
-                      </motion.div>
+                      <motion.tr initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center">
+                        <td colSpan={5} className="px-6 py-16 text-slate-400 dark:text-slate-600 text-sm italic">
+                          No matching records found.
+                        </td>
+                      </motion.tr>
                     ) : (
                       filteredEntries.map((entry, index) => (
-                        <motion.div key={entry.id} layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }} 
+                        <motion.tr
+                          key={entry.id}
+                          layout
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, x: -10 }}
                           className={cn(
-                            "flex flex-col lg:grid lg:grid-cols-12 gap-3 lg:gap-6 p-5 lg:px-8 lg:py-5 bg-white dark:bg-zinc-900 lg:bg-transparent rounded-2xl lg:rounded-none border border-zinc-200 dark:border-zinc-800 lg:border-transparent shadow-sm lg:shadow-none hover:bg-zinc-50 dark:hover:bg-zinc-800/30 transition-colors relative group",
-                            isBlasting && index === currentIndex && "ring-2 ring-emerald-500 lg:ring-0 lg:bg-emerald-50/50 lg:dark:bg-emerald-500/5"
+                            "group transition-all",
+                            isBlasting && index === currentIndex
+                              ? "bg-indigo-50/80 dark:bg-indigo-900/10"
+                              : "hover:bg-slate-50/50 dark:hover:bg-slate-800/50"
                           )}
                         >
-                          {/* Kolom 1: Penerima */}
-                          <div className="col-span-3 pr-16 lg:pr-0">
-                            <div className="font-bold text-sm lg:text-sm text-zinc-900 dark:text-zinc-100">{entry.recipientName}</div>
-                            <div className="text-[11px] text-zinc-500 font-mono mt-1">{entry.phone}</div>
-                          </div>
-
-                          {/* Kolom 2: Detail Paket */}
-                          <div className="col-span-4">
-                            <div className="text-xs lg:text-sm font-semibold text-zinc-700 dark:text-zinc-300 line-clamp-2 lg:line-clamp-1 lg:max-w-[280px]">{entry.itemName || '-'}</div>
-                            <div className="flex flex-col gap-1.5 mt-1.5">
-                              <div className="text-[10px] lg:text-[11px] text-zinc-400 font-mono">Resi: {entry.receiptNumber || '-'}</div>
-                              <div className="flex flex-wrap gap-2">
-                                {entry.cod && <div className="text-[9px] lg:text-[10px] bg-amber-100/50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 px-2 py-0.5 lg:px-2.5 rounded-md font-bold uppercase tracking-wider">COD: Rp {formatCurrency(entry.cod)}</div>}
-                                {entry.dfod && <div className="text-[9px] lg:text-[10px] bg-blue-100/50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 px-2 py-0.5 lg:px-2.5 rounded-md font-bold uppercase tracking-wider">DFOD: Rp {formatCurrency(entry.dfod)}</div>}
+                          <td className="px-6 py-5">
+                            <div className="font-bold text-sm">{entry.recipientName}</div>
+                            <div className="text-xs text-slate-400 dark:text-slate-500 font-mono">{entry.phone}</div>
+                          </td>
+                          <td className="px-6 py-5">
+                            <div className="text-sm font-medium truncate max-w-[200px]" title={entry.itemName}>{entry.itemName || '-'}</div>
+                            <div className="flex flex-col gap-1">
+                              <div className="text-[10px] text-slate-400 dark:text-slate-500 font-mono uppercase tracking-wider">Resi: {entry.receiptNumber || '-'}</div>
+                              {entry.address && <div className="text-[10px] text-slate-400 dark:text-slate-500 truncate max-w-[200px]" title={entry.address}>{entry.address}</div>}
+                              <div className="flex gap-2">
+                                {entry.cod && <div className="text-[10px] text-amber-600 dark:text-amber-500 font-bold uppercase tracking-wider">COD: Rp {formatCurrency(entry.cod)}</div>}
+                                {entry.dfod && <div className="text-[10px] text-blue-600 dark:text-blue-500 font-bold uppercase tracking-wider">DFOD: Rp {formatCurrency(entry.dfod)}</div>}
                               </div>
                             </div>
-                          </div>
-
-                          {/* Kolom 3: Status */}
-                          <div className="col-span-3 flex flex-row lg:flex-col items-center lg:items-start justify-between lg:justify-center gap-3 pt-3 mt-1 border-t border-zinc-100 dark:border-zinc-800 lg:border-none lg:pt-0 lg:mt-0">
-                            <div className={cn("inline-flex items-center gap-1.5 lg:gap-2 px-2.5 py-1 lg:px-3 lg:py-1.5 rounded-lg text-[9px] lg:text-[10px] font-black uppercase tracking-widest", entry.status === 'sent' ? "bg-emerald-100/50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : entry.status === 'sending' ? "bg-blue-100/50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 animate-pulse" : entry.status === 'failed' ? "bg-red-100/50 dark:bg-red-500/10 text-red-600 dark:text-red-400" : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400")}>
-                              {entry.status === 'sent' ? <CheckCircle2 size={12} className="lg:w-3.5 lg:h-3.5" /> : entry.status === 'sending' ? <Loader2 size={12} className="lg:w-3.5 lg:h-3.5 animate-spin" /> : entry.status === 'failed' ? <AlertCircle size={12} className="lg:w-3.5 lg:h-3.5" /> : <Clock size={12} className="lg:w-3.5 lg:h-3.5" />} {entry.status}
+                          </td>
+                          <td className="px-6 py-5">
+                            <div className={cn(
+                              "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest",
+                              entry.status === 'sent'
+                                ? "bg-indigo-100 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400"
+                                : entry.status === 'sending'
+                                  ? "bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 animate-pulse"
+                                  : entry.status === 'failed'
+                                    ? "bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400"
+                                    : "bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400"
+                            )}>
+                              {entry.status === 'sent' ? <CheckCircle2 size={10} /> : entry.status === 'sending' ? <Loader2 size={10} className="animate-spin" /> : entry.status === 'failed' ? <AlertCircle size={10} /> : <Clock size={10} />}
+                              {entry.status}
                             </div>
-                            <button onClick={() => toggleReceived(entry.id)} className={cn("text-[10px] font-bold uppercase tracking-wider flex items-center gap-2 transition-colors", entry.isReceived ? "text-emerald-500" : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300")}>
-                              <div className={cn("w-4 h-4 lg:w-3.5 lg:h-3.5 rounded-full border-2 flex items-center justify-center", entry.isReceived ? "border-emerald-500 bg-emerald-500" : "border-zinc-300 dark:border-zinc-600")}>{entry.isReceived && <CheckCircle2 size={10} className="text-white lg:w-[10px] lg:h-[10px]" strokeWidth={3} />}</div>
-                              Diterima
+                          </td>
+                          <td className="px-6 py-5">
+                            <button
+                              onClick={() => toggleReceived(entry.id)}
+                              className={cn(
+                                "flex items-center gap-2 px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all",
+                                entry.isReceived
+                                  ? "bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-900/30"
+                                  : "bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600 border border-transparent"
+                              )}
+                            >
+                              <div className={cn(
+                                "w-3 h-3 rounded-sm border flex items-center justify-center transition-all",
+                                entry.isReceived ? "bg-blue-600 border-blue-600" : "border-slate-300 dark:border-slate-700"
+                              )}>
+                                {entry.isReceived && <CheckCircle2 size={10} className="text-white" />}
+                              </div>
+                              {entry.isReceived ? 'Diterima' : 'Belum'}
                             </button>
-                          </div>
-
-                          {/* Kolom 4: Aksi */}
-                          <div className="col-span-2 flex items-center justify-end gap-1.5 lg:gap-2 absolute top-4 right-4 lg:relative lg:top-auto lg:right-auto opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button onClick={() => handleSendManual(entry)} className="p-2 lg:p-2.5 bg-zinc-100 dark:bg-zinc-800 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/20 rounded-xl lg:rounded-xl transition-all active:scale-95"><ExternalLink size={16} className="lg:w-4 lg:h-4" /></button>
-                            <button onClick={() => setEntries(prev => prev.filter(e => e.id !== entry.id))} className="p-2 lg:p-2.5 bg-zinc-100 dark:bg-zinc-800 text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl lg:rounded-xl transition-all active:scale-95"><Trash2 size={16} className="lg:w-4 lg:h-4" /></button>
-                          </div>
-                        </motion.div>
+                          </td>
+                          <td className="px-6 py-5 text-right">
+                            <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button onClick={() => handleSendManual(entry)} className="p-2 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-xl"><ExternalLink size={16} /></button>
+                              <button onClick={() => setEntries(prev => prev.filter(e => e.id !== entry.id))} className="p-2 text-slate-300 dark:text-slate-600 hover:text-red-500 dark:hover:text-red-400 rounded-xl"><Trash2 size={16} /></button>
+                            </div>
+                          </td>
+                        </motion.tr>
                       ))
                     )}
                   </AnimatePresence>
-                </div>
-              </div>
+                </tbody>
+              </table>
             </div>
-
           </div>
         </div>
       </main>
 
-      {/* MODALS (Bulk & Preview & Settings) */}
+      {/* Bulk Import Modal (redesigned) */}
       <AnimatePresence>
         {showBulkModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-8">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowBulkModal(false)} className="absolute inset-0 bg-zinc-950/60 backdrop-blur-sm" />
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="relative w-full max-w-2xl bg-white dark:bg-zinc-900 rounded-3xl lg:rounded-[2rem] shadow-2xl overflow-hidden border border-zinc-200 dark:border-zinc-800 flex flex-col">
-              <div className="p-6 lg:p-8 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
-                <div><h2 className="text-lg lg:text-xl font-black dark:text-white">Bulk Import</h2><p className="text-[10px] lg:text-[11px] text-zinc-500 uppercase tracking-widest font-bold mt-1">Copy-paste dari Excel</p></div>
-                <button onClick={() => setShowBulkModal(false)} className="p-2 lg:p-3 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full"><X size={20} className="text-zinc-500 lg:w-6 lg:h-6" /></button>
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowBulkModal(false)} className="absolute inset-0 bg-black/50 backdrop-blur-md" />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-2xl max-h-[90vh] bg-white dark:bg-[#1A1F2C] rounded-[2rem] shadow-2xl overflow-hidden border border-white/20 dark:border-white/10 flex flex-col"
+            >
+              <div className="p-8 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-900/20 shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-indigo-100 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded-xl flex items-center justify-center"><FileSpreadsheet size={20} /></div>
+                  <div>
+                    <h2 className="text-xl font-bold">Bulk Import</h2>
+                    <p className="text-xs text-slate-400 dark:text-slate-500">Copy-paste data from Excel or CSV</p>
+                  </div>
+                </div>
+                <button onClick={() => setShowBulkModal(false)} className="p-2 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-full transition-colors"><X size={20} /></button>
               </div>
-              <div className="p-6 lg:p-8 space-y-4 lg:space-y-5">
-                <div className="text-[10px] lg:text-xs font-mono bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 p-3 lg:p-4 rounded-xl border border-emerald-100 dark:border-emerald-500/20 leading-relaxed">Format Kolom: No | Resi | Nama | HP | Alamat | Tanda | Val COD | Val DFOD | Barang</div>
-                <textarea value={bulkData} onChange={(e) => setBulkData(e.target.value)} placeholder="Paste data Excel di sini..." className="w-full h-48 lg:h-64 p-4 lg:p-5 text-xs lg:text-sm font-mono bg-zinc-50 dark:bg-zinc-950 border-none rounded-xl lg:rounded-2xl focus:ring-2 focus:ring-emerald-500/20 outline-none resize-none dark:text-zinc-300 custom-scrollbar leading-relaxed" />
-                <button onClick={handleBulkImport} className="w-full py-3.5 lg:py-4 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-xl font-bold active:scale-[0.98] transition-all text-xs lg:text-sm">Import Data</button>
+              <div className="p-8 space-y-6 overflow-y-auto custom-scrollbar flex-1">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-4 bg-indigo-50 dark:bg-indigo-900/10 rounded-2xl border border-indigo-100 dark:border-indigo-900/20">
+                    <div className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest mb-1">Step 1</div>
+                    <p className="text-xs text-indigo-800 dark:text-indigo-300">Kolom: No, Resi, Nama, HP, Alamat, Tanda, Nominal COD, Nominal DFOD, Barang</p>
+                  </div>
+                  <div className="p-4 bg-blue-50 dark:bg-blue-900/10 rounded-2xl border border-blue-100 dark:border-blue-900/20">
+                    <div className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-1">Step 2</div>
+                    <p className="text-xs text-blue-800 dark:text-blue-300">Copy range dari Excel & Paste di bawah</p>
+                  </div>
+                </div>
+                <textarea
+                  value={bulkData}
+                  onChange={(e) => setBulkData(e.target.value)}
+                  placeholder="1	JX123456789	Budi Santoso	08123456789	Jl. Merdeka No. 1	COD	150000	0	Sepatu..."
+                  className="w-full h-64 p-6 text-sm font-mono bg-slate-50 dark:bg-[#232A3A] border border-slate-200 dark:border-slate-800 rounded-[1.5rem] focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 outline-none transition-all resize-none dark:text-white custom-scrollbar"
+                />
+                <div className="flex gap-4">
+                  <button onClick={() => setShowBulkModal(false)} className="flex-1 py-4 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-2xl font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-all">Cancel</button>
+                  <button onClick={handleBulkImport} className="flex-[2] py-4 bg-indigo-600 text-white rounded-2xl font-bold shadow-lg shadow-indigo-600/20 hover:bg-indigo-700 transition-all">Import Data</button>
+                </div>
               </div>
             </motion.div>
           </div>
         )}
       </AnimatePresence>
 
+      {/* Preview Modal (redesigned) */}
       <AnimatePresence>
         {showPreviewModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-8">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowPreviewModal(false)} className="absolute inset-0 bg-zinc-950/60 backdrop-blur-sm" />
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="relative w-full max-w-md bg-white dark:bg-zinc-900 rounded-3xl lg:rounded-[2rem] shadow-2xl overflow-hidden border border-zinc-200 dark:border-zinc-800">
-              <div className="p-6 lg:p-8 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
-                <div><h2 className="text-lg lg:text-xl font-black dark:text-white">Preview</h2><p className="text-[10px] lg:text-[11px] text-zinc-500 uppercase tracking-widest font-bold mt-1">First Item</p></div>
-                <button onClick={() => setShowPreviewModal(false)} className="p-2 lg:p-3 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full"><X size={20} className="text-zinc-500 lg:w-6 lg:h-6" /></button>
-              </div>
-              <div className="p-6 lg:p-8">
-                {entries.find(e => e.status === 'pending') ? (
-                  <div className="space-y-4 lg:space-y-5">
-                    <div className="p-4 lg:p-5 bg-zinc-50 dark:bg-zinc-950 rounded-xl lg:rounded-2xl text-xs lg:text-sm whitespace-pre-wrap dark:text-zinc-300 border border-zinc-100 dark:border-zinc-800 max-h-[40vh] overflow-y-auto custom-scrollbar leading-relaxed">
-                      {generateMessage(entries.find(e => e.status === 'pending')!, settings.rotateTemplates ? (activeTemplate.variations?.[entries.filter(e => e.status === 'sent').length % (activeTemplate.variations?.length || 1)] || activeTemplate.text) : activeTemplate.text)}
-                    </div>
-                    <button onClick={() => {
-                      const entry = entries.find(e => e.status === 'pending');
-                      if (entry) { openInSameTab(getWALink(entry, entries.filter(e => e.status === 'sent').length)); updateStatus(entry.id, 'sent'); setShowPreviewModal(false); }
-                    }} className="w-full py-3.5 lg:py-4 bg-emerald-500 text-white rounded-xl font-bold flex items-center justify-center gap-2 active:scale-[0.98] transition-all text-xs lg:text-sm"><Send size={16} className="lg:w-[18px] lg:h-[18px]" /> Send Now</button>
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowPreviewModal(false)} className="absolute inset-0 bg-black/50 backdrop-blur-md" />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-lg max-h-[90vh] bg-white dark:bg-[#1A1F2C] rounded-[2rem] shadow-2xl overflow-hidden border border-white/20 dark:border-white/10 flex flex-col"
+            >
+              <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-900/20 shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-xl flex items-center justify-center"><MessageSquare size={20} /></div>
+                  <div>
+                    <h2 className="text-lg font-bold">Message Preview</h2>
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-wider">First Pending Entry</p>
                   </div>
-                ) : <div className="text-center py-8 lg:py-10 text-zinc-500 text-xs lg:text-sm">No pending entries.</div>}
+                </div>
+                <button onClick={() => setShowPreviewModal(false)} className="p-2 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-full transition-colors"><X size={20} /></button>
+              </div>
+              <div className="p-6 space-y-4 overflow-y-auto custom-scrollbar flex-1">
+                {entries.find(e => e.status === 'pending') ? (
+                  <>
+                    <div className="p-4 bg-slate-50 dark:bg-[#232A3A] rounded-2xl border border-slate-200 dark:border-slate-800">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-8 h-8 bg-indigo-100 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded-lg flex items-center justify-center text-xs font-bold">
+                          {entries.find(e => e.status === 'pending')?.recipientName.charAt(0)}
+                        </div>
+                        <div>
+                          <div className="text-xs font-bold">{entries.find(e => e.status === 'pending')?.recipientName}</div>
+                          <div className="text-[10px] text-slate-400 font-mono">{entries.find(e => e.status === 'pending')?.phone}</div>
+                        </div>
+                      </div>
+                      <div className="bg-white dark:bg-[#1A1F2C] p-4 rounded-xl border border-slate-200 dark:border-slate-800 text-sm whitespace-pre-wrap leading-relaxed dark:text-slate-300 font-sans">
+                        {(() => {
+                          const entry = entries.find(e => e.status === 'pending');
+                          if (!entry) return '';
+                          const sentCount = entries.filter(e => e.status === 'sent').length;
+                          let templateText = activeTemplate.text;
+                          if (settings.rotateTemplates) {
+                            const variations = activeTemplate.variations && activeTemplate.variations.length > 0
+                              ? activeTemplate.variations
+                              : [activeTemplate.text];
+                            templateText = variations[sentCount % variations.length];
+                          }
+                          return generateMessage(entry, templateText);
+                        })()}
+                      </div>
+                    </div>
+                    <div className="flex gap-3">
+                      <button onClick={() => setShowPreviewModal(false)} className="flex-1 py-3 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-xl font-bold text-sm hover:bg-slate-200 dark:hover:bg-slate-700 transition-all">Close</button>
+                      <button
+                        onClick={() => {
+                          const entry = entries.find(e => e.status === 'pending');
+                          if (entry) {
+                            const sentCount = entries.filter(e => e.status === 'sent').length;
+                            const newWindow = window.open(getWALink(entry, sentCount), 'WAsenderTab');
+                            if (newWindow) window.focus();
+                            updateStatus(entry.id, 'sent');
+                            setShowPreviewModal(false);
+                          }
+                        }}
+                        className="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-indigo-600/20 hover:bg-indigo-700 transition-all flex items-center justify-center gap-2"
+                      >
+                        <Send size={16} /> Send Now
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-center py-12">
+                    <Clock size={48} className="mx-auto text-slate-200 dark:text-slate-800 mb-4" />
+                    <p className="text-slate-400 dark:text-slate-600 text-sm italic">No pending entries to preview.</p>
+                  </div>
+                )}
               </div>
             </motion.div>
           </div>
         )}
       </AnimatePresence>
 
+      {/* Settings Modal (redesigned) */}
       <AnimatePresence>
         {showSettingsModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-8">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowSettingsModal(false)} className="absolute inset-0 bg-zinc-950/60 backdrop-blur-sm" />
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="relative w-full max-w-lg bg-white dark:bg-zinc-900 rounded-3xl lg:rounded-[2.5rem] shadow-2xl overflow-hidden border border-zinc-200 dark:border-zinc-800 flex flex-col max-h-[90vh]">
-              <div className="p-6 lg:p-8 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between shrink-0">
-                <div><h2 className="text-lg lg:text-xl font-black dark:text-white">Settings</h2><p className="text-[10px] lg:text-[11px] text-zinc-500 uppercase tracking-widest font-bold mt-1">Engine Config</p></div>
-                <button onClick={() => setShowSettingsModal(false)} className="p-2 lg:p-3 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full"><X size={20} className="text-zinc-500 lg:w-6 lg:h-6" /></button>
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowSettingsModal(false)} className="absolute inset-0 bg-black/50 backdrop-blur-md" />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-md max-h-[90vh] bg-white dark:bg-[#1A1F2C] rounded-[2rem] shadow-2xl overflow-hidden border border-white/20 dark:border-white/10 flex flex-col"
+            >
+              <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-900/20 shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-indigo-100 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded-xl flex items-center justify-center"><Settings2 size={20} /></div>
+                  <div>
+                    <h2 className="text-lg font-bold">Settings</h2>
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-wider">Engine Configuration</p>
+                  </div>
+                </div>
+                <button onClick={() => setShowSettingsModal(false)} className="p-2 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-full transition-colors"><X size={20} /></button>
               </div>
-              <div className="flex px-6 lg:px-8 pt-4 lg:pt-5 gap-6 lg:gap-8 border-b border-zinc-100 dark:border-zinc-800 shrink-0">
-                <button onClick={() => setActiveSettingsTab('general')} className={cn("pb-3 lg:pb-4 text-[11px] lg:text-[12px] font-black uppercase tracking-widest transition-all relative", activeSettingsTab === 'general' ? "text-emerald-500" : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300")}>
-                  General {activeSettingsTab === 'general' && <motion.div layoutId="tab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-500 rounded-t-full" />}
+
+              {/* Tabs */}
+              <div className="flex px-6 pt-4 gap-4 border-b border-slate-200 dark:border-slate-800 shrink-0">
+                <button
+                  onClick={() => setActiveSettingsTab('general')}
+                  className={cn(
+                    "pb-3 text-xs font-bold uppercase tracking-widest transition-all relative",
+                    activeSettingsTab === 'general' ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400"
+                  )}
+                >
+                  General
+                  {activeSettingsTab === 'general' && <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-500 rounded-full" />}
                 </button>
-                <button onClick={() => setActiveSettingsTab('antispam')} className={cn("pb-3 lg:pb-4 text-[11px] lg:text-[12px] font-black uppercase tracking-widest transition-all relative", activeSettingsTab === 'antispam' ? "text-emerald-500" : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300")}>
-                  Anti-Spam {activeSettingsTab === 'antispam' && <motion.div layoutId="tab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-500 rounded-t-full" />}
+                <button
+                  onClick={() => setActiveSettingsTab('antispam')}
+                  className={cn(
+                    "pb-3 text-xs font-bold uppercase tracking-widest transition-all relative",
+                    activeSettingsTab === 'antispam' ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400"
+                  )}
+                >
+                  Anti-Spam
+                  {activeSettingsTab === 'antispam' && <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-500 rounded-full" />}
                 </button>
               </div>
-              <div className="p-6 lg:p-8 overflow-y-auto custom-scrollbar flex-1 space-y-5 lg:space-y-6">
-                {activeSettingsTab === 'antispam' ? (
-                  <>
-                    <div className="p-5 lg:p-6 bg-zinc-50 dark:bg-zinc-950 rounded-2xl lg:rounded-[1.5rem] border border-zinc-100 dark:border-zinc-800">
-                      <div className="flex items-center justify-between mb-2 lg:mb-3"><span className="text-[11px] lg:text-xs font-bold text-zinc-500 uppercase">Safety Score</span><span className={cn("font-black text-base lg:text-lg", safetyScore > 80 ? "text-emerald-500" : safetyScore > 50 ? "text-amber-500" : "text-red-500")}>{safetyScore}%</span></div>
-                      <div className="h-1.5 lg:h-2 w-full bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden mb-1.5 lg:mb-2"><motion.div initial={{ width: 0 }} animate={{ width: `${safetyScore}%` }} className={cn("h-full", safetyScore > 80 ? "bg-emerald-500" : safetyScore > 50 ? "bg-amber-500" : "bg-red-500")} /></div>
+
+              <div className="p-6 overflow-y-auto custom-scrollbar flex-1">
+                {activeSettingsTab === 'antispam' && (
+                  <div className="mb-6 p-4 bg-indigo-50 dark:bg-indigo-900/10 rounded-2xl border border-indigo-100 dark:border-indigo-900/20">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[10px] font-bold text-indigo-700 dark:text-indigo-400 uppercase tracking-widest">Safety Score</span>
+                      <span className={cn(
+                        "text-xs font-black",
+                        safetyScore > 80 ? "text-indigo-600" : safetyScore > 50 ? "text-amber-600" : "text-red-600"
+                      )}>{safetyScore}%</span>
                     </div>
-                    {[
-                      { key: 'shuffleQueue', label: 'Shuffle Queue', desc: 'Acak daftar agar tidak linier.' },
-                      { key: 'useRandomGreetings', label: 'Randomize Greetings', desc: 'Ganti kata sapaan otomatis.' },
-                      { key: 'addRandomSuffix', label: 'Inject Ref Suffix', desc: 'Tambah string acak di akhir.' },
-                      { key: 'useInvisibleChars', label: 'Invisible Characters', desc: 'Sisipkan zero-width space.' },
-                      { key: 'simulateTyping', label: 'Human Typing Sim', desc: 'Delay dihitung sesuai panjang teks.' },
-                      { key: 'adaptiveDelay', label: 'Adaptive Fatigue', desc: 'Jeda bertambah sedikit seiring antrean.' },
-                      { key: 'randomizeFormatting', label: 'Dynamic Spacing', desc: 'Format baris baru diacak.' },
-                      { key: 'rotateTemplates', label: 'Template Rotation', desc: 'Gunakan variasi pesan bergantian.' },
-                      { key: 'randomizeEmojis', label: 'Emoji Scrambler', desc: 'Taruh emoji random dinamis.' },
-                      { key: 'useGlobalSpintax', label: 'Spintax Engine', desc: 'Aktifkan format {A|B}.' }
-                    ].map(item => (
-                      <div key={item.key} className="flex items-center justify-between">
-                        <div className="pr-4"><div className="text-xs lg:text-sm font-bold dark:text-white mb-0.5">{item.label}</div><div className="text-[10px] lg:text-[11px] text-zinc-500">{item.desc}</div></div>
-                        <button onClick={() => setSettings(prev => ({ ...prev, [item.key]: !prev[item.key as keyof AppSettings] }))} className={cn("w-10 h-6 lg:w-12 lg:h-7 rounded-full transition-all relative shrink-0", settings[item.key as keyof AppSettings] ? "bg-emerald-500" : "bg-zinc-200 dark:bg-zinc-700")}><div className={cn("absolute top-1 w-4 h-4 lg:w-5 lg:h-5 bg-white rounded-full transition-all", settings[item.key as keyof AppSettings] ? "left-5 lg:left-6" : "left-1")} /></button>
+                    <div className="h-1.5 w-full bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${safetyScore}%` }}
+                        className={cn(
+                          "h-full transition-all duration-500",
+                          safetyScore > 80 ? "bg-indigo-500" : safetyScore > 50 ? "bg-amber-500" : "bg-red-500"
+                        )}
+                      />
+                    </div>
+                    <p className="text-[9px] text-slate-500 dark:text-slate-400 mt-2 italic">
+                      {safetyScore > 80 ? "Sangat Aman: Pola pengiriman sangat mirip manusia." :
+                        safetyScore > 50 ? "Cukup Aman: Disarankan menambah jeda atau variasi pesan." :
+                          "Beresiko Tinggi: Akun Anda rentan terkena banned!"}
+                    </p>
+                  </div>
+                )}
+                {activeSettingsTab === 'general' ? (
+                  <div className="space-y-6">
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+                          <User size={14} /> Nama Pengirim
+                        </label>
+                        <input
+                          type="text"
+                          value={settings.senderName}
+                          onChange={(e) => setSettings(prev => ({ ...prev, senderName: e.target.value }))}
+                          className="w-full px-4 py-3 bg-slate-50 dark:bg-[#232A3A] border border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 outline-none transition-all text-sm"
+                          placeholder="Admin JNT"
+                        />
                       </div>
-                    ))}
-                  </>
-                ) : (
-                  <>
-                    <div className="space-y-2 lg:space-y-3"><label className="text-[10px] lg:text-[11px] font-bold text-zinc-500 uppercase tracking-widest ml-1">Speed Preset</label><div className="grid grid-cols-2 lg:grid-cols-3 gap-2 lg:gap-3">{[{id:'safe', label:'Safe'},{id:'normal', label:'Normal'},{id:'fast', label:'Fast'},{id:'turbo', label:'Turbo'},{id:'custom', label:'Custom'}].map(m => <button key={m.id} onClick={() => setSettings(prev => ({ ...prev, speedMode: m.id as any }))} className={cn("py-2.5 lg:py-3.5 rounded-xl lg:rounded-2xl text-[11px] lg:text-xs font-bold transition-all border", settings.speedMode === m.id ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 border-transparent" : "bg-transparent border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800")}>{m.label}</button>)}</div></div>
-                    {settings.speedMode === 'custom' && <div className="space-y-1.5 lg:space-y-2"><label className="text-[10px] lg:text-[11px] font-bold text-zinc-500 uppercase tracking-widest ml-1">Custom Delay (ms)</label><input type="number" value={settings.delay} onChange={(e) => setSettings(prev => ({ ...prev, delay: parseInt(e.target.value) || 1000 }))} className="w-full px-4 py-3 lg:px-5 lg:py-4 bg-zinc-50 dark:bg-zinc-950 border-none rounded-xl lg:rounded-2xl text-xs lg:text-sm focus:ring-2 focus:ring-emerald-500/20 outline-none dark:text-white" step="500" /></div>}
-                    
-                    <div className="pt-3 lg:pt-4 border-t border-zinc-100 dark:border-zinc-800 space-y-4 lg:space-y-5">
-                      {[
-                        { key: 'manualMode', label: 'Manual Mode', desc: 'Kirim saat tekan Spasi.' },
-                        { key: 'autoRetry', label: 'Auto Retry', desc: 'Ulangi jika gagal.' },
-                        { key: 'autoSend', label: 'Auto Send (Ext)', desc: 'Eksekusi dgn Extension.' }
-                      ].map(item => (
-                        <div key={item.key} className="flex items-center justify-between">
-                          <div className="pr-4"><div className="text-xs lg:text-sm font-bold dark:text-white mb-0.5">{item.label}</div><div className="text-[10px] lg:text-[11px] text-zinc-500">{item.desc}</div></div>
-                          <button onClick={() => setSettings(prev => ({ ...prev, [item.key]: !prev[item.key as keyof AppSettings] }))} className={cn("w-10 h-6 lg:w-12 lg:h-7 rounded-full transition-all relative shrink-0", settings[item.key as keyof AppSettings] ? "bg-emerald-500" : "bg-zinc-200 dark:bg-zinc-700")}><div className={cn("absolute top-1 w-4 h-4 lg:w-5 lg:h-5 bg-white rounded-full transition-all", settings[item.key as keyof AppSettings] ? "left-5 lg:left-6" : "left-1")} /></button>
+
+                      {/* Speed Presets */}
+                      <div className="space-y-3 pt-2">
+                        <label className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                          <Zap size={14} className="text-amber-500" /> Pilih Kecepatan Blast
+                        </label>
+                        <div className="grid grid-cols-2 gap-2">
+                          {[
+                            { id: 'safe', label: 'Main Aman', desc: '15-30s', icon: '🛡️' },
+                            { id: 'normal', label: 'Normal', desc: '8-15s', icon: '⚖️' },
+                            { id: 'fast', label: 'Percepat', desc: '3-7s', icon: '⚡' },
+                            { id: 'turbo', label: 'Turbo', desc: '1-2s', icon: '🚀' },
+                          ].map((mode) => (
+                            <button
+                              key={mode.id}
+                              onClick={() => setSettings(prev => ({ ...prev, speedMode: mode.id as any }))}
+                              className={cn(
+                                "p-3 rounded-xl border text-left transition-all",
+                                settings.speedMode === mode.id
+                                  ? "bg-indigo-50 dark:bg-indigo-900/20 border-indigo-500 ring-1 ring-indigo-500"
+                                  : "bg-white dark:bg-[#232A3A] border-slate-200 dark:border-slate-800 hover:border-indigo-500/50"
+                              )}
+                            >
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="text-lg">{mode.icon}</span>
+                                {settings.speedMode === mode.id && <div className="w-2 h-2 bg-indigo-500 rounded-full" />}
+                              </div>
+                              <div className="text-xs font-bold">{mode.label}</div>
+                              <div className="text-[10px] text-slate-400">{mode.desc}</div>
+                            </button>
+                          ))}
+                          <button
+                            onClick={() => setSettings(prev => ({ ...prev, speedMode: 'custom' }))}
+                            className={cn(
+                              "col-span-2 p-3 rounded-xl border text-left transition-all",
+                              settings.speedMode === 'custom'
+                                ? "bg-indigo-50 dark:bg-indigo-900/20 border-indigo-500 ring-1 ring-indigo-500"
+                                : "bg-white dark:bg-[#232A3A] border-slate-200 dark:border-slate-800 hover:border-indigo-500/50"
+                            )}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="text-xs font-bold">⚙️ Custom (Atur Manual)</div>
+                              {settings.speedMode === 'custom' && <div className="w-2 h-2 bg-indigo-500 rounded-full" />}
+                            </div>
+                          </button>
                         </div>
-                      ))}
+                      </div>
+
+                      {settings.speedMode === 'custom' && (
+                        <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                          <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+                            <Timer size={14} /> Blast Delay (Milliseconds)
+                          </label>
+                          <input
+                            type="number"
+                            value={settings.delay}
+                            onChange={(e) => setSettings(prev => ({ ...prev, delay: parseInt(e.target.value) || 1000 }))}
+                            className="w-full px-4 py-3 bg-slate-50 dark:bg-[#232A3A] border border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 outline-none transition-all text-sm"
+                            placeholder="5000"
+                            min="1000"
+                            step="500"
+                          />
+                        </div>
+                      )}
+
+                      <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-[#232A3A] rounded-2xl border border-slate-200 dark:border-slate-800">
+                        <div className="space-y-1">
+                          <div className="text-xs font-bold">Mode Manual</div>
+                          <div className="text-[10px] text-slate-400">Kirim berikutnya hanya saat Anda klik/tekan Spasi.</div>
+                        </div>
+                        <button
+                          onClick={() => setSettings(prev => ({ ...prev, manualMode: !prev.manualMode }))}
+                          className={cn(
+                            "w-12 h-6 rounded-full transition-all relative",
+                            settings.manualMode ? "bg-indigo-500" : "bg-slate-300 dark:bg-slate-700"
+                          )}
+                        >
+                          <div className={cn(
+                            "absolute top-1 w-4 h-4 bg-white rounded-full transition-all",
+                            settings.manualMode ? "left-7" : "left-1"
+                          )} />
+                        </button>
+                      </div>
+
+                      <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-[#232A3A] rounded-2xl border border-slate-200 dark:border-slate-800">
+                        <div className="space-y-1">
+                          <div className="text-xs font-bold">Auto Retry</div>
+                          <div className="text-[10px] text-slate-400">Coba kirim ulang otomatis jika gagal.</div>
+                        </div>
+                        <button
+                          onClick={() => setSettings(prev => ({ ...prev, autoRetry: !prev.autoRetry }))}
+                          className={cn(
+                            "w-12 h-6 rounded-full transition-all relative",
+                            settings.autoRetry ? "bg-indigo-500" : "bg-slate-300 dark:bg-slate-700"
+                          )}
+                        >
+                          <div className={cn(
+                            "absolute top-1 w-4 h-4 bg-white rounded-full transition-all",
+                            settings.autoRetry ? "left-7" : "left-1"
+                          )} />
+                        </button>
+                      </div>
+
+                      {settings.autoRetry && (
+                        <div className="space-y-2">
+                          <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+                            <RotateCcw size={14} /> Max Retries
+                          </label>
+                          <input
+                            type="number"
+                            value={settings.maxRetries}
+                            onChange={(e) => setSettings(prev => ({ ...prev, maxRetries: parseInt(e.target.value) || 1 }))}
+                            className="w-full px-4 py-3 bg-slate-50 dark:bg-[#232A3A] border border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 outline-none transition-all text-sm"
+                            min="1"
+                            max="10"
+                          />
+                        </div>
+                      )}
+
+                      <div className="pt-2">
+                        <button
+                          onClick={() => {
+                            if (window.confirm('Kembalikan semua template ke pengaturan default? Template yang Anda ubah akan tertimpa.')) {
+                              setTemplates(DEFAULT_TEMPLATES);
+                              setActiveTemplateId(DEFAULT_TEMPLATES[0].id);
+                              setActiveVariationIndex(0);
+                              toast.success('Template berhasil dipulihkan');
+                            }
+                          }}
+                          className="w-full py-3 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-xl font-bold text-xs hover:bg-slate-200 dark:hover:bg-slate-700 transition-all flex items-center justify-center gap-2"
+                        >
+                          <RotateCcw size={14} /> Restore Default Templates
+                        </button>
+                      </div>
                     </div>
-                    
-                    <div className="grid grid-cols-2 gap-3 lg:gap-4 pt-3 lg:pt-4">
-                      <div className="space-y-1.5 lg:space-y-2"><label className="text-[9px] lg:text-[10px] font-bold text-zinc-500 uppercase tracking-widest ml-1">Batch Size</label><input type="number" value={settings.batchSize} onChange={(e) => setSettings(prev => ({ ...prev, batchSize: parseInt(e.target.value) || 0 }))} className="w-full px-3 py-2.5 lg:px-4 lg:py-3 bg-zinc-50 dark:bg-zinc-950 border-none rounded-lg lg:rounded-xl text-[11px] lg:text-sm outline-none dark:text-white" /></div>
-                      <div className="space-y-1.5 lg:space-y-2"><label className="text-[9px] lg:text-[10px] font-bold text-zinc-500 uppercase tracking-widest ml-1">Pause (ms)</label><input type="number" value={settings.batchPause} onChange={(e) => setSettings(prev => ({ ...prev, batchPause: parseInt(e.target.value) || 0 }))} className="w-full px-3 py-2.5 lg:px-4 lg:py-3 bg-zinc-50 dark:bg-zinc-950 border-none rounded-lg lg:rounded-xl text-[11px] lg:text-sm outline-none dark:text-white" /></div>
-                      <div className="space-y-1.5 lg:space-y-2"><label className="text-[9px] lg:text-[10px] font-bold text-zinc-500 uppercase tracking-widest ml-1">Hourly Lmt</label><input type="number" value={settings.hourlyLimit} onChange={(e) => setSettings(prev => ({ ...prev, hourlyLimit: parseInt(e.target.value) || 0 }))} className="w-full px-3 py-2.5 lg:px-4 lg:py-3 bg-zinc-50 dark:bg-zinc-950 border-none rounded-lg lg:rounded-xl text-[11px] lg:text-sm outline-none dark:text-white" /></div>
-                      <div className="space-y-1.5 lg:space-y-2"><label className="text-[9px] lg:text-[10px] font-bold text-zinc-500 uppercase tracking-widest ml-1">Error Lmt</label><input type="number" value={settings.stopOnConsecutiveErrors} onChange={(e) => setSettings(prev => ({ ...prev, stopOnConsecutiveErrors: parseInt(e.target.value) || 0 }))} className="w-full px-3 py-2.5 lg:px-4 lg:py-3 bg-zinc-50 dark:bg-zinc-950 border-none rounded-lg lg:rounded-xl text-[11px] lg:text-sm outline-none dark:text-white" /></div>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between p-3 bg-indigo-50/50 dark:bg-indigo-900/5 rounded-xl border border-indigo-100/50 dark:border-indigo-900/10">
+                        <div className="space-y-0.5">
+                          <div className="text-xs font-bold">Randomize Delay</div>
+                          <div className="text-[9px] text-slate-400">Jeda waktu acak agar tidak terdeteksi bot.</div>
+                        </div>
+                        <button
+                          onClick={() => setSettings(prev => ({ ...prev, randomizeDelay: !prev.randomizeDelay }))}
+                          className={cn(
+                            "w-10 h-5 rounded-full transition-all relative",
+                            settings.randomizeDelay ? "bg-indigo-500" : "bg-slate-300 dark:bg-slate-700"
+                          )}
+                        >
+                          <div className={cn(
+                            "absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all",
+                            settings.randomizeDelay ? "left-5.5" : "left-0.5"
+                          )} />
+                        </button>
+                      </div>
+
+                      {settings.randomizeDelay && (
+                        <div className="space-y-2 px-1">
+                          <label className="text-[10px] font-bold text-slate-500 uppercase">Max Delay (ms)</label>
+                          <input
+                            type="number"
+                            value={settings.maxDelay}
+                            onChange={(e) => setSettings(prev => ({ ...prev, maxDelay: parseInt(e.target.value) || 10000 }))}
+                            className="w-full px-3 py-2 bg-slate-50 dark:bg-[#232A3A] border border-slate-200 dark:border-slate-800 rounded-lg text-xs"
+                            step="500"
+                          />
+                        </div>
+                      )}
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold text-slate-500 uppercase">Batch Size</label>
+                          <input
+                            type="number"
+                            value={settings.batchSize}
+                            onChange={(e) => setSettings(prev => ({ ...prev, batchSize: parseInt(e.target.value) || 0 }))}
+                            className="w-full px-3 py-2 bg-slate-50 dark:bg-[#232A3A] border border-slate-200 dark:border-slate-800 rounded-lg text-xs"
+                            placeholder="10"
+                          />
+                          <p className="text-[8px] text-slate-400 italic">Istirahat tiap X pesan.</p>
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold text-slate-500 uppercase">Pause (ms)</label>
+                          <input
+                            type="number"
+                            value={settings.batchPause}
+                            onChange={(e) => setSettings(prev => ({ ...prev, batchPause: parseInt(e.target.value) || 0 }))}
+                            className="w-full px-3 py-2 bg-slate-50 dark:bg-[#232A3A] border border-slate-200 dark:border-slate-800 rounded-lg text-xs"
+                            placeholder="30000"
+                          />
+                          <p className="text-[8px] text-slate-400 italic">Lama istirahat.</p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold text-slate-500 uppercase">Hourly Limit</label>
+                          <input
+                            type="number"
+                            value={settings.hourlyLimit}
+                            onChange={(e) => setSettings(prev => ({ ...prev, hourlyLimit: parseInt(e.target.value) || 0 }))}
+                            className="w-full px-3 py-2 bg-slate-50 dark:bg-[#232A3A] border border-slate-200 dark:border-slate-800 rounded-lg text-xs"
+                            placeholder="50"
+                          />
+                          <p className="text-[8px] text-slate-400 italic">Maks pesan per jam.</p>
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold text-slate-500 uppercase">Stop on Errors</label>
+                          <input
+                            type="number"
+                            value={settings.stopOnConsecutiveErrors}
+                            onChange={(e) => setSettings(prev => ({ ...prev, stopOnConsecutiveErrors: parseInt(e.target.value) || 0 }))}
+                            className="w-full px-3 py-2 bg-slate-50 dark:bg-[#232A3A] border border-slate-200 dark:border-slate-800 rounded-lg text-xs"
+                            placeholder="3"
+                          />
+                          <p className="text-[8px] text-slate-400 italic">Stop jika X gagal urut.</p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold text-slate-500 uppercase">Long Break After</label>
+                          <input
+                            type="number"
+                            value={settings.longBreakAfter}
+                            onChange={(e) => setSettings(prev => ({ ...prev, longBreakAfter: parseInt(e.target.value) || 0 }))}
+                            className="w-full px-3 py-2 bg-slate-50 dark:bg-[#232A3A] border border-slate-200 dark:border-slate-800 rounded-lg text-xs"
+                            placeholder="25"
+                          />
+                          <p className="text-[8px] text-slate-400 italic">Istirahat tiap X pesan.</p>
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold text-slate-500 uppercase">Duration (min)</label>
+                          <input
+                            type="number"
+                            value={settings.longBreakDuration}
+                            onChange={(e) => setSettings(prev => ({ ...prev, longBreakDuration: parseInt(e.target.value) || 0 }))}
+                            className="w-full px-3 py-2 bg-slate-50 dark:bg-[#232A3A] border border-slate-200 dark:border-slate-800 rounded-lg text-xs"
+                            placeholder="10"
+                          />
+                          <p className="text-[8px] text-slate-400 italic">Lama istirahat (menit).</p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-3">
+                        {[
+                          { key: 'shuffleQueue', label: 'Shuffle Queue', desc: 'Acak urutan antrean saat memulai blast.' },
+                          { key: 'useRandomGreetings', label: 'Random Greetings', desc: 'Variasi kata sapaan otomatis.' },
+                          { key: 'addRandomSuffix', label: 'Random Suffix (Ref ID)', desc: 'Tambah ID unik di akhir pesan.' },
+                          { key: 'useInvisibleChars', label: 'Invisible Characters', desc: 'Sisipkan karakter tak terlihat.' },
+                          { key: 'simulateTyping', label: 'Simulate Typing', desc: 'Tambah jeda berdasarkan panjang pesan.' },
+                          { key: 'adaptiveDelay', label: 'Adaptive Delay', desc: 'Delay bertambah seiring jumlah pesan.' },
+                          { key: 'randomizeFormatting', label: 'Random Formatting', desc: 'Variasi spasi dan baris baru.' },
+                          { key: 'rotateTemplates', label: 'Template Rotation', desc: 'Gunakan template berbeda bergantian.' },
+                          { key: 'randomizeEmojis', label: 'Randomize Emojis', desc: 'Sisipkan emoji acak di setiap pesan.' },
+                          { key: 'useGlobalSpintax', label: 'Global Spintax', desc: 'Aktifkan parser {pilihan1|pilihan2}.' },
+                          { key: 'autoSend', label: 'Auto Send Mode', desc: 'Kirim otomatis via Chrome Extension.' }
+                        ].map((item) => (
+                          <div key={item.key} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-[#232A3A] rounded-xl border border-slate-200 dark:border-slate-800">
+                            <div className="space-y-0.5">
+                              <div className="text-xs font-bold">{item.label}</div>
+                              <div className="text-[9px] text-slate-400">{item.desc}</div>
+                            </div>
+                            <button
+                              onClick={() => setSettings(prev => ({ ...prev, [item.key]: !prev[item.key as keyof AppSettings] }))}
+                              className={cn(
+                                "w-10 h-5 rounded-full transition-all relative",
+                                settings[item.key as keyof AppSettings] ? "bg-indigo-500" : "bg-slate-300 dark:bg-slate-700"
+                              )}
+                            >
+                              <div className={cn(
+                                "absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all",
+                                settings[item.key as keyof AppSettings] ? "left-5.5" : "left-0.5"
+                              )} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+
+                      {settings.autoSend && (
+                        <div className="p-4 bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20 rounded-2xl space-y-4">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
+                              <Puzzle size={16} />
+                              <span className="text-xs font-bold uppercase tracking-wider">Chrome Extension Required</span>
+                            </div>
+                            <div className={cn(
+                              "px-2 py-0.5 rounded text-[8px] font-bold uppercase",
+                              isExtensionDetected ? "bg-indigo-500 text-white" : "bg-amber-500 text-white"
+                            )}>
+                              {isExtensionDetected ? "Connected" : "Not Found"}
+                            </div>
+                          </div>
+
+                          <p className="text-[10px] leading-relaxed text-amber-800/70 dark:text-amber-400/70">
+                            Fitur ini membutuhkan Chrome Extension khusus untuk menekan tombol kirim secara otomatis di WhatsApp Web.
+                          </p>
+
+                          <button
+                            onClick={downloadExtensionZip}
+                            className="w-full py-3 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-amber-600/20 transition-all"
+                          >
+                            <Download size={16} /> Download Extension (.zip)
+                          </button>
+
+                          <div className="space-y-2">
+                            <div className="text-[10px] font-bold text-amber-900 dark:text-amber-300">Cara Instalasi (Hanya 1 Menit):</div>
+                            <ol className="text-[10px] space-y-2 text-amber-800/70 dark:text-amber-400/70 list-decimal ml-4">
+                              <li>Klik tombol <b>Download Extension</b> di atas.</li>
+                              <li>Ekstrak file <code className="bg-amber-100 dark:bg-amber-800 px-1 rounded">wasender-pro-helper.zip</code> menjadi folder.</li>
+                              <li>Buka <code className="bg-amber-100 dark:bg-amber-800 px-1 rounded">chrome://extensions</code> di browser Chrome.</li>
+                              <li>Aktifkan <b>Developer Mode</b> di pojok kanan atas.</li>
+                              <li>Klik <b>Load Unpacked</b> dan pilih folder hasil ekstrak tadi.</li>
+                            </ol>
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  </>
+                  </div>
                 )}
               </div>
-              <div className="p-4 lg:p-6 shrink-0"><button onClick={() => setShowSettingsModal(false)} className="w-full py-3.5 lg:py-4 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-xl lg:rounded-2xl font-bold active:scale-[0.98] transition-all text-xs lg:text-sm">Save Config</button></div>
+
+              <div className="p-6 border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/20 shrink-0">
+                <button
+                  onClick={() => setShowSettingsModal(false)}
+                  className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold shadow-lg shadow-indigo-600/20 hover:bg-indigo-700 transition-all"
+                >
+                  Save Configuration
+                </button>
+              </div>
             </motion.div>
           </div>
         )}
       </AnimatePresence>
+
+      <footer className="max-w-7xl mx-auto px-6 py-12 border-t border-slate-200 dark:border-slate-800 text-center">
+        <div className="text-[10px] text-slate-400 dark:text-slate-600 uppercase tracking-[0.3em] font-mono font-bold">
+          WAsender PRO Engine • v2.0.0 • Enterprise Edition
+        </div>
+      </footer>
     </div>
   );
 }
