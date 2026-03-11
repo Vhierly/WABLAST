@@ -3,7 +3,7 @@ import {
   Plus, Send, Trash2, Play, Square, MessageSquare, User, Package, Hash, Phone,
   FileText, CheckCircle2, Clock, AlertCircle, Settings2, Download, FileSpreadsheet,
   X, Search, Sparkles, BarChart3, History, Timer, ExternalLink, ChevronRight, Moon,
-  Sun, RotateCcw, Shield, Puzzle, Loader2, Zap, Terminal
+  Sun, RotateCcw, Shield, Puzzle, Loader2, Zap, Terminal, Palette, Lock
 } from 'lucide-react';
 import { Toaster, toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'motion/react';
@@ -39,6 +39,14 @@ export default function App() {
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  
+  // Secret Theme State
+  const [showThemeModal, setShowThemeModal] = useState(false);
+  const [themePassword, setThemePassword] = useState('');
+  const [isNeoBrutalism, setIsNeoBrutalism] = useState(() => {
+    return localStorage.getItem('wa_blast_neo') === 'true';
+  });
+
   const [activeSettingsTab, setActiveSettingsTab] = useState<'general' | 'antispam'>('general');
   const [countdown, setCountdown] = useState(0);
   const [nextBatchPauseAt, setNextBatchPauseAt] = useState(0);
@@ -102,17 +110,30 @@ export default function App() {
   useEffect(() => localStorage.setItem('wa_blast_templates', JSON.stringify(templates)), [templates]);
   useEffect(() => localStorage.setItem('wa_blast_active_template_id', activeTemplateId), [activeTemplateId]);
   useEffect(() => localStorage.setItem('wa_blast_settings', JSON.stringify(settings)), [settings]);
+  useEffect(() => localStorage.setItem('wa_blast_neo', isNeoBrutalism.toString()), [isNeoBrutalism]);
+  
   useEffect(() => {
     const theme = isDarkMode ? 'dark' : 'light';
     localStorage.setItem('wa_blast_theme', theme);
-    if (isDarkMode) {
+    if (isDarkMode && !isNeoBrutalism) {
       document.documentElement.classList.add('dark');
       document.body.classList.add('dark');
     } else {
       document.documentElement.classList.remove('dark');
       document.body.classList.remove('dark');
     }
-  }, [isDarkMode]);
+  }, [isDarkMode, isNeoBrutalism]);
+
+  const handleUnlockNeo = () => {
+    if (themePassword === 'tanyapaleif') {
+      setIsNeoBrutalism(true);
+      setShowThemeModal(false);
+      setThemePassword('');
+      toast.success("NEO BRUTALISM UNLOCKED! 🎨🔥");
+    } else {
+      toast.error("Akses Ditolak! Password salah.");
+    }
+  };
 
   const handleResetDefault = () => {
     if (window.confirm('Apakah Anda yakin ingin menghapus semua data dan kembali ke pengaturan awal? Semua antrean dan template custom akan hilang.')) {
@@ -503,8 +524,8 @@ export default function App() {
 
   const statsData = useMemo(() => {
     const sent = entries.filter(e => e.status === 'sent').length, pending = entries.filter(e => e.status === 'pending').length, received = entries.filter(e => e.isReceived).length;
-    return [{ name: 'Sent', value: sent, color: '#10b981' }, { name: 'Pending', value: pending, color: '#f59e0b' }, { name: 'Received', value: received, color: '#0ea5e9' }];
-  }, [entries]);
+    return [{ name: 'Sent', value: sent, color: isNeoBrutalism ? '#000000' : '#10b981' }, { name: 'Pending', value: pending, color: isNeoBrutalism ? '#FF4911' : '#f59e0b' }, { name: 'Received', value: received, color: isNeoBrutalism ? '#00E5FF' : '#0ea5e9' }];
+  }, [entries, isNeoBrutalism]);
 
   const safetyScore = useMemo(() => {
     let score = 0;
@@ -524,12 +545,35 @@ export default function App() {
     toast.success('Laporan diunduh');
   };
 
+  // THEME ENGINE HELPERS
+  const neo = isNeoBrutalism;
+  const tAppBg = neo ? "bg-[#E8E8E8] text-black font-mono selection:bg-[#00E5FF] selection:text-black" : (isDarkMode ? "dark bg-[#09090b] text-zinc-200" : "bg-[#f4f4f5] text-zinc-900");
+  const tCard = neo ? "bg-white border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] rounded-none" : "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl lg:rounded-[2rem] shadow-sm";
+  const tInput = neo ? "bg-white border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:shadow-none focus:translate-x-[4px] focus:translate-y-[4px] rounded-none text-black font-bold outline-none placeholder-gray-400 transition-all" : "bg-zinc-50 dark:bg-zinc-950 border-none rounded-xl lg:rounded-2xl focus:ring-2 focus:ring-emerald-500/20 outline-none dark:text-white transition-all";
+  const tBtnPrimary = neo ? "bg-[#FF90E8] border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[6px] hover:translate-y-[6px] rounded-none text-black font-black uppercase tracking-widest transition-all" : "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-xl lg:rounded-2xl font-bold hover:scale-[0.98] transition-transform shadow-md";
+  const tBtnSecondary = neo ? "bg-[#FFC900] border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] rounded-none text-black font-black uppercase transition-all" : "bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-full lg:rounded-xl hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all";
+  const tBtnIcon = neo ? "bg-white border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] rounded-none text-black transition-all" : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors";
+  const tBadge = neo ? "border-4 border-black bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-none text-black font-black uppercase" : "rounded-md lg:rounded-lg font-bold";
+  
   return (
-    <div className={cn(
-      "min-h-screen lg:h-screen w-full flex flex-col lg:flex-row lg:overflow-hidden font-sans selection:bg-emerald-500/30 transition-colors duration-300",
-      isDarkMode ? "dark bg-[#09090b] text-zinc-200" : "bg-[#f4f4f5] text-zinc-900"
-    )}>
-      <Toaster position="top-center" toastOptions={{ className: 'dark:bg-zinc-800 dark:text-white border dark:border-zinc-700 mt-4 shadow-xl' }} />
+    <div className={cn("min-h-screen lg:h-screen w-full flex flex-col lg:flex-row lg:overflow-hidden font-sans transition-colors duration-300", tAppBg)}>
+      <Toaster position="top-center" toastOptions={{ className: neo ? 'border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] rounded-none font-bold text-black bg-white' : 'dark:bg-zinc-800 dark:text-white border dark:border-zinc-700 mt-4 shadow-xl' }} />
+
+      {/* Secret Password Modal */}
+      <AnimatePresence>
+        {showThemeModal && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 backdrop-blur-sm bg-black/60">
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className={cn("p-8 w-full max-w-sm flex flex-col gap-5", neo ? "bg-[#FFC900] border-4 border-black shadow-[12px_12px_0px_0px_rgba(0,0,0,1)]" : "bg-white dark:bg-zinc-900 rounded-[2rem] shadow-2xl border border-zinc-200 dark:border-zinc-800")}>
+              <div className="flex justify-between items-center">
+                <h3 className={cn("font-black text-xl", neo ? "text-black uppercase" : "dark:text-white")}>Enter Passcode</h3>
+                <button onClick={() => setShowThemeModal(false)}><X size={20} className={neo ? "text-black" : "text-zinc-500"} /></button>
+              </div>
+              <input type="password" value={themePassword} onChange={e => setThemePassword(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleUnlockNeo()} placeholder="••••••••" className={cn("w-full px-5 py-4", tInput)} />
+              <button onClick={handleUnlockNeo} className={cn("w-full py-4 text-sm flex items-center justify-center gap-2", tBtnPrimary)}><Lock size={16} /> UNLOCK</button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* FLOATING HUD WIDGET */}
       <AnimatePresence>
@@ -539,71 +583,64 @@ export default function App() {
             animate={{ opacity: 1, y: 0, scale: 1 }} 
             exit={{ opacity: 0, y: 20, scale: 0.9 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:bottom-6 md:bottom-8 md:right-8 z-[100] w-auto sm:w-[340px] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.5)]"
+            className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:bottom-6 md:bottom-8 md:right-8 z-[100] w-auto sm:w-[340px]"
           >
-            <div className="bg-zinc-900/95 backdrop-blur-xl border border-zinc-700/50 p-5 sm:p-6 rounded-[2rem] flex flex-col relative overflow-hidden">
-              <div className="absolute top-0 left-0 w-full h-1 bg-zinc-800">
-                <motion.div 
-                  className="h-full bg-gradient-to-r from-emerald-500 to-teal-400" 
-                  initial={{ width: "0%" }}
-                  animate={{ width: `${entries.length > 0 ? (entries.filter(e => e.status === 'sent').length / entries.length) * 100 : 0}%` }}
-                />
+            <div className={cn("p-5 sm:p-6 flex flex-col relative overflow-hidden", neo ? "bg-white border-4 border-black shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] rounded-none" : "bg-zinc-900/95 backdrop-blur-xl border border-zinc-700/50 rounded-[2rem] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.5)]")}>
+              <div className={cn("absolute top-0 left-0 w-full", neo ? "h-2 bg-zinc-200 border-b-4 border-black" : "h-1 bg-zinc-800")}>
+                <motion.div className={cn("h-full", neo ? "bg-[#FF4911]" : "bg-gradient-to-r from-emerald-500 to-teal-400")} initial={{ width: "0%" }} animate={{ width: `${entries.length > 0 ? (entries.filter(e => e.status === 'sent').length / entries.length) * 100 : 0}%` }} />
               </div>
               
               <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-5 mt-1 sm:mt-2">
                 <div className="relative w-10 h-10 sm:w-12 sm:h-12 shrink-0">
-                  <div className="absolute inset-0 border-[3px] sm:border-4 border-zinc-800 rounded-full" />
-                  <div className="absolute inset-0 border-[3px] sm:border-4 border-emerald-500 rounded-full border-t-transparent animate-spin" />
+                  <div className={cn("absolute inset-0 rounded-full", neo ? "border-4 border-black" : "border-[3px] sm:border-4 border-zinc-800")} />
+                  <div className={cn("absolute inset-0 rounded-full border-t-transparent animate-spin", neo ? "border-4 border-[#00E5FF]" : "border-[3px] sm:border-4 border-emerald-500")} />
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <Play className="w-3 h-3 sm:w-4 sm:h-4 text-emerald-500 fill-current translate-x-[1px]" />
+                    <Play className={cn("w-3 h-3 sm:w-4 sm:h-4 fill-current translate-x-[1px]", neo ? "text-black" : "text-emerald-500")} />
                   </div>
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-white leading-tight">
+                  <h3 className={cn("text-sm font-bold leading-tight", neo ? "text-black uppercase font-black" : "text-white")}>
                     {isLongBreak ? 'Sleeping 😴' : entries.some(e => e.status === 'sending') ? 'Waiting WA ⏳' : 'Engine Running 🚀'}
                   </h3>
-                  <div className="text-[10px] sm:text-[11px] text-zinc-400 mt-1 font-medium">
-                    Sent: <span className="text-emerald-400 font-bold">{entries.filter(e => e.status === 'sent').length}</span> / {entries.length} items
+                  <div className={cn("text-[10px] sm:text-[11px] mt-1 font-medium", neo ? "text-black font-bold" : "text-zinc-400")}>
+                    Sent: <span className={neo ? "text-[#FF4911]" : "text-emerald-400"}>{entries.filter(e => e.status === 'sent').length}</span> / {entries.length} items
                   </div>
                 </div>
               </div>
 
               {!settings.manualMode ? (
-                <div className="mb-4 sm:mb-5 bg-zinc-950 rounded-2xl p-3 sm:p-4 border border-zinc-800/80 flex items-center justify-between shadow-inner">
-                  <span className="text-[9px] sm:text-[10px] uppercase tracking-widest text-zinc-500 font-bold">
+                <div className={cn("mb-4 sm:mb-5 flex items-center justify-between p-3 sm:p-4", neo ? "bg-[#B4F8C8] border-4 border-black" : "bg-zinc-950 rounded-2xl border border-zinc-800/80 shadow-inner")}>
+                  <span className={cn("text-[9px] sm:text-[10px] uppercase tracking-widest font-bold", neo ? "text-black" : "text-zinc-500")}>
                     {entries.some(e => e.status === 'sending') ? 'Processing' : isLongBreak ? 'Break Left' : 'Next In'}
                   </span>
-                  <div className={cn("text-xl sm:text-2xl font-black tabular-nums tracking-tighter", isLongBreak ? "text-amber-500" : entries.some(e => e.status === 'sending') ? "text-blue-500 animate-pulse" : "text-white")}>
+                  <div className={cn("text-xl sm:text-2xl font-black tabular-nums tracking-tighter", isLongBreak ? "text-amber-500" : entries.some(e => e.status === 'sending') ? "text-blue-500 animate-pulse" : (neo ? "text-black" : "text-white"))}>
                     {entries.some(e => e.status === 'sending') ? '--:--' : `${Math.floor(countdown / 60)}:${(countdown % 60).toString().padStart(2, '0')}`}
                   </div>
                 </div>
               ) : (
-                <div className="mb-4 sm:mb-5 bg-zinc-950 rounded-2xl p-3 sm:p-4 border border-zinc-800/80 text-center shadow-inner">
-                  <div className="text-emerald-400 font-bold text-[10px] uppercase tracking-widest mb-1">Manual Mode</div>
-                  <div className="text-[10px] sm:text-[11px] text-zinc-400">Tekan [ENTER] di WA atau klik lanjut.</div>
+                <div className={cn("mb-4 sm:mb-5 text-center p-3 sm:p-4", neo ? "bg-[#FFC900] border-4 border-black" : "bg-zinc-950 rounded-2xl border border-zinc-800/80 shadow-inner")}>
+                  <div className={cn("font-bold text-[10px] uppercase tracking-widest mb-1", neo ? "text-black font-black" : "text-emerald-400")}>Manual Mode</div>
+                  <div className={cn("text-[10px] sm:text-[11px]", neo ? "text-black font-bold" : "text-zinc-400")}>Tekan [ENTER] di WA atau klik lanjut.</div>
                 </div>
               )}
 
               <div className="w-full flex flex-col gap-2">
                 {entries.some(e => e.status === 'sending') && (
-                  <button onClick={() => { const s = entries.find(e => e.status === 'sending'); if(s) updateStatus(s.id, 'sent'); }} className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-xs sm:text-[13px] transition-all active:scale-95 shadow-sm">Force Skip</button>
+                  <button onClick={() => { const s = entries.find(e => e.status === 'sending'); if(s) updateStatus(s.id, 'sent'); }} className={cn("w-full py-3 text-xs sm:text-[13px]", neo ? "bg-[#00E5FF] border-4 border-black font-black uppercase text-black hover:translate-x-[2px] hover:translate-y-[2px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none transition-all" : "bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold transition-all active:scale-95 shadow-sm")}>Force Skip</button>
                 )}
                 {Date.now() >= nextActionTime && entries.filter(e => e.status === 'pending').length > 0 && !entries.some(e => e.status === 'sending') && !settings.manualMode && (
                   <button onClick={() => {
                     const entry = entries.find(e => e.status === 'pending');
-                    if(entry) {
-                      openInSameTab(getWALink(entry, entries.filter(e => e.status === 'sent').length));
-                      if(settings.autoSend) updateStatus(entry.id, 'sending'); else updateStatus(entry.id, 'sent');
-                    }
-                  }} className="w-full py-3 bg-amber-600 hover:bg-amber-500 text-white rounded-xl font-bold text-xs sm:text-[13px] transition-all active:scale-95 shadow-sm">Trigger Manual</button>
+                    if(entry) { openInSameTab(getWALink(entry, entries.filter(e => e.status === 'sent').length)); if(settings.autoSend) updateStatus(entry.id, 'sending'); else updateStatus(entry.id, 'sent'); }
+                  }} className={cn("w-full py-3 text-xs sm:text-[13px]", neo ? "bg-[#FFC900] border-4 border-black font-black uppercase text-black hover:translate-x-[2px] hover:translate-y-[2px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none transition-all" : "bg-amber-600 hover:bg-amber-500 text-white rounded-xl font-bold transition-all active:scale-95 shadow-sm")}>Trigger Manual</button>
                 )}
                 {settings.manualMode && (
                   <button onClick={() => {
                     const pending = entries.filter(e => e.status === 'pending');
                     if (pending.length > 0) { openInSameTab(getWALink(pending[0])); updateStatus(pending[0].id, 'sent'); }
-                  }} className="w-full py-3 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white rounded-xl font-bold text-xs sm:text-[13px] transition-all active:scale-95 shadow-sm">Kirim Berikutnya</button>
+                  }} className={cn("w-full py-3 text-xs sm:text-[13px]", neo ? "bg-[#FF90E8] border-4 border-black font-black uppercase text-black hover:translate-x-[2px] hover:translate-y-[2px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none transition-all" : "bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white rounded-xl font-bold transition-all active:scale-95 shadow-sm")}>Kirim Berikutnya</button>
                 )}
-                <button onClick={stopBlast} className="w-full py-3 border border-red-500/20 text-red-400 hover:bg-red-500 hover:text-white rounded-xl font-bold text-xs sm:text-[13px] transition-all active:scale-95">Stop Engine</button>
+                <button onClick={stopBlast} className={cn("w-full py-3 text-xs sm:text-[13px]", neo ? "bg-[#FF4911] border-4 border-black font-black uppercase text-white hover:translate-x-[2px] hover:translate-y-[2px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none transition-all" : "border border-red-500/20 text-red-400 hover:bg-red-500 hover:text-white rounded-xl font-bold transition-all active:scale-95")}>Stop Engine</button>
               </div>
             </div>
           </motion.div>
@@ -611,26 +648,26 @@ export default function App() {
       </AnimatePresence>
 
       {/* SIDEBAR (Command Center) */}
-      <aside className="w-full lg:w-[320px] xl:w-[360px] lg:h-full p-4 md:p-6 flex flex-col gap-4 md:gap-6 border-b lg:border-b-0 lg:border-r border-zinc-200 dark:border-zinc-800/80 bg-white/50 dark:bg-zinc-950/50 backdrop-blur-xl shrink-0 z-20 lg:overflow-y-auto custom-scrollbar">
+      <aside className={cn("w-full lg:w-[320px] xl:w-[360px] lg:h-full p-4 md:p-6 flex flex-col gap-4 md:gap-6 shrink-0 z-20 lg:overflow-y-auto custom-scrollbar", neo ? "bg-[#FF90E8] border-b-4 lg:border-b-0 lg:border-r-4 border-black" : "border-b lg:border-b-0 lg:border-r border-zinc-200 dark:border-zinc-800/80 bg-white/50 dark:bg-zinc-950/50 backdrop-blur-xl")}>
         
         {/* Brand */}
         <div className="flex items-center gap-3 md:gap-4 px-2 pt-2">
-          <div className="w-10 h-10 md:w-12 md:h-12 bg-zinc-900 dark:bg-white rounded-xl md:rounded-2xl flex items-center justify-center shadow-lg shrink-0">
-            <Send className="w-5 h-5 md:w-6 md:h-6 text-white dark:text-zinc-900 translate-x-[1px]" />
+          <div className={cn("w-10 h-10 md:w-12 md:h-12 flex items-center justify-center shrink-0", neo ? "bg-white border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]" : "bg-zinc-900 dark:bg-white rounded-xl md:rounded-2xl shadow-lg")}>
+            <Send className={cn("w-5 h-5 md:w-6 md:h-6 translate-x-[1px]", neo ? "text-black" : "text-white dark:text-zinc-900")} />
           </div>
           <div>
-            <h1 className="text-xl md:text-2xl font-black tracking-tight dark:text-white leading-none">WAsender</h1>
-            <p className="text-[9px] md:text-[10px] font-bold text-emerald-500 uppercase tracking-widest mt-1 md:mt-1.5">PRO Engine v2</p>
+            <h1 className={cn("text-xl md:text-2xl font-black tracking-tight leading-none", neo ? "text-black uppercase" : "dark:text-white")}>WAsender</h1>
+            <p className={cn("text-[9px] md:text-[10px] font-bold uppercase tracking-widest mt-1 md:mt-1.5", neo ? "text-black" : "text-emerald-500")}>PRO Engine v2</p>
           </div>
         </div>
 
         {/* Master Control */}
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl md:rounded-[2rem] p-5 md:p-6 flex flex-col gap-4 md:gap-5 shadow-sm">
+        <div className={cn("p-5 md:p-6 flex flex-col gap-4 md:gap-5", tCard)}>
           <div className="flex justify-between items-center">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">System Status</span>
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-lg">
-              <div className={cn("w-2 h-2 rounded-full", isBlasting ? "bg-emerald-500 animate-pulse" : "bg-zinc-400")} />
-              <span className="text-[10px] font-bold dark:text-zinc-300 uppercase">{isBlasting ? 'Running' : 'Standby'}</span>
+            <span className={cn("text-[10px] font-bold uppercase tracking-widest", neo ? "text-black" : "text-zinc-500")}>System Status</span>
+            <div className={cn("flex items-center gap-2 px-3 py-1.5", neo ? "bg-white border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]" : "bg-zinc-100 dark:bg-zinc-800 rounded-lg")}>
+              <div className={cn("w-2 h-2 rounded-full", isBlasting ? (neo ? "bg-[#FF4911] animate-pulse" : "bg-emerald-500 animate-pulse") : "bg-zinc-400")} />
+              <span className={cn("text-[10px] font-bold uppercase", neo ? "text-black font-black" : "dark:text-zinc-300")}>{isBlasting ? 'Running' : 'Standby'}</span>
             </div>
           </div>
           
@@ -638,10 +675,10 @@ export default function App() {
             onClick={isBlasting ? stopBlast : startBlast}
             disabled={entries.length === 0}
             className={cn(
-              "w-full h-14 md:h-16 rounded-2xl md:rounded-[1.25rem] font-black text-base md:text-lg transition-all flex items-center justify-center gap-3 shadow-xl active:scale-95 disabled:opacity-50 disabled:active:scale-100",
-              isBlasting 
-                ? "bg-red-500 hover:bg-red-600 text-white shadow-red-500/20" 
-                : "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 shadow-zinc-900/10 hover:scale-[1.02]"
+              "w-full h-14 md:h-16 flex items-center justify-center gap-3 transition-all disabled:opacity-50 disabled:active:scale-100",
+              neo 
+                ? (isBlasting ? "bg-[#FF4911] border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] text-white font-black uppercase text-base md:text-lg hover:shadow-none hover:translate-x-[6px] hover:translate-y-[6px]" : "bg-[#00E5FF] border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] text-black font-black uppercase text-base md:text-lg hover:shadow-none hover:translate-x-[6px] hover:translate-y-[6px]")
+                : (isBlasting ? "bg-red-500 hover:bg-red-600 text-white shadow-red-500/20 rounded-2xl md:rounded-[1.25rem] font-black text-base md:text-lg active:scale-95" : "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 shadow-zinc-900/10 hover:scale-[1.02] rounded-2xl md:rounded-[1.25rem] font-black text-base md:text-lg active:scale-95")
             )}
           >
             {isBlasting ? <Square size={18} className="md:w-5 md:h-5" fill="currentColor" /> : <Play size={18} className="md:w-5 md:h-5" fill="currentColor" />}
@@ -649,10 +686,10 @@ export default function App() {
           </button>
 
           <div className={cn(
-            "flex items-center justify-between px-3 md:px-4 py-3 md:py-3.5 rounded-xl md:rounded-2xl border text-[10px] md:text-[11px] font-bold transition-all",
-            isExtensionDetected 
-              ? "bg-emerald-50/50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/20 text-emerald-600 dark:text-emerald-400" 
-              : "bg-zinc-50 dark:bg-zinc-800/50 border-zinc-200 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400"
+            "flex items-center justify-between px-3 md:px-4 py-3 md:py-3.5 text-[10px] md:text-[11px] font-bold transition-all",
+            neo 
+              ? (isExtensionDetected ? "bg-[#B4F8C8] border-4 border-black text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] uppercase" : "bg-white border-4 border-black text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] uppercase")
+              : (isExtensionDetected ? "bg-emerald-50/50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-xl md:rounded-2xl" : "bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 rounded-xl md:rounded-2xl")
           )}>
             <div className="flex items-center gap-2 md:gap-2.5"><Puzzle size={14} className={isExtensionDetected ? "animate-pulse" : ""} /> Extension</div>
             <span className="uppercase">{isExtensionDetected ? 'Connected' : 'Offline'}</span>
@@ -661,57 +698,52 @@ export default function App() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4 md:gap-6 lg:flex-1 lg:flex lg:flex-col">
           {/* Quick Settings */}
-          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl md:rounded-[2rem] p-5 md:p-6 shadow-sm flex flex-col gap-4 md:gap-5">
+          <div className={cn("p-5 md:p-6 flex flex-col gap-4 md:gap-5", tCard)}>
             <div className="space-y-2">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 ml-1">Pengirim / CS</label>
+              <label className={cn("text-[10px] uppercase tracking-widest ml-1", neo ? "text-black font-black" : "font-bold text-zinc-500")}>Pengirim / CS</label>
               <input 
-                type="text" 
-                value={settings.senderName}
-                onChange={(e) => setSettings(prev => ({ ...prev, senderName: e.target.value }))}
-                className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-950 border-none rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all dark:text-white"
+                type="text" value={settings.senderName} onChange={(e) => setSettings(prev => ({ ...prev, senderName: e.target.value }))}
+                className={cn("w-full px-4 py-3 text-sm transition-all", neo ? "bg-white border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:shadow-none focus:translate-x-[4px] focus:translate-y-[4px] focus:bg-[#FFC900] text-black font-bold outline-none" : "bg-zinc-50 dark:bg-zinc-950 border-none rounded-xl focus:ring-2 focus:ring-emerald-500/20 outline-none dark:text-white")}
                 placeholder="Admin JNT"
               />
             </div>
             <div className="space-y-3 pt-1">
               <div className="flex justify-between items-center">
-                <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 ml-1">Delay Waktu</label>
-                <span className="text-[10px] font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 px-2 py-0.5 rounded-md">{settings.delay / 1000}s</span>
+                <label className={cn("text-[10px] uppercase tracking-widest ml-1", neo ? "text-black font-black" : "font-bold text-zinc-500")}>Delay Waktu</label>
+                <span className={cn("text-[10px] px-2 py-0.5", neo ? "font-black bg-white border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-black" : "font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 rounded-md")}>{settings.delay / 1000}s</span>
               </div>
               <input 
-                type="range" 
-                min="1000" 
-                max="10000" 
-                step="500"
-                value={settings.delay}
-                onChange={(e) => setSettings(prev => ({ ...prev, delay: parseInt(e.target.value) }))}
-                className="w-full h-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                type="range" min="1000" max="10000" step="500" value={settings.delay} onChange={(e) => setSettings(prev => ({ ...prev, delay: parseInt(e.target.value) }))}
+                className={cn("w-full h-2 appearance-none cursor-pointer", neo ? "bg-white border-2 border-black" : "bg-zinc-200 dark:bg-zinc-700 rounded-lg accent-emerald-500")}
               />
-              <div className="flex justify-between text-[9px] font-bold tracking-widest text-zinc-400 uppercase">
-                <span>Fast</span>
-                <span>Safe</span>
+              <div className={cn("flex justify-between text-[9px] tracking-widest uppercase", neo ? "text-black font-black" : "font-bold text-zinc-400")}>
+                <span>Fast</span><span>Safe</span>
               </div>
             </div>
           </div>
 
           {/* Stats */}
-          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl md:rounded-[2rem] p-5 md:p-6 shadow-sm">
-            <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-4 md:mb-5">Analytics</div>
+          <div className={cn("p-5 md:p-6", tCard)}>
+            <div className={cn("text-[10px] uppercase tracking-widest mb-4 md:mb-5", neo ? "text-black font-black" : "font-bold text-zinc-500")}>Analytics</div>
             <div className="flex items-center gap-4 md:gap-6">
-              <div className="w-16 h-16 md:w-20 md:h-20 shrink-0">
+              <div className={cn("w-16 h-16 md:w-20 md:h-20 shrink-0", neo ? "border-4 border-black bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-1" : "")}>
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    <Pie data={statsData} innerRadius={22} outerRadius={32} paddingAngle={5} dataKey="value" stroke="none">
+                    <Pie data={statsData} innerRadius={neo ? 0 : 22} outerRadius={neo ? 30 : 32} paddingAngle={neo ? 0 : 5} dataKey="value" stroke={neo ? "#000" : "none"} strokeWidth={neo ? 2 : 0}>
                       {statsData.map((e, i) => <Cell key={i} fill={e.color} />)}
                     </Pie>
-                    <RechartsTooltip cursor={false} contentStyle={{ backgroundColor: isDarkMode ? '#18181b' : '#fff', borderColor: isDarkMode ? '#27272a' : '#e2e8f0', borderRadius: '12px', padding: '8px', fontSize: '10px', fontWeight: 'bold' }} />
+                    <RechartsTooltip cursor={false} contentStyle={{ backgroundColor: neo ? '#fff' : (isDarkMode ? '#18181b' : '#fff'), borderColor: neo ? '#000' : (isDarkMode ? '#27272a' : '#e2e8f0'), borderWidth: neo ? '4px' : '1px', borderRadius: neo ? '0' : '12px', padding: '8px', fontSize: '10px', fontWeight: 'bold', color: neo ? '#000' : '', boxShadow: neo ? '4px 4px 0px 0px rgba(0,0,0,1)' : '' }} />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
               <div className="flex-1 flex flex-col gap-2 md:gap-3">
                 {statsData.map(s => (
                   <div key={s.name} className="flex justify-between items-center text-[11px] md:text-xs font-bold">
-                    <div className="flex items-center gap-2"><div className="w-2 h-2 md:w-2.5 md:h-2.5 rounded-full" style={{ backgroundColor: s.color }} /> <span className="text-zinc-500 dark:text-zinc-400">{s.name}</span></div>
-                    <span className="text-xs md:text-sm dark:text-white">{s.value}</span>
+                    <div className="flex items-center gap-2">
+                      <div className={cn("w-2 h-2 md:w-2.5 md:h-2.5", neo ? "border-2 border-black" : "rounded-full")} style={{ backgroundColor: s.color }} /> 
+                      <span className={neo ? "text-black font-black uppercase" : "text-zinc-500 dark:text-zinc-400"}>{s.name}</span>
+                    </div>
+                    <span className={neo ? "text-black font-black text-sm" : "text-xs md:text-sm dark:text-white"}>{s.value}</span>
                   </div>
                 ))}
               </div>
@@ -720,20 +752,20 @@ export default function App() {
         </div>
 
         {/* Terminal Logging */}
-        <div className="lg:flex-1 bg-zinc-950 dark:bg-[#0a0a0a] rounded-3xl md:rounded-[2rem] border border-zinc-800 p-5 md:p-6 flex flex-col overflow-hidden shadow-inner relative group min-h-[140px] md:min-h-[160px] lg:h-auto">
+        <div className={cn("flex-col overflow-hidden relative group min-h-[140px] md:min-h-[160px] lg:h-auto lg:flex-1 p-5 md:p-6 flex", neo ? "bg-black border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] text-[#00FF41]" : "bg-zinc-950 dark:bg-[#0a0a0a] rounded-3xl md:rounded-[2rem] border border-zinc-800 shadow-inner")}>
           <div className="flex justify-between items-center mb-3 md:mb-4 shrink-0">
             <div className="flex gap-2">
-              <div className="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-zinc-700" />
-              <div className="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-zinc-700" />
+              <div className={cn("w-2.5 h-2.5 md:w-3 md:h-3", neo ? "bg-[#FF4911]" : "rounded-full bg-zinc-700")} />
+              <div className={cn("w-2.5 h-2.5 md:w-3 md:h-3", neo ? "bg-[#FFC900]" : "rounded-full bg-zinc-700")} />
             </div>
-            <span className="text-[9px] md:text-[10px] font-mono text-zinc-500 uppercase tracking-widest">sys.log</span>
-            <button onClick={() => setLogs([])} className="text-[9px] md:text-[10px] font-mono text-zinc-600 hover:text-white uppercase transition-colors lg:opacity-0 group-hover:opacity-100">Clear</button>
+            <span className={cn("text-[9px] md:text-[10px] font-mono uppercase tracking-widest", neo ? "text-[#00FF41] font-bold" : "text-zinc-500")}>sys.log</span>
+            <button onClick={() => setLogs([])} className={cn("text-[9px] md:text-[10px] font-mono uppercase transition-colors lg:opacity-0 group-hover:opacity-100", neo ? "text-white hover:text-[#00FF41]" : "text-zinc-600 hover:text-white")}>Clear</button>
           </div>
           <div className="flex-1 overflow-y-auto custom-scrollbar font-mono text-[10px] md:text-[11px] space-y-1.5 md:space-y-2 pr-2">
-            {logs.length === 0 ? <div className="text-zinc-600 italic">Waiting for events...</div> : logs.map(log => (
+            {logs.length === 0 ? <div className={neo ? "text-zinc-500" : "text-zinc-600 italic"}>Waiting for events...</div> : logs.map(log => (
               <div key={log.id} className="flex gap-2 md:gap-3 leading-relaxed">
-                <span className="text-zinc-600 shrink-0">[{new Date(log.timestamp).toLocaleTimeString([], { hour12: false })}]</span>
-                <span className={cn("break-all", log.type === 'success' ? "text-emerald-400" : log.type === 'error' ? "text-red-400" : log.type === 'warning' ? "text-amber-400" : "text-blue-400")}>{log.message}</span>
+                <span className={neo ? "text-zinc-500 shrink-0" : "text-zinc-600 shrink-0"}>[{new Date(log.timestamp).toLocaleTimeString([], { hour12: false })}]</span>
+                <span className={cn("break-all", neo ? (log.type === 'success' ? "text-[#00E5FF]" : log.type === 'error' ? "text-[#FF4911]" : log.type === 'warning' ? "text-[#FFC900]" : "text-white") : (log.type === 'success' ? "text-emerald-400" : log.type === 'error' ? "text-red-400" : log.type === 'warning' ? "text-amber-400" : "text-blue-400"))}>{log.message}</span>
               </div>
             ))}
           </div>
@@ -745,29 +777,32 @@ export default function App() {
       <main className="flex-1 flex flex-col lg:h-full lg:overflow-hidden relative">
         
         {/* Top Navbar */}
-        <header className="p-4 md:p-6 lg:h-24 lg:px-8 flex flex-col-reverse sm:flex-row items-center justify-between shrink-0 border-b border-zinc-200 dark:border-zinc-800/80 bg-white/50 dark:bg-zinc-950/50 backdrop-blur-xl z-10 gap-4">
+        <header className={cn("p-4 md:p-6 lg:h-24 lg:px-8 flex flex-col-reverse sm:flex-row items-center justify-between shrink-0 z-10 gap-4", neo ? "bg-[#FFC900] border-b-4 border-black" : "border-b border-zinc-200 dark:border-zinc-800/80 bg-white/50 dark:bg-zinc-950/50 backdrop-blur-xl")}>
           <div className="relative w-full sm:max-w-xs md:max-w-sm lg:max-w-md">
-            <Search className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 text-zinc-400 w-4 h-4 md:w-5 md:h-5" />
+            <Search className={cn("absolute left-3 md:left-4 top-1/2 -translate-y-1/2 w-4 h-4 md:w-5 md:h-5", neo ? "text-black" : "text-zinc-400")} />
             <input 
               type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Cari antrean..."
-              className="w-full pl-10 md:pl-12 pr-4 md:pr-5 py-2.5 md:py-3.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-full text-xs md:text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all dark:text-white"
+              className={cn("w-full pl-10 md:pl-12 pr-4 md:pr-5 py-2.5 md:py-3.5 text-xs md:text-sm transition-all", neo ? "bg-white border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:shadow-none focus:translate-x-[4px] focus:translate-y-[4px] rounded-none text-black font-bold outline-none placeholder-gray-500" : "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-full focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none dark:text-white")}
             />
           </div>
           <div className="flex flex-wrap items-center justify-center sm:justify-end gap-2 md:gap-3 w-full sm:w-auto">
+            <button onClick={() => isNeoBrutalism ? setIsNeoBrutalism(false) : setShowThemeModal(true)} className={cn("p-2 md:p-3 transition-colors", neo ? "bg-white border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] text-black hover:translate-x-[4px] hover:translate-y-[4px] hover:shadow-none" : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 rounded-full hover:text-indigo-500")} title="Secret Theme">
+              <Palette size={14} className="md:w-4 md:h-4" />
+            </button>
             {!isExtensionDetected && (
-              <button onClick={downloadExtensionZip} className="px-4 py-2 md:px-5 md:py-2.5 bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-full text-[10px] md:text-xs font-bold flex items-center gap-2 border border-amber-200 dark:border-amber-500/20 hover:bg-amber-100 transition-colors">
+              <button onClick={downloadExtensionZip} className={cn("px-4 py-2 md:px-5 md:py-2.5 text-[10px] md:text-xs flex items-center gap-2 transition-colors", neo ? "bg-[#FF4911] border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] text-white font-black uppercase" : "bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-full font-bold border border-amber-200 dark:border-amber-500/20 hover:bg-amber-100")}>
                 <Puzzle size={14} className="md:w-4 md:h-4" /> Install Ext
               </button>
             )}
-            <button onClick={() => setShowBulkModal(true)} className="flex-1 sm:flex-none justify-center px-4 py-2 md:px-5 md:py-2.5 bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-full text-[10px] md:text-xs font-bold hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors flex items-center gap-2">
-              <FileSpreadsheet size={14} className="md:w-4 md:h-4" /> Bulk Import
+            <button onClick={() => setShowBulkModal(true)} className={cn("px-4 py-2 md:px-5 md:py-2.5 text-[10px] md:text-xs flex items-center gap-2", tBtnSecondary)}>
+              <FileSpreadsheet size={14} className="md:w-4 md:h-4" /> Bulk
             </button>
-            <div className="hidden sm:block h-5 md:h-6 w-px bg-zinc-200 dark:bg-zinc-800 mx-0.5 md:mx-1" />
-            <button onClick={exportToCSV} className="p-2 md:p-3 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors" title="Export CSV"><Download size={14} className="md:w-4 md:h-4" /></button>
-            <button onClick={handleResetDefault} className="p-2 md:p-3 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 rounded-full hover:text-red-500 transition-colors" title="Reset All"><RotateCcw size={14} className="md:w-4 md:h-4" /></button>
-            <button onClick={() => setIsDarkMode(!isDarkMode)} className="p-2 md:p-3 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 rounded-full hover:text-emerald-500 transition-colors">{isDarkMode ? <Sun size={14} className="md:w-4 md:h-4" /> : <Moon size={14} className="md:w-4 md:h-4" />}</button>
-            <button onClick={() => setShowSettingsModal(true)} className="p-2 md:p-3 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 rounded-full hover:text-emerald-500 transition-colors"><Settings2 size={14} className="md:w-4 md:h-4" /></button>
+            <div className={cn("hidden md:block h-5 md:h-6 w-px mx-0.5 md:mx-1", neo ? "bg-black w-1" : "bg-zinc-200 dark:bg-zinc-800")} />
+            <button onClick={exportToCSV} className={cn("p-2 md:p-3", tBtnIcon)} title="Export CSV"><Download size={14} className="md:w-4 md:h-4" /></button>
+            <button onClick={handleResetDefault} className={cn("p-2 md:p-3", tBtnIcon)} title="Reset All"><RotateCcw size={14} className="md:w-4 md:h-4" /></button>
+            {!neo && <button onClick={() => setIsDarkMode(!isDarkMode)} className={cn("p-2 md:p-3", tBtnIcon)}>{isDarkMode ? <Sun size={14} className="md:w-4 md:h-4" /> : <Moon size={14} className="md:w-4 md:h-4" />}</button>}
+            <button onClick={() => setShowSettingsModal(true)} className={cn("p-2 md:p-3", tBtnIcon)}><Settings2 size={14} className="md:w-4 md:h-4" /></button>
           </div>
         </header>
 
@@ -779,46 +814,46 @@ export default function App() {
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 lg:gap-8 shrink-0">
               
               {/* Form Card */}
-              <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl lg:rounded-[2rem] p-5 sm:p-6 lg:p-8 shadow-sm">
+              <div className={cn("p-5 sm:p-6 lg:p-8", tCard)}>
                 <div className="flex items-center gap-3 mb-6 lg:mb-8">
-                  <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500 flex items-center justify-center"><User className="w-4 h-4 lg:w-5 lg:h-5" /></div>
-                  <h2 className="font-bold text-xs lg:text-sm dark:text-white uppercase tracking-widest">Input Data Baru</h2>
+                  <div className={cn("w-8 h-8 lg:w-10 lg:h-10 flex items-center justify-center shrink-0", neo ? "bg-[#B4F8C8] border-4 border-black text-black" : "rounded-xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500")}><User className="w-4 h-4 lg:w-5 lg:h-5" /></div>
+                  <h2 className={cn("font-bold text-xs lg:text-sm uppercase tracking-widest", neo ? "text-black font-black" : "dark:text-white")}>Input Data Baru</h2>
                 </div>
                 <form onSubmit={handleAddEntry} className="space-y-4 lg:space-y-5">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-5">
                     <div className="space-y-1.5 lg:space-y-2">
-                      <label className="text-[9px] lg:text-[10px] font-bold text-zinc-400 uppercase tracking-wider ml-1">No. HP / WA</label>
-                      <input type="text" value={formData.phone} onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))} className="w-full px-4 py-3 lg:px-5 lg:py-3.5 bg-zinc-50 dark:bg-zinc-950 border-none rounded-xl lg:rounded-2xl text-xs lg:text-sm focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all dark:text-white" placeholder="0812..." />
+                      <label className={cn("text-[9px] lg:text-[10px] uppercase tracking-wider ml-1", neo ? "text-black font-black" : "font-bold text-zinc-400")}>No. HP / WA</label>
+                      <input type="text" value={formData.phone} onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))} className={tInput} placeholder="0812..." />
                     </div>
                     <div className="space-y-1.5 lg:space-y-2">
-                      <label className="text-[9px] lg:text-[10px] font-bold text-zinc-400 uppercase tracking-wider ml-1">Nama Penerima</label>
-                      <input type="text" value={formData.recipientName} onChange={(e) => setFormData(prev => ({ ...prev, recipientName: e.target.value }))} className="w-full px-4 py-3 lg:px-5 lg:py-3.5 bg-zinc-50 dark:bg-zinc-950 border-none rounded-xl lg:rounded-2xl text-xs lg:text-sm focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all dark:text-white" placeholder="Budi Santoso" />
+                      <label className={cn("text-[9px] lg:text-[10px] uppercase tracking-wider ml-1", neo ? "text-black font-black" : "font-bold text-zinc-400")}>Nama Penerima</label>
+                      <input type="text" value={formData.recipientName} onChange={(e) => setFormData(prev => ({ ...prev, recipientName: e.target.value }))} className={tInput} placeholder="Budi Santoso" />
                     </div>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-5">
                     <div className="space-y-1.5 lg:space-y-2">
-                      <label className="text-[9px] lg:text-[10px] font-bold text-zinc-400 uppercase tracking-wider ml-1">Resi / AWB</label>
-                      <input type="text" value={formData.receiptNumber} onChange={(e) => setFormData(prev => ({ ...prev, receiptNumber: e.target.value }))} className="w-full px-4 py-3 lg:px-5 lg:py-3.5 bg-zinc-50 dark:bg-zinc-950 border-none rounded-xl lg:rounded-2xl text-xs lg:text-sm focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all dark:text-white" placeholder="JX123..." />
+                      <label className={cn("text-[9px] lg:text-[10px] uppercase tracking-wider ml-1", neo ? "text-black font-black" : "font-bold text-zinc-400")}>Resi / AWB</label>
+                      <input type="text" value={formData.receiptNumber} onChange={(e) => setFormData(prev => ({ ...prev, receiptNumber: e.target.value }))} className={tInput} placeholder="JX123..." />
                     </div>
                     <div className="space-y-1.5 lg:space-y-2">
-                      <label className="text-[9px] lg:text-[10px] font-bold text-zinc-400 uppercase tracking-wider ml-1">Barang</label>
-                      <input type="text" value={formData.itemName} onChange={(e) => setFormData(prev => ({ ...prev, itemName: e.target.value }))} className="w-full px-4 py-3 lg:px-5 lg:py-3.5 bg-zinc-50 dark:bg-zinc-950 border-none rounded-xl lg:rounded-2xl text-xs lg:text-sm focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all dark:text-white" placeholder="Sepatu" />
+                      <label className={cn("text-[9px] lg:text-[10px] uppercase tracking-wider ml-1", neo ? "text-black font-black" : "font-bold text-zinc-400")}>Barang</label>
+                      <input type="text" value={formData.itemName} onChange={(e) => setFormData(prev => ({ ...prev, itemName: e.target.value }))} className={tInput} placeholder="Sepatu" />
                     </div>
                   </div>
                   <div className="space-y-1.5 lg:space-y-2">
-                    <label className="text-[9px] lg:text-[10px] font-bold text-zinc-400 uppercase tracking-wider ml-1">Alamat Tujuan</label>
-                    <input type="text" value={formData.address} onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))} className="w-full px-4 py-3 lg:px-5 lg:py-3.5 bg-zinc-50 dark:bg-zinc-950 border-none rounded-xl lg:rounded-2xl text-xs lg:text-sm focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all dark:text-white" placeholder="Jl. Sudirman No 1" />
+                    <label className={cn("text-[9px] lg:text-[10px] uppercase tracking-wider ml-1", neo ? "text-black font-black" : "font-bold text-zinc-400")}>Alamat Tujuan</label>
+                    <input type="text" value={formData.address} onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))} className={tInput} placeholder="Jl. Sudirman No 1" />
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 lg:gap-5 items-end pt-1 lg:pt-2">
                     <div className="space-y-1.5 lg:space-y-2">
-                      <label className="text-[9px] lg:text-[10px] font-bold text-amber-500 uppercase tracking-wider ml-1">Val COD</label>
-                      <input type="text" value={formData.cod} onChange={(e) => setFormData(prev => ({ ...prev, cod: e.target.value.replace(/[^0-9.,]/g, '') }))} className="w-full px-4 py-3 lg:px-5 lg:py-3.5 bg-amber-50/50 dark:bg-amber-500/10 border-none rounded-xl lg:rounded-2xl text-xs lg:text-sm focus:ring-2 focus:ring-amber-500/20 outline-none transition-all dark:text-white" placeholder="0" />
+                      <label className={cn("text-[9px] lg:text-[10px] uppercase tracking-wider ml-1", neo ? "text-black font-black" : "font-bold text-amber-500")}>Val COD</label>
+                      <input type="text" value={formData.cod} onChange={(e) => setFormData(prev => ({ ...prev, cod: e.target.value.replace(/[^0-9.,]/g, '') }))} className={neo ? tInput : "w-full px-4 py-3 lg:px-5 lg:py-3.5 bg-amber-50/50 dark:bg-amber-500/10 border-none rounded-xl lg:rounded-2xl text-xs lg:text-sm focus:ring-2 focus:ring-amber-500/20 outline-none transition-all dark:text-white"} placeholder="0" />
                     </div>
                     <div className="space-y-1.5 lg:space-y-2">
-                      <label className="text-[9px] lg:text-[10px] font-bold text-blue-500 uppercase tracking-wider ml-1">Val DFOD</label>
-                      <input type="text" value={formData.dfod} onChange={(e) => setFormData(prev => ({ ...prev, dfod: e.target.value.replace(/[^0-9.,]/g, '') }))} className="w-full px-4 py-3 lg:px-5 lg:py-3.5 bg-blue-50/50 dark:bg-blue-500/10 border-none rounded-xl lg:rounded-2xl text-xs lg:text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all dark:text-white" placeholder="0" />
+                      <label className={cn("text-[9px] lg:text-[10px] uppercase tracking-wider ml-1", neo ? "text-black font-black" : "font-bold text-blue-500")}>Val DFOD</label>
+                      <input type="text" value={formData.dfod} onChange={(e) => setFormData(prev => ({ ...prev, dfod: e.target.value.replace(/[^0-9.,]/g, '') }))} className={neo ? tInput : "w-full px-4 py-3 lg:px-5 lg:py-3.5 bg-blue-50/50 dark:bg-blue-500/10 border-none rounded-xl lg:rounded-2xl text-xs lg:text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all dark:text-white"} placeholder="0" />
                     </div>
-                    <button type="submit" className="w-full py-3.5 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-xl lg:rounded-2xl font-bold text-xs lg:text-sm hover:scale-[0.98] transition-transform flex items-center justify-center gap-2 shadow-md mt-2 sm:mt-0">
+                    <button type="submit" className={cn("flex items-center justify-center gap-2 mt-2 sm:mt-0", tBtnPrimary)}>
                       <Plus size={16} className="lg:w-[18px] lg:h-[18px]" /> Tambah
                     </button>
                   </div>
@@ -826,30 +861,30 @@ export default function App() {
               </div>
 
               {/* Templates Card */}
-              <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl lg:rounded-[2rem] p-5 sm:p-6 lg:p-8 shadow-sm flex flex-col">
+              <div className={cn("p-5 sm:p-6 lg:p-8 flex flex-col", tCard)}>
                 <div className="flex items-center justify-between mb-4 lg:mb-6">
                   <div className="flex items-center gap-2 lg:gap-3">
-                    <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-500 flex items-center justify-center"><MessageSquare className="w-4 h-4 lg:w-5 lg:h-5" /></div>
-                    <h2 className="font-bold text-xs lg:text-sm dark:text-white uppercase tracking-widest">Pesan Template</h2>
+                    <div className={cn("w-8 h-8 lg:w-10 lg:h-10 flex items-center justify-center shrink-0", neo ? "bg-[#00E5FF] border-4 border-black text-black" : "rounded-xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-500")}><MessageSquare className="w-4 h-4 lg:w-5 lg:h-5" /></div>
+                    <h2 className={cn("font-bold text-xs lg:text-sm uppercase tracking-widest", neo ? "text-black font-black" : "dark:text-white")}>Pesan Template</h2>
                   </div>
-                  <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 lg:p-1.5 rounded-lg lg:rounded-xl">
+                  <div className={cn("flex p-1 lg:p-1.5", neo ? "bg-white border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]" : "bg-zinc-100 dark:bg-zinc-800 rounded-lg lg:rounded-xl")}>
                     {[0,1,2].map(idx => (
-                      <button key={idx} onClick={() => setActiveVariationIndex(idx)} className={cn("px-3 py-1 lg:px-4 lg:py-1.5 text-[10px] lg:text-[11px] font-bold rounded-md lg:rounded-lg transition-all", activeVariationIndex === idx ? "bg-white dark:bg-zinc-600 text-zinc-900 dark:text-white shadow-sm" : "text-zinc-500")}>V{idx+1}</button>
+                      <button key={idx} onClick={() => setActiveVariationIndex(idx)} className={cn("px-3 py-1 lg:px-4 lg:py-1.5 text-[10px] lg:text-[11px] font-bold transition-all", activeVariationIndex === idx ? (neo ? "bg-black text-white" : "bg-white dark:bg-zinc-600 text-zinc-900 dark:text-white shadow-sm rounded-md lg:rounded-lg") : "text-zinc-500")}>V{idx+1}</button>
                     ))}
                   </div>
                 </div>
                 
                 <div className="flex gap-2 lg:gap-2.5 mb-3 lg:mb-4 overflow-x-auto custom-scrollbar pb-1 lg:pb-1.5">
                   {templates.map(t => (
-                    <button key={t.id} onClick={() => { setActiveTemplateId(t.id); setActiveVariationIndex(0); }} className={cn("px-4 py-1.5 lg:px-5 lg:py-2 rounded-full text-[10px] lg:text-[11px] font-bold transition-all whitespace-nowrap", activeTemplateId === t.id ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900" : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-700")}>{t.name}</button>
+                    <button key={t.id} onClick={() => { setActiveTemplateId(t.id); setActiveVariationIndex(0); }} className={cn("px-4 py-1.5 lg:px-5 lg:py-2 text-[10px] lg:text-[11px] font-bold transition-all whitespace-nowrap", activeTemplateId === t.id ? (neo ? "bg-[#FF4911] border-4 border-black text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]" : "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-full") : (neo ? "bg-white border-4 border-black text-black hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]" : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-full"))}>{t.name}</button>
                   ))}
                 </div>
 
-                <textarea value={currentTemplateText} onChange={(e) => updateActiveTemplateText(e.target.value)} className="w-full flex-1 min-h-[140px] lg:min-h-[160px] p-4 lg:p-5 text-xs lg:text-sm bg-zinc-50 dark:bg-zinc-950 border-none rounded-xl lg:rounded-2xl focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all resize-none dark:text-zinc-200 custom-scrollbar leading-relaxed" placeholder="Tulis template..." />
+                <textarea value={currentTemplateText} onChange={(e) => updateActiveTemplateText(e.target.value)} className={cn("w-full flex-1 min-h-[140px] lg:min-h-[160px] p-4 lg:p-5 text-xs lg:text-sm resize-none custom-scrollbar leading-relaxed", neo ? "bg-white border-4 border-black shadow-inner font-bold text-black outline-none focus:bg-[#FFC900] transition-colors" : "bg-zinc-50 dark:bg-zinc-950 border-none rounded-xl lg:rounded-2xl focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all dark:text-zinc-200")} placeholder="Tulis template..." />
                 
                 <div className="mt-3 lg:mt-4 flex flex-wrap gap-1.5 lg:gap-2">
                   {['{salam}', '{pengirim}', '{nama}', '{barang}', '{resi}', '{cod}', '{dfod}', '{if_cod}...{/if_cod}'].map(tag => (
-                    <button key={tag} onClick={() => updateActiveTemplateText(currentTemplateText + ' ' + (tag.includes('...') ? '{if_cod}{/if_cod}' : tag))} className="text-[9px] lg:text-[10px] font-mono font-bold px-2.5 py-1 lg:px-3 lg:py-1.5 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md lg:rounded-lg text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 active:scale-95 transition-all">{tag}</button>
+                    <button key={tag} onClick={() => updateActiveTemplateText(currentTemplateText + ' ' + (tag.includes('...') ? '{if_cod}{/if_cod}' : tag))} className={cn("text-[9px] lg:text-[10px] font-mono font-bold px-2.5 py-1 lg:px-3 lg:py-1.5 transition-all", neo ? "bg-white border-2 border-black text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-[#00E5FF] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px]" : "bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md lg:rounded-lg text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 active:scale-95")}>{tag}</button>
                   ))}
                 </div>
               </div>
@@ -857,84 +892,87 @@ export default function App() {
             </div>
 
             {/* Bottom Row: Responsive Queue Data List/Table */}
-            <div className="flex-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl lg:rounded-[2rem] shadow-sm flex flex-col overflow-hidden lg:min-h-[450px]">
+            <div className={cn("flex-1 flex flex-col overflow-hidden lg:min-h-[450px]", tCard)}>
               
               {/* Header Container */}
-              <div className="px-5 py-4 lg:px-8 lg:py-5 border-b border-zinc-100 dark:border-zinc-800/80 flex flex-col sm:flex-row sm:items-center justify-between bg-zinc-50/50 dark:bg-zinc-900/50 gap-4 sm:gap-0 shrink-0">
+              <div className={cn("px-5 py-4 lg:px-8 lg:py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-0 shrink-0", neo ? "bg-[#00E5FF] border-b-4 border-black" : "border-b border-zinc-100 dark:border-zinc-800/80 bg-zinc-50/50 dark:bg-zinc-900/50")}>
                 <div className="flex items-center justify-between sm:justify-start gap-4 w-full sm:w-auto">
-                  <h2 className="font-bold text-xs lg:text-sm dark:text-white uppercase tracking-widest">Queue Data</h2>
-                  <span className="px-2 py-0.5 lg:px-3 lg:py-1 bg-zinc-200 dark:bg-zinc-800 text-[10px] lg:text-[11px] font-bold text-zinc-600 dark:text-zinc-400 rounded-md lg:rounded-lg">{filteredEntries.length} items</span>
+                  <h2 className={cn("font-bold text-xs lg:text-sm uppercase tracking-widest", neo ? "text-black font-black" : "dark:text-white")}>Queue Data</h2>
+                  <span className={cn("px-2 py-0.5 lg:px-3 lg:py-1 text-[10px] lg:text-[11px] font-bold", neo ? "bg-white border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-black" : "bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 rounded-md lg:rounded-lg")}>{filteredEntries.length} items</span>
                 </div>
                 <div className="flex gap-2 lg:gap-3 justify-end w-full sm:w-auto">
-                  <button onClick={() => setShowPreviewModal(true)} disabled={entries.filter(e => e.status === 'pending').length === 0} className="flex-1 sm:flex-none px-3 py-2 lg:px-5 lg:py-2.5 text-[9px] lg:text-[11px] font-bold uppercase tracking-wider bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 rounded-lg lg:rounded-xl hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all disabled:opacity-50">Preview</button>
+                  <button onClick={() => setShowPreviewModal(true)} disabled={entries.filter(e => e.status === 'pending').length === 0} className={cn("flex-1 sm:flex-none px-3 py-2 lg:px-5 lg:py-2.5 text-[9px] lg:text-[11px] disabled:opacity-50", tBtnSecondary)}>Preview</button>
                   {isConfirmingClear ? (
                     <div className="flex flex-1 sm:flex-none items-center gap-1 lg:gap-2">
-                      <button onClick={clearAll} className="flex-1 sm:flex-none px-3 py-2 lg:px-4 lg:py-2.5 text-[9px] lg:text-[11px] font-bold uppercase bg-red-500 text-white rounded-lg lg:rounded-xl">Yes</button>
-                      <button onClick={() => setIsConfirmingClear(false)} className="flex-1 sm:flex-none px-3 py-2 lg:px-4 lg:py-2.5 text-[9px] lg:text-[11px] font-bold uppercase bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300 rounded-lg lg:rounded-xl">Cancel</button>
+                      <button onClick={clearAll} className={cn("flex-1 sm:flex-none px-3 py-2 lg:px-4 lg:py-2.5 text-[9px] lg:text-[11px] font-bold uppercase", neo ? "bg-[#FF4911] border-4 border-black text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all font-black" : "bg-red-500 text-white rounded-lg lg:rounded-xl")}>Yes</button>
+                      <button onClick={() => setIsConfirmingClear(false)} className={cn("flex-1 sm:flex-none px-3 py-2 lg:px-4 lg:py-2.5 text-[9px] lg:text-[11px]", tBtnSecondary)}>Cancel</button>
                     </div>
                   ) : (
-                    <button onClick={() => setIsConfirmingClear(true)} className="flex-1 sm:flex-none px-3 py-2 lg:px-4 lg:py-2.5 text-[9px] lg:text-[11px] font-bold uppercase bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 rounded-lg lg:rounded-xl hover:bg-red-100 transition-all">Clear All</button>
+                    <button onClick={() => setIsConfirmingClear(true)} className={cn("flex-1 sm:flex-none px-3 py-2 lg:px-4 lg:py-2.5 text-[9px] lg:text-[11px] font-bold uppercase", neo ? "bg-[#FF4911] border-4 border-black text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all font-black" : "bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 rounded-lg lg:rounded-xl hover:bg-red-100 transition-all")}>Clear All</button>
                   )}
                 </div>
               </div>
 
               {/* Grid Headers (Desktop Only) */}
-              <div className="hidden lg:grid grid-cols-12 gap-6 px-8 py-4 border-b border-zinc-100 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 z-10 shrink-0">
-                <div className="col-span-3 text-[11px] font-black text-zinc-400 uppercase tracking-widest">Penerima</div>
-                <div className="col-span-4 text-[11px] font-black text-zinc-400 uppercase tracking-widest">Detail Paket</div>
-                <div className="col-span-3 text-[11px] font-black text-zinc-400 uppercase tracking-widest">Status</div>
-                <div className="col-span-2 text-[11px] font-black text-zinc-400 uppercase tracking-widest text-right">Aksi</div>
+              <div className={cn("hidden lg:grid grid-cols-12 gap-6 px-8 py-4 z-10 shrink-0", neo ? "bg-white border-b-4 border-black" : "border-b border-zinc-100 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95")}>
+                <div className={cn("col-span-3 text-[11px] uppercase tracking-widest", neo ? "font-black text-black" : "font-black text-zinc-400")}>Penerima</div>
+                <div className={cn("col-span-4 text-[11px] uppercase tracking-widest", neo ? "font-black text-black" : "font-black text-zinc-400")}>Detail Paket</div>
+                <div className={cn("col-span-3 text-[11px] uppercase tracking-widest", neo ? "font-black text-black" : "font-black text-zinc-400")}>Status</div>
+                <div className={cn("col-span-2 text-[11px] uppercase tracking-widest text-right", neo ? "font-black text-black" : "font-black text-zinc-400")}>Aksi</div>
               </div>
 
               {/* Data List / Cards */}
-              <div className="flex-1 overflow-y-auto custom-scrollbar p-4 lg:p-0 bg-zinc-50/30 dark:bg-zinc-950/30 lg:bg-transparent">
-                <div className="flex flex-col gap-4 lg:gap-0 lg:divide-y lg:divide-zinc-50 lg:dark:divide-zinc-800/50">
+              <div className={cn("flex-1 overflow-y-auto custom-scrollbar p-4 lg:p-0", neo ? "bg-[#F4F4F0] lg:bg-white" : "bg-zinc-50/30 dark:bg-zinc-950/30 lg:bg-transparent")}>
+                <div className={cn("flex flex-col gap-4 lg:gap-0", !neo && "lg:divide-y lg:divide-zinc-50 lg:dark:divide-zinc-800/50")}>
                   <AnimatePresence mode="popLayout">
                     {filteredEntries.length === 0 ? (
                       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center px-5 py-16 lg:py-24">
-                        <div className="text-zinc-400 dark:text-zinc-600 text-xs lg:text-sm font-medium">Antrean kosong.</div>
+                        <div className={cn("text-xs lg:text-sm", neo ? "font-black text-black uppercase" : "text-zinc-400 dark:text-zinc-600 font-medium")}>Antrean kosong.</div>
                       </motion.div>
                     ) : (
                       filteredEntries.map((entry, index) => (
                         <motion.div key={entry.id} layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }} 
                           className={cn(
-                            "flex flex-col lg:grid lg:grid-cols-12 gap-3 lg:gap-6 p-5 lg:px-8 lg:py-5 bg-white dark:bg-zinc-900 lg:bg-transparent rounded-2xl lg:rounded-none border border-zinc-200 dark:border-zinc-800 lg:border-transparent shadow-sm lg:shadow-none hover:bg-zinc-50 dark:hover:bg-zinc-800/30 transition-colors relative group",
-                            isBlasting && index === currentIndex && "ring-2 ring-emerald-500 lg:ring-0 lg:bg-emerald-50/50 lg:dark:bg-emerald-500/5"
+                            "flex flex-col lg:grid lg:grid-cols-12 gap-3 lg:gap-6 p-5 lg:px-8 lg:py-5 relative group transition-colors",
+                            neo ? "bg-white border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] lg:shadow-none lg:border-0 lg:border-b-4" : "bg-white dark:bg-zinc-900 lg:bg-transparent rounded-2xl lg:rounded-none border border-zinc-200 dark:border-zinc-800 lg:border-transparent shadow-sm lg:shadow-none hover:bg-zinc-50 dark:hover:bg-zinc-800/30",
+                            isBlasting && index === currentIndex && (neo ? "bg-[#FFC900] lg:bg-[#FFC900]" : "ring-2 ring-emerald-500 lg:ring-0 lg:bg-emerald-50/50 lg:dark:bg-emerald-500/5")
                           )}
                         >
                           {/* Kolom 1: Penerima */}
-                          <div className="col-span-3 pr-16 lg:pr-0">
-                            <div className="font-bold text-sm lg:text-sm text-zinc-900 dark:text-zinc-100">{entry.recipientName}</div>
-                            <div className="text-[11px] text-zinc-500 font-mono mt-1">{entry.phone}</div>
+                          <div className="col-span-3 pr-20 lg:pr-0">
+                            <div className={cn("text-sm lg:text-sm", neo ? "font-black text-black" : "font-bold text-zinc-900 dark:text-zinc-100")}>{entry.recipientName}</div>
+                            <div className={cn("text-[11px] font-mono mt-1", neo ? "font-bold text-black" : "text-zinc-500")}>{entry.phone}</div>
                           </div>
 
                           {/* Kolom 2: Detail Paket */}
                           <div className="col-span-4">
-                            <div className="text-xs lg:text-sm font-semibold text-zinc-700 dark:text-zinc-300 line-clamp-2 lg:line-clamp-1 lg:max-w-[280px]">{entry.itemName || '-'}</div>
+                            <div className={cn("text-xs lg:text-sm line-clamp-2 lg:line-clamp-1 lg:max-w-[280px]", neo ? "font-black text-black" : "font-semibold text-zinc-700 dark:text-zinc-300")}>{entry.itemName || '-'}</div>
                             <div className="flex flex-col gap-1.5 mt-1.5">
-                              <div className="text-[10px] lg:text-[11px] text-zinc-400 font-mono">Resi: {entry.receiptNumber || '-'}</div>
+                              <div className={cn("text-[10px] lg:text-[11px] font-mono", neo ? "font-bold text-black" : "text-zinc-400")}>Resi: {entry.receiptNumber || '-'}</div>
                               <div className="flex flex-wrap gap-2">
-                                {entry.cod && <div className="text-[9px] lg:text-[10px] bg-amber-100/50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 px-2 py-0.5 lg:px-2.5 rounded-md font-bold uppercase tracking-wider">COD: Rp {formatCurrency(entry.cod)}</div>}
-                                {entry.dfod && <div className="text-[9px] lg:text-[10px] bg-blue-100/50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 px-2 py-0.5 lg:px-2.5 rounded-md font-bold uppercase tracking-wider">DFOD: Rp {formatCurrency(entry.dfod)}</div>}
+                                {entry.cod && <div className={cn("text-[9px] lg:text-[10px] px-2 py-0.5 lg:px-2.5", neo ? "border-2 border-black bg-[#FFC900] text-black font-black uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]" : "bg-amber-100/50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-md font-bold uppercase tracking-wider")}>COD: Rp {formatCurrency(entry.cod)}</div>}
+                                {entry.dfod && <div className={cn("text-[9px] lg:text-[10px] px-2 py-0.5 lg:px-2.5", neo ? "border-2 border-black bg-[#00E5FF] text-black font-black uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]" : "bg-blue-100/50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-md font-bold uppercase tracking-wider")}>DFOD: Rp {formatCurrency(entry.dfod)}</div>}
                               </div>
                             </div>
                           </div>
 
                           {/* Kolom 3: Status */}
-                          <div className="col-span-3 flex flex-row lg:flex-col items-center lg:items-start justify-between lg:justify-center gap-3 pt-3 mt-1 border-t border-zinc-100 dark:border-zinc-800 lg:border-none lg:pt-0 lg:mt-0">
-                            <div className={cn("inline-flex items-center gap-1.5 lg:gap-2 px-2.5 py-1 lg:px-3 lg:py-1.5 rounded-lg text-[9px] lg:text-[10px] font-black uppercase tracking-widest", entry.status === 'sent' ? "bg-emerald-100/50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : entry.status === 'sending' ? "bg-blue-100/50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 animate-pulse" : entry.status === 'failed' ? "bg-red-100/50 dark:bg-red-500/10 text-red-600 dark:text-red-400" : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400")}>
+                          <div className={cn("col-span-3 flex flex-row lg:flex-col items-center lg:items-start justify-between lg:justify-center gap-3 pt-3 mt-1 lg:pt-0 lg:mt-0", neo ? "border-t-4 border-black lg:border-none" : "border-t border-zinc-100 dark:border-zinc-800 lg:border-none")}>
+                            <div className={cn("inline-flex items-center gap-1.5 lg:gap-2 px-2.5 py-1 lg:px-3 lg:py-1.5 text-[9px] lg:text-[10px]", neo ? "border-2 border-black font-black uppercase text-black bg-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]" : (entry.status === 'sent' ? "bg-emerald-100/50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-lg font-black uppercase tracking-widest" : entry.status === 'sending' ? "bg-blue-100/50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 animate-pulse rounded-lg font-black uppercase tracking-widest" : entry.status === 'failed' ? "bg-red-100/50 dark:bg-red-500/10 text-red-600 dark:text-red-400 rounded-lg font-black uppercase tracking-widest" : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 rounded-lg font-black uppercase tracking-widest"))}>
                               {entry.status === 'sent' ? <CheckCircle2 size={12} className="lg:w-3.5 lg:h-3.5" /> : entry.status === 'sending' ? <Loader2 size={12} className="lg:w-3.5 lg:h-3.5 animate-spin" /> : entry.status === 'failed' ? <AlertCircle size={12} className="lg:w-3.5 lg:h-3.5" /> : <Clock size={12} className="lg:w-3.5 lg:h-3.5" />} {entry.status}
                             </div>
-                            <button onClick={() => toggleReceived(entry.id)} className={cn("text-[10px] font-bold uppercase tracking-wider flex items-center gap-2 transition-colors", entry.isReceived ? "text-emerald-500" : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300")}>
-                              <div className={cn("w-4 h-4 lg:w-3.5 lg:h-3.5 rounded-full border-2 flex items-center justify-center", entry.isReceived ? "border-emerald-500 bg-emerald-500" : "border-zinc-300 dark:border-zinc-600")}>{entry.isReceived && <CheckCircle2 size={10} className="text-white lg:w-[10px] lg:h-[10px]" strokeWidth={3} />}</div>
+                            <button onClick={() => toggleReceived(entry.id)} className={cn("flex items-center gap-2 transition-colors", neo ? "border-2 border-black bg-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] px-2 py-1 text-[9px] lg:text-[10px] font-black uppercase text-black" : (entry.isReceived ? "text-emerald-500 text-[10px] font-bold uppercase tracking-wider" : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 text-[10px] font-bold uppercase tracking-wider"))}>
+                              <div className={cn("flex items-center justify-center", neo ? "w-3 h-3 lg:w-3.5 lg:h-3.5 border-2 border-black bg-white" : (entry.isReceived ? "w-4 h-4 lg:w-3.5 lg:h-3.5 rounded-full border-2 border-emerald-500 bg-emerald-500" : "w-4 h-4 lg:w-3.5 lg:h-3.5 rounded-full border-2 border-zinc-300 dark:border-zinc-600"))}>
+                                {entry.isReceived && <CheckCircle2 size={10} className={neo ? "text-black" : "text-white lg:w-[10px] lg:h-[10px]"} strokeWidth={neo ? 4 : 3} />}
+                              </div>
                               Diterima
                             </button>
                           </div>
 
                           {/* Kolom 4: Aksi */}
                           <div className="col-span-2 flex items-center justify-end gap-1.5 lg:gap-2 absolute top-4 right-4 lg:relative lg:top-auto lg:right-auto opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button onClick={() => handleSendManual(entry)} className="p-2 lg:p-2.5 bg-zinc-100 dark:bg-zinc-800 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/20 rounded-xl lg:rounded-xl transition-all active:scale-95"><ExternalLink size={16} className="lg:w-4 lg:h-4" /></button>
-                            <button onClick={() => setEntries(prev => prev.filter(e => e.id !== entry.id))} className="p-2 lg:p-2.5 bg-zinc-100 dark:bg-zinc-800 text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl lg:rounded-xl transition-all active:scale-95"><Trash2 size={16} className="lg:w-4 lg:h-4" /></button>
+                            <button onClick={() => handleSendManual(entry)} className={cn("p-2 lg:p-2.5", tBtnIcon)}><ExternalLink size={16} className="lg:w-4 lg:h-4" /></button>
+                            <button onClick={() => setEntries(prev => prev.filter(e => e.id !== entry.id))} className={cn("p-2 lg:p-2.5", neo ? tBtnIcon : "bg-zinc-100 dark:bg-zinc-800 text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl lg:rounded-xl transition-all active:scale-95")}><Trash2 size={16} className="lg:w-4 lg:h-4" /></button>
                           </div>
                         </motion.div>
                       ))
@@ -953,15 +991,15 @@ export default function App() {
         {showBulkModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-8">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowBulkModal(false)} className="absolute inset-0 bg-zinc-950/60 backdrop-blur-sm" />
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="relative w-full max-w-2xl bg-white dark:bg-zinc-900 rounded-3xl lg:rounded-[2rem] shadow-2xl overflow-hidden border border-zinc-200 dark:border-zinc-800 flex flex-col">
-              <div className="p-6 lg:p-8 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
-                <div><h2 className="text-lg lg:text-xl font-black dark:text-white">Bulk Import</h2><p className="text-[10px] lg:text-[11px] text-zinc-500 uppercase tracking-widest font-bold mt-1">Copy-paste dari Excel</p></div>
-                <button onClick={() => setShowBulkModal(false)} className="p-2 lg:p-3 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full"><X size={20} className="text-zinc-500 lg:w-6 lg:h-6" /></button>
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className={cn("relative w-full max-w-2xl flex flex-col", neo ? "bg-[#FF90E8] border-4 border-black shadow-[16px_16px_0px_0px_rgba(0,0,0,1)]" : "bg-white dark:bg-zinc-900 rounded-3xl lg:rounded-[2rem] shadow-2xl overflow-hidden border border-zinc-200 dark:border-zinc-800")}>
+              <div className={cn("p-6 lg:p-8 flex items-center justify-between", neo ? "border-b-4 border-black bg-white" : "border-b border-zinc-100 dark:border-zinc-800")}>
+                <div><h2 className={cn("text-lg lg:text-xl", neo ? "font-black text-black uppercase" : "font-black dark:text-white")}>Bulk Import</h2><p className={cn("text-[10px] lg:text-[11px] uppercase tracking-widest font-bold mt-1", neo ? "text-black" : "text-zinc-500")}>Copy-paste dari Excel</p></div>
+                <button onClick={() => setShowBulkModal(false)} className={cn("p-2 lg:p-3", neo ? "border-4 border-black bg-white hover:bg-gray-200 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]" : "hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full")}><X size={20} className={neo ? "text-black" : "text-zinc-500 lg:w-6 lg:h-6"} /></button>
               </div>
-              <div className="p-6 lg:p-8 space-y-4 lg:space-y-5">
-                <div className="text-[10px] lg:text-xs font-mono bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 p-3 lg:p-4 rounded-xl border border-emerald-100 dark:border-emerald-500/20 leading-relaxed">Format Kolom: No | Resi | Nama | HP | Alamat | Tanda | Val COD | Val DFOD | Barang</div>
-                <textarea value={bulkData} onChange={(e) => setBulkData(e.target.value)} placeholder="Paste data Excel di sini..." className="w-full h-48 lg:h-64 p-4 lg:p-5 text-xs lg:text-sm font-mono bg-zinc-50 dark:bg-zinc-950 border-none rounded-xl lg:rounded-2xl focus:ring-2 focus:ring-emerald-500/20 outline-none resize-none dark:text-zinc-300 custom-scrollbar leading-relaxed" />
-                <button onClick={handleBulkImport} className="w-full py-3.5 lg:py-4 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-xl font-bold active:scale-[0.98] transition-all text-xs lg:text-sm">Import Data</button>
+              <div className={cn("p-6 lg:p-8 space-y-4 lg:space-y-5", neo ? "bg-white" : "")}>
+                <div className={cn("text-[10px] lg:text-xs font-mono leading-relaxed", neo ? "bg-[#00E5FF] border-4 border-black p-3 lg:p-4 text-black font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]" : "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 p-3 lg:p-4 rounded-xl border border-emerald-100 dark:border-emerald-500/20")}>Format Kolom: No | Resi | Nama | HP | Alamat | Tanda | Val COD | Val DFOD | Barang</div>
+                <textarea value={bulkData} onChange={(e) => setBulkData(e.target.value)} placeholder="Paste data Excel di sini..." className={cn("w-full h-48 lg:h-64 p-4 lg:p-5 text-xs lg:text-sm font-mono resize-none custom-scrollbar leading-relaxed", neo ? "bg-white border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] outline-none text-black focus:bg-[#FFC900]" : "bg-zinc-50 dark:bg-zinc-950 border-none rounded-xl lg:rounded-2xl focus:ring-2 focus:ring-emerald-500/20 outline-none dark:text-zinc-300")} />
+                <button onClick={handleBulkImport} className={tBtnPrimary}>Import Data</button>
               </div>
             </motion.div>
           </div>
@@ -972,23 +1010,23 @@ export default function App() {
         {showPreviewModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-8">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowPreviewModal(false)} className="absolute inset-0 bg-zinc-950/60 backdrop-blur-sm" />
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="relative w-full max-w-md bg-white dark:bg-zinc-900 rounded-3xl lg:rounded-[2rem] shadow-2xl overflow-hidden border border-zinc-200 dark:border-zinc-800">
-              <div className="p-6 lg:p-8 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
-                <div><h2 className="text-lg lg:text-xl font-black dark:text-white">Preview</h2><p className="text-[10px] lg:text-[11px] text-zinc-500 uppercase tracking-widest font-bold mt-1">First Item</p></div>
-                <button onClick={() => setShowPreviewModal(false)} className="p-2 lg:p-3 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full"><X size={20} className="text-zinc-500 lg:w-6 lg:h-6" /></button>
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className={cn("relative w-full max-w-md", neo ? "bg-[#00E5FF] border-4 border-black shadow-[16px_16px_0px_0px_rgba(0,0,0,1)]" : "bg-white dark:bg-zinc-900 rounded-3xl lg:rounded-[2rem] shadow-2xl overflow-hidden border border-zinc-200 dark:border-zinc-800")}>
+              <div className={cn("p-6 lg:p-8 flex items-center justify-between", neo ? "border-b-4 border-black bg-white" : "border-b border-zinc-100 dark:border-zinc-800")}>
+                <div><h2 className={cn("text-lg lg:text-xl", neo ? "font-black text-black uppercase" : "font-black dark:text-white")}>Preview</h2><p className={cn("text-[10px] lg:text-[11px] uppercase tracking-widest font-bold mt-1", neo ? "text-black" : "text-zinc-500")}>First Item</p></div>
+                <button onClick={() => setShowPreviewModal(false)} className={cn("p-2 lg:p-3", neo ? "border-4 border-black bg-white hover:bg-gray-200 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]" : "hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full")}><X size={20} className={neo ? "text-black" : "text-zinc-500 lg:w-6 lg:h-6"} /></button>
               </div>
-              <div className="p-6 lg:p-8">
+              <div className={cn("p-6 lg:p-8", neo ? "bg-white" : "")}>
                 {entries.find(e => e.status === 'pending') ? (
                   <div className="space-y-4 lg:space-y-5">
-                    <div className="p-4 lg:p-5 bg-zinc-50 dark:bg-zinc-950 rounded-xl lg:rounded-2xl text-xs lg:text-sm whitespace-pre-wrap dark:text-zinc-300 border border-zinc-100 dark:border-zinc-800 max-h-[40vh] overflow-y-auto custom-scrollbar leading-relaxed">
+                    <div className={cn("p-4 lg:p-5 text-xs lg:text-sm whitespace-pre-wrap max-h-[40vh] overflow-y-auto custom-scrollbar leading-relaxed", neo ? "bg-white border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] text-black font-bold font-mono" : "bg-zinc-50 dark:bg-zinc-950 rounded-xl lg:rounded-2xl dark:text-zinc-300 border border-zinc-100 dark:border-zinc-800")}>
                       {generateMessage(entries.find(e => e.status === 'pending')!, settings.rotateTemplates ? (activeTemplate.variations?.[entries.filter(e => e.status === 'sent').length % (activeTemplate.variations?.length || 1)] || activeTemplate.text) : activeTemplate.text)}
                     </div>
                     <button onClick={() => {
                       const entry = entries.find(e => e.status === 'pending');
                       if (entry) { openInSameTab(getWALink(entry, entries.filter(e => e.status === 'sent').length)); updateStatus(entry.id, 'sent'); setShowPreviewModal(false); }
-                    }} className="w-full py-3.5 lg:py-4 bg-emerald-500 text-white rounded-xl font-bold flex items-center justify-center gap-2 active:scale-[0.98] transition-all text-xs lg:text-sm"><Send size={16} className="lg:w-[18px] lg:h-[18px]" /> Send Now</button>
+                    }} className={cn("flex items-center justify-center gap-2", tBtnPrimary)}><Send size={16} className="lg:w-[18px] lg:h-[18px]" /> Send Now</button>
                   </div>
-                ) : <div className="text-center py-8 lg:py-10 text-zinc-500 text-xs lg:text-sm">No pending entries.</div>}
+                ) : <div className={cn("text-center py-8 lg:py-10 text-xs lg:text-sm", neo ? "text-black font-black uppercase" : "text-zinc-500")}>No pending entries.</div>}
               </div>
             </motion.div>
           </div>
@@ -999,25 +1037,25 @@ export default function App() {
         {showSettingsModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-8">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowSettingsModal(false)} className="absolute inset-0 bg-zinc-950/60 backdrop-blur-sm" />
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="relative w-full max-w-lg bg-white dark:bg-zinc-900 rounded-3xl lg:rounded-[2.5rem] shadow-2xl overflow-hidden border border-zinc-200 dark:border-zinc-800 flex flex-col max-h-[90vh]">
-              <div className="p-6 lg:p-8 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between shrink-0">
-                <div><h2 className="text-lg lg:text-xl font-black dark:text-white">Settings</h2><p className="text-[10px] lg:text-[11px] text-zinc-500 uppercase tracking-widest font-bold mt-1">Engine Config</p></div>
-                <button onClick={() => setShowSettingsModal(false)} className="p-2 lg:p-3 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full"><X size={20} className="text-zinc-500 lg:w-6 lg:h-6" /></button>
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className={cn("relative w-full max-w-lg flex flex-col max-h-[90vh]", neo ? "bg-[#FFC900] border-4 border-black shadow-[16px_16px_0px_0px_rgba(0,0,0,1)]" : "bg-white dark:bg-zinc-900 rounded-3xl lg:rounded-[2.5rem] shadow-2xl overflow-hidden border border-zinc-200 dark:border-zinc-800")}>
+              <div className={cn("p-6 lg:p-8 flex items-center justify-between shrink-0", neo ? "border-b-4 border-black bg-white" : "border-b border-zinc-100 dark:border-zinc-800")}>
+                <div><h2 className={cn("text-lg lg:text-xl", neo ? "font-black text-black uppercase" : "font-black dark:text-white")}>Settings</h2><p className={cn("text-[10px] lg:text-[11px] uppercase tracking-widest font-bold mt-1", neo ? "text-black" : "text-zinc-500")}>Engine Config</p></div>
+                <button onClick={() => setShowSettingsModal(false)} className={cn("p-2 lg:p-3", neo ? "border-4 border-black bg-white hover:bg-gray-200 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]" : "hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full")}><X size={20} className={neo ? "text-black" : "text-zinc-500 lg:w-6 lg:h-6"} /></button>
               </div>
-              <div className="flex px-6 lg:px-8 pt-4 lg:pt-5 gap-6 lg:gap-8 border-b border-zinc-100 dark:border-zinc-800 shrink-0">
-                <button onClick={() => setActiveSettingsTab('general')} className={cn("pb-3 lg:pb-4 text-[11px] lg:text-[12px] font-black uppercase tracking-widest transition-all relative", activeSettingsTab === 'general' ? "text-emerald-500" : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300")}>
-                  General {activeSettingsTab === 'general' && <motion.div layoutId="tab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-500 rounded-t-full" />}
+              <div className={cn("flex px-6 lg:px-8 pt-4 lg:pt-5 gap-6 lg:gap-8 shrink-0", neo ? "border-b-4 border-black bg-white" : "border-b border-zinc-100 dark:border-zinc-800")}>
+                <button onClick={() => setActiveSettingsTab('general')} className={cn("pb-3 lg:pb-4 text-[11px] lg:text-[12px] uppercase tracking-widest transition-all relative", neo ? (activeSettingsTab === 'general' ? "font-black text-black" : "font-bold text-gray-500") : (activeSettingsTab === 'general' ? "font-black text-emerald-500" : "font-black text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"))}>
+                  General {activeSettingsTab === 'general' && <motion.div layoutId="tab" className={cn("absolute bottom-0 left-0 right-0 h-1", neo ? "bg-black" : "bg-emerald-500 rounded-t-full")} />}
                 </button>
-                <button onClick={() => setActiveSettingsTab('antispam')} className={cn("pb-3 lg:pb-4 text-[11px] lg:text-[12px] font-black uppercase tracking-widest transition-all relative", activeSettingsTab === 'antispam' ? "text-emerald-500" : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300")}>
-                  Anti-Spam {activeSettingsTab === 'antispam' && <motion.div layoutId="tab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-500 rounded-t-full" />}
+                <button onClick={() => setActiveSettingsTab('antispam')} className={cn("pb-3 lg:pb-4 text-[11px] lg:text-[12px] uppercase tracking-widest transition-all relative", neo ? (activeSettingsTab === 'antispam' ? "font-black text-black" : "font-bold text-gray-500") : (activeSettingsTab === 'antispam' ? "font-black text-emerald-500" : "font-black text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"))}>
+                  Anti-Spam {activeSettingsTab === 'antispam' && <motion.div layoutId="tab" className={cn("absolute bottom-0 left-0 right-0 h-1", neo ? "bg-black" : "bg-emerald-500 rounded-t-full")} />}
                 </button>
               </div>
-              <div className="p-6 lg:p-8 overflow-y-auto custom-scrollbar flex-1 space-y-5 lg:space-y-6">
+              <div className={cn("p-6 lg:p-8 overflow-y-auto custom-scrollbar flex-1 space-y-5 lg:space-y-6", neo ? "bg-[#F4F4F0]" : "")}>
                 {activeSettingsTab === 'antispam' ? (
                   <>
-                    <div className="p-5 lg:p-6 bg-zinc-50 dark:bg-zinc-950 rounded-2xl lg:rounded-[1.5rem] border border-zinc-100 dark:border-zinc-800">
-                      <div className="flex items-center justify-between mb-2 lg:mb-3"><span className="text-[11px] lg:text-xs font-bold text-zinc-500 uppercase">Safety Score</span><span className={cn("font-black text-base lg:text-lg", safetyScore > 80 ? "text-emerald-500" : safetyScore > 50 ? "text-amber-500" : "text-red-500")}>{safetyScore}%</span></div>
-                      <div className="h-1.5 lg:h-2 w-full bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden mb-1.5 lg:mb-2"><motion.div initial={{ width: 0 }} animate={{ width: `${safetyScore}%` }} className={cn("h-full", safetyScore > 80 ? "bg-emerald-500" : safetyScore > 50 ? "bg-amber-500" : "bg-red-500")} /></div>
+                    <div className={cn("p-5 lg:p-6", neo ? "bg-white border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]" : "bg-zinc-50 dark:bg-zinc-950 rounded-2xl lg:rounded-[1.5rem] border border-zinc-100 dark:border-zinc-800")}>
+                      <div className="flex items-center justify-between mb-2 lg:mb-3"><span className={cn("text-[11px] lg:text-xs uppercase", neo ? "font-black text-black" : "font-bold text-zinc-500")}>Safety Score</span><span className={cn("font-black text-base lg:text-lg", neo ? "text-black" : (safetyScore > 80 ? "text-emerald-500" : safetyScore > 50 ? "text-amber-500" : "text-red-500"))}>{safetyScore}%</span></div>
+                      <div className={cn("w-full overflow-hidden mb-1.5 lg:mb-2", neo ? "h-4 border-4 border-black bg-white" : "h-1.5 lg:h-2 bg-zinc-200 dark:bg-zinc-800 rounded-full")}><motion.div initial={{ width: 0 }} animate={{ width: `${safetyScore}%` }} className={cn("h-full", neo ? (safetyScore > 80 ? "bg-[#00E5FF]" : safetyScore > 50 ? "bg-[#FFC900]" : "bg-[#FF4911]") : (safetyScore > 80 ? "bg-emerald-500" : safetyScore > 50 ? "bg-amber-500" : "bg-red-500"))} /></div>
                     </div>
                     {[
                       { key: 'shuffleQueue', label: 'Shuffle Queue', desc: 'Acak daftar agar tidak linier.' },
@@ -1032,39 +1070,39 @@ export default function App() {
                       { key: 'useGlobalSpintax', label: 'Spintax Engine', desc: 'Aktifkan format {A|B}.' }
                     ].map(item => (
                       <div key={item.key} className="flex items-center justify-between">
-                        <div className="pr-4"><div className="text-xs lg:text-sm font-bold dark:text-white mb-0.5">{item.label}</div><div className="text-[10px] lg:text-[11px] text-zinc-500">{item.desc}</div></div>
-                        <button onClick={() => setSettings(prev => ({ ...prev, [item.key]: !prev[item.key as keyof AppSettings] }))} className={cn("w-10 h-6 lg:w-12 lg:h-7 rounded-full transition-all relative shrink-0", settings[item.key as keyof AppSettings] ? "bg-emerald-500" : "bg-zinc-200 dark:bg-zinc-700")}><div className={cn("absolute top-1 w-4 h-4 lg:w-5 lg:h-5 bg-white rounded-full transition-all", settings[item.key as keyof AppSettings] ? "left-5 lg:left-6" : "left-1")} /></button>
+                        <div className="pr-4"><div className={cn("text-xs lg:text-sm mb-0.5", neo ? "font-black text-black uppercase" : "font-bold dark:text-white")}>{item.label}</div><div className={cn("text-[10px] lg:text-[11px]", neo ? "font-bold text-gray-700" : "text-zinc-500")}>{item.desc}</div></div>
+                        <button onClick={() => setSettings(prev => ({ ...prev, [item.key]: !prev[item.key as keyof AppSettings] }))} className={cn("transition-all relative shrink-0", neo ? (settings[item.key as keyof AppSettings] ? "w-14 h-8 bg-[#00E5FF] border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]" : "w-14 h-8 bg-white border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]") : (settings[item.key as keyof AppSettings] ? "w-10 h-6 lg:w-12 lg:h-7 rounded-full bg-emerald-500" : "w-10 h-6 lg:w-12 lg:h-7 rounded-full bg-zinc-200 dark:bg-zinc-700"))}><div className={cn("absolute transition-all", neo ? "w-4 h-4 bg-black top-[4px]" : "w-4 h-4 lg:w-5 lg:h-5 bg-white rounded-full top-1", settings[item.key as keyof AppSettings] ? (neo ? "left-7" : "left-5 lg:left-6") : (neo ? "left-1.5" : "left-1"))} /></button>
                       </div>
                     ))}
                   </>
                 ) : (
                   <>
-                    <div className="space-y-2 lg:space-y-3"><label className="text-[10px] lg:text-[11px] font-bold text-zinc-500 uppercase tracking-widest ml-1">Speed Preset</label><div className="grid grid-cols-2 lg:grid-cols-3 gap-2 lg:gap-3">{[{id:'safe', label:'Safe'},{id:'normal', label:'Normal'},{id:'fast', label:'Fast'},{id:'turbo', label:'Turbo'},{id:'custom', label:'Custom'}].map(m => <button key={m.id} onClick={() => setSettings(prev => ({ ...prev, speedMode: m.id as any }))} className={cn("py-2.5 lg:py-3.5 rounded-xl lg:rounded-2xl text-[11px] lg:text-xs font-bold transition-all border", settings.speedMode === m.id ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 border-transparent" : "bg-transparent border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800")}>{m.label}</button>)}</div></div>
-                    {settings.speedMode === 'custom' && <div className="space-y-1.5 lg:space-y-2"><label className="text-[10px] lg:text-[11px] font-bold text-zinc-500 uppercase tracking-widest ml-1">Custom Delay (ms)</label><input type="number" value={settings.delay} onChange={(e) => setSettings(prev => ({ ...prev, delay: parseInt(e.target.value) || 1000 }))} className="w-full px-4 py-3 lg:px-5 lg:py-4 bg-zinc-50 dark:bg-zinc-950 border-none rounded-xl lg:rounded-2xl text-xs lg:text-sm focus:ring-2 focus:ring-emerald-500/20 outline-none dark:text-white" step="500" /></div>}
+                    <div className="space-y-2 lg:space-y-3"><label className={cn("text-[10px] lg:text-[11px] uppercase tracking-widest ml-1", neo ? "font-black text-black" : "font-bold text-zinc-500")}>Speed Preset</label><div className="grid grid-cols-2 lg:grid-cols-3 gap-2 lg:gap-3">{[{id:'safe', label:'Safe'},{id:'normal', label:'Normal'},{id:'fast', label:'Fast'},{id:'turbo', label:'Turbo'},{id:'custom', label:'Custom'}].map(m => <button key={m.id} onClick={() => setSettings(prev => ({ ...prev, speedMode: m.id as any }))} className={cn("py-2.5 lg:py-3.5 text-[11px] lg:text-xs transition-all", neo ? (settings.speedMode === m.id ? "bg-black text-white font-black uppercase border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]" : "bg-white text-black font-bold uppercase border-4 border-black hover:bg-[#FFC900]") : (settings.speedMode === m.id ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 border border-transparent font-bold rounded-xl lg:rounded-2xl" : "bg-transparent border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 font-bold rounded-xl lg:rounded-2xl"))}>{m.label}</button>)}</div></div>
+                    {settings.speedMode === 'custom' && <div className="space-y-1.5 lg:space-y-2"><label className={cn("text-[10px] lg:text-[11px] uppercase tracking-widest ml-1", neo ? "font-black text-black" : "font-bold text-zinc-500")}>Custom Delay (ms)</label><input type="number" value={settings.delay} onChange={(e) => setSettings(prev => ({ ...prev, delay: parseInt(e.target.value) || 1000 }))} className={tInput} step="500" /></div>}
                     
-                    <div className="pt-3 lg:pt-4 border-t border-zinc-100 dark:border-zinc-800 space-y-4 lg:space-y-5">
+                    <div className={cn("pt-3 lg:pt-4 space-y-4 lg:space-y-5", neo ? "border-t-4 border-black" : "border-t border-zinc-100 dark:border-zinc-800")}>
                       {[
                         { key: 'manualMode', label: 'Manual Mode', desc: 'Kirim saat tekan Spasi.' },
                         { key: 'autoRetry', label: 'Auto Retry', desc: 'Ulangi jika gagal.' },
                         { key: 'autoSend', label: 'Auto Send (Ext)', desc: 'Eksekusi dgn Extension.' }
                       ].map(item => (
                         <div key={item.key} className="flex items-center justify-between">
-                          <div className="pr-4"><div className="text-xs lg:text-sm font-bold dark:text-white mb-0.5">{item.label}</div><div className="text-[10px] lg:text-[11px] text-zinc-500">{item.desc}</div></div>
-                          <button onClick={() => setSettings(prev => ({ ...prev, [item.key]: !prev[item.key as keyof AppSettings] }))} className={cn("w-10 h-6 lg:w-12 lg:h-7 rounded-full transition-all relative shrink-0", settings[item.key as keyof AppSettings] ? "bg-emerald-500" : "bg-zinc-200 dark:bg-zinc-700")}><div className={cn("absolute top-1 w-4 h-4 lg:w-5 lg:h-5 bg-white rounded-full transition-all", settings[item.key as keyof AppSettings] ? "left-5 lg:left-6" : "left-1")} /></button>
+                          <div className="pr-4"><div className={cn("text-xs lg:text-sm mb-0.5", neo ? "font-black text-black uppercase" : "font-bold dark:text-white")}>{item.label}</div><div className={cn("text-[10px] lg:text-[11px]", neo ? "font-bold text-gray-700" : "text-zinc-500")}>{item.desc}</div></div>
+                          <button onClick={() => setSettings(prev => ({ ...prev, [item.key]: !prev[item.key as keyof AppSettings] }))} className={cn("transition-all relative shrink-0", neo ? (settings[item.key as keyof AppSettings] ? "w-14 h-8 bg-[#00E5FF] border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]" : "w-14 h-8 bg-white border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]") : (settings[item.key as keyof AppSettings] ? "w-10 h-6 lg:w-12 lg:h-7 rounded-full bg-emerald-500" : "w-10 h-6 lg:w-12 lg:h-7 rounded-full bg-zinc-200 dark:bg-zinc-700"))}><div className={cn("absolute transition-all", neo ? "w-4 h-4 bg-black top-[4px]" : "w-4 h-4 lg:w-5 lg:h-5 bg-white rounded-full top-1", settings[item.key as keyof AppSettings] ? (neo ? "left-7" : "left-5 lg:left-6") : (neo ? "left-1.5" : "left-1"))} /></button>
                         </div>
                       ))}
                     </div>
                     
                     <div className="grid grid-cols-2 gap-3 lg:gap-4 pt-3 lg:pt-4">
-                      <div className="space-y-1.5 lg:space-y-2"><label className="text-[9px] lg:text-[10px] font-bold text-zinc-500 uppercase tracking-widest ml-1">Batch Size</label><input type="number" value={settings.batchSize} onChange={(e) => setSettings(prev => ({ ...prev, batchSize: parseInt(e.target.value) || 0 }))} className="w-full px-3 py-2.5 lg:px-4 lg:py-3 bg-zinc-50 dark:bg-zinc-950 border-none rounded-lg lg:rounded-xl text-[11px] lg:text-sm outline-none dark:text-white" /></div>
-                      <div className="space-y-1.5 lg:space-y-2"><label className="text-[9px] lg:text-[10px] font-bold text-zinc-500 uppercase tracking-widest ml-1">Pause (ms)</label><input type="number" value={settings.batchPause} onChange={(e) => setSettings(prev => ({ ...prev, batchPause: parseInt(e.target.value) || 0 }))} className="w-full px-3 py-2.5 lg:px-4 lg:py-3 bg-zinc-50 dark:bg-zinc-950 border-none rounded-lg lg:rounded-xl text-[11px] lg:text-sm outline-none dark:text-white" /></div>
-                      <div className="space-y-1.5 lg:space-y-2"><label className="text-[9px] lg:text-[10px] font-bold text-zinc-500 uppercase tracking-widest ml-1">Hourly Lmt</label><input type="number" value={settings.hourlyLimit} onChange={(e) => setSettings(prev => ({ ...prev, hourlyLimit: parseInt(e.target.value) || 0 }))} className="w-full px-3 py-2.5 lg:px-4 lg:py-3 bg-zinc-50 dark:bg-zinc-950 border-none rounded-lg lg:rounded-xl text-[11px] lg:text-sm outline-none dark:text-white" /></div>
-                      <div className="space-y-1.5 lg:space-y-2"><label className="text-[9px] lg:text-[10px] font-bold text-zinc-500 uppercase tracking-widest ml-1">Error Lmt</label><input type="number" value={settings.stopOnConsecutiveErrors} onChange={(e) => setSettings(prev => ({ ...prev, stopOnConsecutiveErrors: parseInt(e.target.value) || 0 }))} className="w-full px-3 py-2.5 lg:px-4 lg:py-3 bg-zinc-50 dark:bg-zinc-950 border-none rounded-lg lg:rounded-xl text-[11px] lg:text-sm outline-none dark:text-white" /></div>
+                      <div className="space-y-1.5 lg:space-y-2"><label className={cn("text-[9px] lg:text-[10px] uppercase tracking-widest ml-1", neo ? "font-black text-black" : "font-bold text-zinc-500")}>Batch Size</label><input type="number" value={settings.batchSize} onChange={(e) => setSettings(prev => ({ ...prev, batchSize: parseInt(e.target.value) || 0 }))} className={tInput} /></div>
+                      <div className="space-y-1.5 lg:space-y-2"><label className={cn("text-[9px] lg:text-[10px] uppercase tracking-widest ml-1", neo ? "font-black text-black" : "font-bold text-zinc-500")}>Pause (ms)</label><input type="number" value={settings.batchPause} onChange={(e) => setSettings(prev => ({ ...prev, batchPause: parseInt(e.target.value) || 0 }))} className={tInput} /></div>
+                      <div className="space-y-1.5 lg:space-y-2"><label className={cn("text-[9px] lg:text-[10px] uppercase tracking-widest ml-1", neo ? "font-black text-black" : "font-bold text-zinc-500")}>Hourly Lmt</label><input type="number" value={settings.hourlyLimit} onChange={(e) => setSettings(prev => ({ ...prev, hourlyLimit: parseInt(e.target.value) || 0 }))} className={tInput} /></div>
+                      <div className="space-y-1.5 lg:space-y-2"><label className={cn("text-[9px] lg:text-[10px] uppercase tracking-widest ml-1", neo ? "font-black text-black" : "font-bold text-zinc-500")}>Error Lmt</label><input type="number" value={settings.stopOnConsecutiveErrors} onChange={(e) => setSettings(prev => ({ ...prev, stopOnConsecutiveErrors: parseInt(e.target.value) || 0 }))} className={tInput} /></div>
                     </div>
                   </>
                 )}
               </div>
-              <div className="p-4 lg:p-6 shrink-0"><button onClick={() => setShowSettingsModal(false)} className="w-full py-3.5 lg:py-4 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-xl lg:rounded-2xl font-bold active:scale-[0.98] transition-all text-xs lg:text-sm">Save Config</button></div>
+              <div className={cn("p-4 lg:p-6 shrink-0", neo ? "bg-white border-t-4 border-black" : "")}><button onClick={() => setShowSettingsModal(false)} className={tBtnPrimary}>Save Config</button></div>
             </motion.div>
           </div>
         )}
